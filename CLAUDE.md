@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Laravel 12 / PHP 8.3 multi-tenant SaaS (pet spa booking). Single database, tenant isolation via a `tenant_id` column. No PHP is installed on the host: run everything inside Docker.
+Laravel 12 / PHP 8.3 multi-tenant SaaS (pet spa booking). Frontend: Inertia 2 + Vue 3 `<script setup>` + TypeScript (Laravel Vue starter kit v1.0.2, Tailwind 3, Ziggy). Single database, tenant isolation via a `tenant_id` column. No PHP is installed on the host: run everything inside Docker.
 
 ## Commands
 
@@ -11,6 +11,7 @@ docker compose up -d --build                      # app (:8080), queue, mysql 8,
 docker compose exec app composer install
 docker compose exec app php artisan migrate
 
+docker compose exec app npm run build          # Vite (Node 22 lives in the app image)
 docker compose exec app composer ci               # lint + analyse + test (same as CI)
 docker compose exec app composer format           # Pint (fix); `composer lint` only checks
 docker compose exec app composer analyse          # Larastan level 6
@@ -37,7 +38,9 @@ The invariant: **tenant A must never see tenant B's data.** The pieces only make
 Rules when adding features:
 - Every model whose table has `tenant_id` must use `BelongsToTenant`; `tests/Arch/TenancyTest.php` fails otherwise. Add the migration column as `foreignId('tenant_id')->constrained()->cascadeOnDelete()`.
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
-- Route groups needing a tenant use the `tenant` middleware; once auth is added it must run before `auth`/session user resolution.
+- Route groups needing a tenant use the `tenant` middleware. It is forced before `auth` via `prependToPriorityList` in `bootstrap/app.php`; anything that reads `$request->user()` (e.g. Inertia shared props) must stay lazy/after it. All starter-kit routes (home, dashboard, settings, auth) live inside `Route::middleware('tenant')` in `routes/web.php`.
+- `unique`/`exists` validation rules bypass global scopes: always add `->where('tenant_id', ...)` (see `RegisteredUserController`). Login throttle keys include the tenant.
+- HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenantHost` (tenant host + `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards cross-tenant auth.
 - Not yet tenant-aware (handle when relevant): queue jobs (must carry `tenant_id` and wrap in `CurrentTenant::run`), cache keys, `password_reset_tokens`.
 
 ## Infra notes

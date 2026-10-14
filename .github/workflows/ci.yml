@@ -61,5 +61,10 @@ jobs:
           extensions: pdo_mysql, redis, bcmath, intl
           coverage: none
       - uses: ramsey/composer-install@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm run build
       - run: cp .env.example .env && php artisan key:generate
       - run: php artisan test
