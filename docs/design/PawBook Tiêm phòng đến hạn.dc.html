@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{--color-bg:#FAFAF9;--color-surface:#FFFFFF;--color-surface-muted:#F5F5F4;--color-border:#E7E5E4;--color-text:#1C1917;--color-text-muted:#57534E;--color-text-subtle:#A8A29E;--color-primary:#0D9488;--color-primary-hover:#0F766E;--color-primary-soft:#CCFBF1;--color-on-primary:#FFFFFF;--color-accent:#F97362;--color-accent-soft:#FFE4DF;--color-success:#16A34A;--color-warning:#D97706;--color-danger:#DC2626;--color-info:#2563EB;--focus-ring:0 0 0 3px rgb(13 148 136 / .35);--shadow-sm:0 1px 2px rgb(0 0 0/.05);--shadow-md:0 4px 12px rgb(0 0 0/.08);--shadow-lg:0 12px 32px rgb(0 0 0/.12);--scrim:rgb(28 25 23/.32)}
+[data-theme="dark"]{--color-bg:#0F1514;--color-surface:#161E1D;--color-surface-muted:#1D2826;--color-border:#2A3735;--color-text:#ECF1F0;--color-text-muted:#9DB0AD;--color-text-subtle:#6B7F7C;--color-primary:#2DD4BF;--color-primary-hover:#5EEAD4;--color-primary-soft:#123A36;--color-on-primary:#042F2E;--color-accent:#FB8A7B;--color-accent-soft:#3B201C;--color-success:#4ADE80;--color-warning:#FBBF24;--color-danger:#F87171;--color-info:#60A5FA;--focus-ring:0 0 0 3px rgb(45 212 191 / .4);--shadow-sm:0 0 0 1px #2A3735;--shadow-md:0 0 0 1px #2A3735;--shadow-lg:0 0 0 1px #2A3735;--scrim:rgb(0 0 0/.55)}
+body{margin:0;background:#FAFAF9;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:#0D9488;text-decoration:none}a:hover{color:#0F766E;text-decoration:underline}
+input{font-family:'Be Vietnam Pro',system-ui,sans-serif;font-size:14px;color:inherit}
+@keyframes pb-shimmer{0%{opacity:.45}50%{opacity:1}100%{opacity:.45}}
+@keyframes pb-spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="width:1440px;height:100vh;min-height:900px;display:flex;flex-direction:column;background:var(--color-bg);color:var(--color-text);font:400 14px/20px 'Be Vietnam Pro',system-ui,sans-serif;position:relative;overflow:hidden">
+
+  <div style="flex:none;height:76px;box-sizing:border-box;background:#1C1917;color:#E7E5E4;display:flex;flex-wrap:wrap;align-content:center;align-items:center;gap:8px 20px;padding:0 16px;font-size:12px">
+    <span style="font-weight:600;color:#fff">Demo · S7</span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="color:#A8A29E">Vai trò</span><sc-for list="{{ roleOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.on }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:{{ o.fg }};font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+    <div style="display:flex;align-items:center;gap:6px"><span style="color:#A8A29E">Hiển thị</span><sc-for list="{{ viewOpts }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.on }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:{{ o.fg }};font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+    <span style="color:#FBBF24">Các dòng ngoài Tôm, Sushi, Bơ, Lu là dữ liệu mẫu</span>
+    <button onClick="{{ toggleTheme }}" style="margin-left:auto;height:26px;padding:0 10px;border-radius:6px;border:1px solid #57534E;background:transparent;color:#E7E5E4;font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ themeLabel }}</button>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex">
+    <aside style="flex:none;width:248px;background:var(--color-surface-muted);border-right:1px solid var(--color-border);display:flex;flex-direction:column;padding:16px 12px;box-sizing:border-box;gap:4px">
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px"><span style="width:32px;height:32px;border-radius:8px;background:var(--color-primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:var(--color-on-primary)"><circle cx="5.5" cy="11" r="2"></circle><circle cx="9.5" cy="6" r="2"></circle><circle cx="14.5" cy="6" r="2"></circle><circle cx="18.5" cy="11" r="2"></circle><path d="M12 11c-3 0-5.5 3.2-5.5 5.6 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span><span style="font:700 18px/24px 'Be Vietnam Pro'">PawBook</span></div>
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:12px;height:36px;padding:0 12px;border-radius:10px;background:{{ n.bg }};color:{{ n.fg }};font-weight:{{ n.fw }}"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ n.d }}"></path></svg>{{ n.label }}</div></sc-for>
+    </aside>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <header style="flex:none;height:56px;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--color-surface);border-bottom:1px solid var(--color-border)">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:10px;border:1px solid var(--color-border)"><span style="width:24px;height:24px;border-radius:6px;background:var(--color-accent);color:#1C1917;font:700 12px/24px 'Be Vietnam Pro';text-align:center">PH</span><span style="font-weight:600">Paw House Spa &amp; Vet</span></div>
+        <div style="flex:1;max-width:460px;display:flex;align-items:center;height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--color-border);background:var(--color-surface-muted);color:var(--color-text-muted)">Tìm chủ nuôi, SĐT, tên pet…<kbd style="margin-left:auto;font:500 11px 'JetBrains Mono',monospace;padding:1px 6px;border-radius:4px;border:1px solid var(--color-border);background:var(--color-surface)">/</kbd></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:50%;background:var(--color-surface-muted);box-shadow:0 0 0 2px var(--color-surface),0 0 0 4px {{ me.color }};display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ me.ini }}</span><div style="line-height:16px"><div style="font-weight:500;font-size:13px">{{ me.name }}</div><div style="font-size:12px;color:var(--color-text-muted)">{{ me.role }}</div></div></div>
+      </header>
+
+      <main style="flex:1;min-height:0;overflow:auto"><div style="max-width:1280px;margin:0 auto;padding:24px 32px 48px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:baseline;gap:16px"><span style="font:600 24px/32px 'Be Vietnam Pro'">Tiêm phòng đến hạn</span><span style="color:var(--color-text-muted)">Tính đến T5 16/10/2026</span></div>
+
+        <sc-if value="{{ isLocked }}" hint-placeholder-val="{{ false }}"><div role="note" style="padding:72px 32px;border-radius:10px;border:1px dashed var(--color-border);background:var(--color-surface-muted);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center"><span style="width:56px;height:56px;border-radius:50%;background:var(--color-surface);border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span><div style="font:600 20px/28px 'Be Vietnam Pro'">Bạn không có quyền xem danh sách này</div><div style="max-width:440px;color:var(--color-text-muted)">Danh sách tiêm phòng gắn với thông tin chủ nuôi và hồ sơ y tế, chỉ lễ tân, bác sĩ và owner xem được.</div></div></sc-if>
+
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding:64px 32px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center"><span style="width:56px;height:56px;border-radius:50%;background:color-mix(in oklab,var(--color-danger) 14%,transparent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:none;stroke:var(--color-danger);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01"></path></svg></span><div style="font:600 20px/28px 'Be Vietnam Pro'">Không tải được danh sách tiêm phòng</div><div style="color:var(--color-text-muted)">Mất kết nối tới máy chủ. Dữ liệu vẫn an toàn.</div><div style="font:400 12px/16px 'JetBrains Mono',monospace;color:var(--color-text-subtle)">Mã lỗi: NET_TIMEOUT</div><button onClick="{{ retry }}" style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer">Thử lại</button></div></sc-if>
+
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:28px;border-bottom:1px solid var(--color-border)" role="tablist"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3"><div role="tab" onClick="{{ t.on }}" style="display:flex;align-items:center;gap:8px;padding:10px 0;margin-bottom:-1px;border-bottom:2px solid {{ t.bd }};color:{{ t.fg }};font-weight:{{ t.fw }};cursor:pointer">{{ t.label }}<span style="min-width:22px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:color-mix(in oklab,{{ t.color }} 18%,transparent);font:600 12px/20px 'Be Vietnam Pro';text-align:center;font-variant-numeric:tabular-nums">{{ t.n }}</span></div></sc-for></div>
+
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-muted)">Loài</span><sc-for list="{{ fSpecies }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="height:32px;padding:0 12px;border-radius:999px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-muted)">Loại</span><sc-for list="{{ fKind }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="height:32px;padding:0 12px;border-radius:999px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--color-text-muted)">Bác sĩ</span><sc-for list="{{ fVet }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="height:32px;padding:0 12px;border-radius:999px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+          </div>
+
+          <sc-if value="{{ bulkOn }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;background:var(--color-primary-soft)"><span style="font-weight:600">Đã chọn {{ selCount }} mục</span><button onClick="{{ bulkRemind }}" disabled="{{ eligOff }}" style="height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--color-primary);background:var(--color-surface);color:{{ eligFg }};font:500 13px 'Be Vietnam Pro';cursor:{{ eligCur }}">Gửi nhắc lại ({{ eligCount }})</button><button onClick="{{ clearSel }}" style="border:0;background:transparent;color:var(--color-text-muted);font:500 13px 'Be Vietnam Pro';cursor:pointer">Bỏ chọn</button></div></sc-if>
+
+          <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);overflow:hidden" aria-busy="true"><sc-for list="{{ skel }}" as="k" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:20px;padding:16px 20px;border-top:1px solid var(--color-border)"><i style="width:18px;height:18px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="width:160px;height:28px;border-radius:999px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="width:180px;height:14px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="flex:1;height:14px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="width:120px;height:14px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i></div></sc-for></div></sc-if>
+
+          <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}"><div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+            <div style="display:grid;grid-template-columns:40px 1.5fr 1.4fr 1.5fr 1.1fr 1.1fr 2.2fr;gap:12px;align-items:center;padding:10px 20px;background:var(--color-surface-muted);font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)"><span><span role="checkbox" onClick="{{ toggleAll }}" style="display:flex;width:18px;height:18px;border-radius:4px;box-sizing:border-box;border:1px solid {{ allBd }};background:{{ allBg }};cursor:pointer"></span></span><span>Thú cưng</span><span>Chủ nuôi</span><span>Vaccine / thuốc</span><span>Đến hạn</span><span>Nhắc hẹn</span><span>Hành động</span></div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:40px 1.5fr 1.4fr 1.5fr 1.1fr 1.1fr 2.2fr;gap:12px;align-items:center;padding:12px 20px;border-top:1px solid var(--color-border);background:{{ r.rowBg }}" style-hover="background:var(--color-surface-muted)">
+              <span role="checkbox" onClick="{{ r.pick }}" style="display:flex;width:18px;height:18px;border-radius:4px;box-sizing:border-box;border:1px solid {{ r.cbBd }};background:{{ r.cbBg }};cursor:pointer;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:12px;height:12px;display:{{ r.tick }};fill:none;stroke:var(--color-on-primary);stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;align-self:center"><span style="width:32px;height:32px;border-radius:50%;background:{{ r.avBg }};display:flex;align-items:center;justify-content:center;font:600 10px 'Be Vietnam Pro'">{{ r.sp }}</span><span style="line-height:18px"><span style="font-weight:600;display:block">{{ r.pet }}</span><span style="font-size:12px;color:var(--color-text-muted)">{{ r.vet }}</span></span></span>
+              <span style="line-height:18px"><span style="display:block;font-weight:500">{{ r.owner }}</span><span style="font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums">{{ r.phone }}</span></span>
+              <span style="line-height:18px"><span style="display:block;font-weight:500">{{ r.what }}</span><span style="font-size:12px;color:var(--color-text-muted)">{{ r.dose }}</span></span>
+              <span style="line-height:18px"><span style="display:block;font-variant-numeric:tabular-nums;font-weight:500">{{ r.due }}</span><span style="display:inline-flex;align-items:center;gap:6px;margin-top:2px;font-size:12px;color:var(--color-text)"><i style="width:6px;height:6px;border-radius:50%;background:{{ r.color }}"></i>{{ r.label }}</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;justify-self:start;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';background:color-mix(in oklab,{{ r.rcolor }} 16%,transparent)"><i style="width:6px;height:6px;border-radius:50%;background:{{ r.rcolor }}"></i>{{ r.remind }}</span>
+              <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><sc-if value="{{ r.booked }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;background:color-mix(in oklab,var(--color-success) 14%,transparent);font:500 13px 'Be Vietnam Pro'">Đã đặt {{ r.bookedLabel }}</span></sc-if>
+                <sc-if value="{{ r.canBook }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.onBook }}" style="height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--color-primary);background:var(--color-primary);color:var(--color-on-primary);font:500 13px 'Be Vietnam Pro';cursor:pointer">Đặt lịch tiêm</button></sc-if>
+                <button title="{{ r.remTip }}" onClick="{{ r.onRemind }}" disabled="{{ r.remOff }}" style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--color-border);background:{{ r.remBg }};color:{{ r.remFg }};font:500 13px 'Be Vietnam Pro';cursor:{{ r.remCur }}"><sc-if value="{{ r.remBusy }}" hint-placeholder-val="{{ false }}"><span style="width:12px;height:12px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:pb-spin .8s linear infinite"></span></sc-if>{{ r.remLabel }}</button>
+                <button title="{{ r.markTip }}" onClick="{{ r.onMark }}" disabled="{{ r.markOff }}" style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px;border:0;background:transparent;color:{{ r.markFg }};font:500 13px 'Be Vietnam Pro';cursor:{{ r.markCur }}"><svg viewBox="0 0 24 24" style="width:12px;height:12px;display:{{ r.markLock }};fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Đã tiêm nơi khác</button></span>
+            </div></sc-for>
+            <div style="display:flex;align-items:center;padding:10px 20px;border-top:1px solid var(--color-border);font-size:13px;color:var(--color-text-muted)"><span style="flex:1">{{ pageInfo }}</span><span>Trang 1/1</span></div>
+          </div></sc-if>
+
+          <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:56px 24px;border-radius:10px;border:1px dashed var(--color-border);text-align:center;background:var(--color-surface)"><span style="width:56px;height:56px;border-radius:50%;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:30px;height:30px;fill:var(--color-primary)"><circle cx="5.5" cy="11" r="2"></circle><circle cx="9.5" cy="6" r="2"></circle><circle cx="14.5" cy="6" r="2"></circle><circle cx="18.5" cy="11" r="2"></circle><path d="M12 11c-3 0-5.5 3.2-5.5 5.6 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span><div style="font:600 16px/24px 'Be Vietnam Pro'">{{ emptyTitle }}</div><div style="color:var(--color-text-muted)">{{ emptyText }}</div><sc-if value="{{ filtered }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearFilters }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Xóa bộ lọc</button></sc-if></div></sc-if>
+        </sc-if>
+      </div></main>
+    </div>
+  </div>
+
+  <sc-if value="{{ qb.open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeQB }}" style="position:absolute;inset:76px 0 0 0;background:var(--scrim);z-index:30"></div>
+    <div role="dialog" aria-label="Đặt lịch tiêm" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:31;width:460px;padding:24px;border-radius:16px;background:var(--color-surface);border:1px solid var(--color-border);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center"><span style="flex:1;font:600 20px/28px 'Be Vietnam Pro'">Đặt lịch tiêm cho {{ qb.pet }}</span><button onClick="{{ closeQB }}" aria-label="Đóng (Esc)" style="border:0;background:transparent;color:var(--color-text-muted);cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button></div>
+      <div style="padding:10px 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted)"><div style="font-weight:500">Tiêm phòng · {{ qb.what }}</div><div style="font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums">15' · 350.000 ₫ · T5 16/10 · Giờ theo tiệm (GMT+7) · Chủ nuôi: {{ qb.owner }}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px"><sc-for list="{{ qb.slots }}" as="t" hint-placeholder-count="5"><button onClick="{{ t.on }}" style="height:34px;border-radius:6px;border:1px solid {{ t.bd }};background:{{ t.bg }};color:{{ t.fg }};text-decoration:{{ t.deco }};font:500 13px 'Be Vietnam Pro';font-variant-numeric:tabular-nums;cursor:pointer">{{ t.label }}</button></sc-for></div>
+      <sc-if value="{{ qb.err }}" hint-placeholder-val="{{ false }}"><div role="alert" aria-live="assertive" style="display:flex;flex-direction:column;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--color-danger);background:color-mix(in oklab,var(--color-danger) 10%,transparent)"><span style="font-weight:600">Khung giờ 16:00 vừa có người đặt</span><span style="font-size:13px;color:var(--color-text-muted)">Chọn khung giờ gần nhất:</span><div style="display:flex;gap:8px"><sc-for list="{{ qb.suggest }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.on }}" style="height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--color-primary);background:var(--color-primary-soft);color:var(--color-text);font:500 13px 'Be Vietnam Pro';font-variant-numeric:tabular-nums;cursor:pointer">{{ s.label }}</button></sc-for></div></div></sc-if>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button onClick="{{ closeQB }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Hủy</button><button onClick="{{ qb.confirm }}" disabled="{{ qb.off }}" style="height:36px;padding:0 18px;border-radius:10px;border:0;background:{{ qb.bg }};color:{{ qb.fg }};font:500 14px 'Be Vietnam Pro';cursor:{{ qb.cur }}">Đặt lịch</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mk.open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMk }}" style="position:absolute;inset:76px 0 0 0;background:var(--scrim);z-index:30"></div>
+    <div role="dialog" aria-label="Đánh dấu đã tiêm ở nơi khác" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:31;width:460px;padding:24px;border-radius:16px;background:var(--color-surface);border:1px solid var(--color-border);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center"><span style="flex:1;font:600 20px/28px 'Be Vietnam Pro'">Đánh dấu đã tiêm ở nơi khác</span><button onClick="{{ closeMk }}" aria-label="Đóng (Esc)" style="border:0;background:transparent;color:var(--color-text-muted);cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button></div>
+      <div style="padding:10px 12px;border-radius:10px;background:var(--color-surface-muted)"><div style="font-weight:600">{{ mk.pet }} · {{ mk.what }}</div><div style="font-size:12px;color:var(--color-text-muted)">{{ mk.dose }} · đến hạn {{ mk.due }}</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 13px/18px 'Be Vietnam Pro'">Nơi tiêm (bắt buộc)</label><input value="{{ mk.place }}" onInput="{{ onPlace }}" placeholder="vd Phòng khám thú y Sài Gòn" style="height:36px;padding:0 10px;border:1px solid {{ mk.bd }};border-radius:6px;background:var(--color-surface);outline:0"><sc-if value="{{ mk.err }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;line-height:16px;color:var(--color-danger)">Vui lòng nhập nơi tiêm</span></sc-if></div>
+      <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Hồ sơ ghi thêm một bản ghi mới kèm tên bác sĩ xác nhận và thời gian. Bản ghi không sửa đè được, chỉ thêm đính chính. Lịch nhắc của mũi này được dừng.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button onClick="{{ closeMk }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Hủy</button><button onClick="{{ saveMk }}" style="height:36px;padding:0 18px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer">Lưu</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="alert" aria-live="polite" style="position:absolute;right:24px;bottom:24px;z-index:40;width:420px;padding:14px 16px;border-radius:10px;background:var(--color-surface);border:1px solid {{ toastColor }};box-shadow:var(--shadow-lg);display:flex;gap:12px;align-items:flex-start"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;margin-top:2px;fill:none;stroke:{{ toastColor }};stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ toastIcon }}"></path></svg><div style="flex:1"><div style="font-weight:600">{{ toastTitle }}</div><div style="font-size:13px;color:var(--color-text-muted)">{{ toastText }}</div></div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;owner&quot;,&quot;rec&quot;,&quot;vet&quot;,&quot;groomer&quot;],&quot;default&quot;:&quot;rec&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;},&quot;viewState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;normal&quot;,&quot;loading&quot;,&quot;empty&quot;,&quot;error&quot;],&quot;default&quot;:&quot;normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, role: null, theme: null, tab: 0, fSp: 'all', fKind: 'all', fVet: 'all', sel: {}, rem: {}, remBusy: {}, booked: {}, gone: {}, qb: null, mk: null, toast: false, toastColor: '', toastIcon: '', toastTitle: '', toastText: '' };
+  get view() { return this.state.view ?? this.props.viewState ?? 'normal'; }
+  get role() { return this.state.role ?? this.props.role ?? 'rec'; }
+  get theme() { return this.state.theme ?? this.props.theme ?? 'light'; }
+  hm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  TODAY = Date.UTC(2026, 9, 16);
+  fmt(iso) { const a = iso.split('-'); return a[2] + '/' + a[1] + '/' + a[0]; }
+  days(iso) { const a = iso.split('-'); return Math.round((Date.UTC(+a[0], +a[1] - 1, +a[2]) - this.TODAY) / 864e5); }
+  D = [
+    ['tom', 'Tôm', 'cat', 'Bùi Gia Huy', '0977 246 810', 'Tẩy giun', 'Lần 3', 'worm', '2026-10-04', ['failed', 'Zalo · 13/10'], 'K'],
+    ['com', 'Cốm', 'dog', 'Lê Thanh Hà', '0988 321 654', 'Vaccine 7 bệnh', 'Mũi 2', 'vax', '2026-10-09', ['sent', '12/10'], 'H'],
+    ['muc', 'Mực', 'cat', 'Phan Quốc Việt', '0966 710 235', 'Tẩy giun', 'Lần 2', 'worm', '2026-10-11', ['none'], 'K'],
+    ['sushi', 'Sushi', 'dog', 'Đặng Mỹ Linh', '0938 555 222', 'Vaccine 7 bệnh', 'Mũi 2', 'vax', '2026-10-16', ['none'], 'K'],
+    ['bong', 'Bông', 'dog', 'Ngô Thu Trang', '0932 118 477', 'Dại', 'Mũi 1', 'vax', '2026-10-18', ['sent', '14/10'], 'H'],
+    ['nam', 'Nấm', 'dog', 'Trịnh Hải Đăng', '0913 665 902', 'Vaccine 7 bệnh', 'Mũi 3', 'vax', '2026-10-20', ['none'], 'H'],
+    ['muop', 'Mướp', 'cat', 'Đỗ Khánh Vy', '0945 200 316', '5 bệnh', 'Mũi 2', 'vax', '2026-10-21', ['sent', '08:30 hôm nay', true], 'K'],
+    ['bo', 'Bơ', 'cat', 'Nguyễn Thị Lan', '0903 123 456', 'Tẩy giun', 'Lần 2', 'worm', '2026-10-22', ['none'], 'K'],
+    ['lu', 'Lu', 'dog', 'Hoàng Văn Nam', '0912 987 654', 'Vaccine 7 bệnh', 'Nhắc lại hằng năm', 'vax', '2026-10-28', ['none'], 'H'],
+    ['gao', 'Gạo', 'dog', 'Vũ Minh Châu', '0905 774 128', 'Tẩy giun', 'Lần 4', 'worm', '2026-11-02', ['none'], 'K'],
+    ['su', 'Su', 'cat', 'Đinh Hoài An', '0971 305 842', 'Dại', 'Nhắc lại hằng năm', 'vax', '2026-11-09', ['none'], 'H'],
+    ['tep', 'Tép', 'dog', 'Lý Gia Bảo', '0919 440 273', 'Vaccine 7 bệnh', 'Mũi 3', 'vax', '2026-11-12', ['none'], 'K']
+  ].map(r => ({ id: r[0], pet: r[1], sp: r[2], owner: r[3], phone: r[4], what: r[5], dose: r[6], kind: r[7], due: r[8], rem: r[9], vet: r[10] }));
+  VET = { K: 'Trần Minh Khoa', H: 'BS. Lê Thu Hà' };
+  ic = { alert: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01', check: 'M20 6 9 17l-5-5' };
+  me(r) { return { owner: { name: 'Trần Minh Khoa', ini: 'TK', role: 'Owner · Bác sĩ', color: '#0D9488' }, rec: { name: 'Võ Thị Mai', ini: 'VM', role: 'Lễ tân', color: '#EAB308' }, vet: { name: 'BS. Lê Thu Hà', ini: 'LH', role: 'Bác sĩ', color: '#8B5CF6' }, groomer: { name: 'Nguyễn Ngọc Anh', ini: 'NA', role: 'Groomer', color: '#F97362' } }[r]; }
+  flash(kind, t, x) { this.setState({ toast: true, toastColor: kind === 'err' ? 'var(--color-danger)' : 'var(--color-success)', toastIcon: kind === 'err' ? this.ic.alert : this.ic.check, toastTitle: t, toastText: x }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: false }), 5000); }
+  componentDidMount() { this._k = e => { if (e.key === 'Escape') this.setState({ qb: null, mk: null }); }; document.addEventListener('keydown', this._k); }
+  componentWillUnmount() { document.removeEventListener('keydown', this._k); }
+  lockedOf(id) { const r = this.D.find(x => x.id === id); const rem = this.state.rem[id] || r.rem; return rem[0] === 'sent' && !!rem[2]; }
+  remind(ids, skipped) {
+    const s = this.state; this.setState({ remBusy: Object.assign({}, s.remBusy, ...ids.map(i => ({ [i]: true }))) });
+    setTimeout(() => {
+      const FAIL = ['muc', 'nam'], ok = ids.filter(i => FAIL.indexOf(i) < 0), bad = ids.filter(i => FAIL.indexOf(i) >= 0);
+      this.setState(x => ({ rem: Object.assign({}, x.rem, ...ok.map(i => ({ [i]: ['sent', '11:20 hôm nay', true] })), ...bad.map(i => ({ [i]: ['failed', 'Zalo · hôm nay'] }))), remBusy: Object.assign({}, x.remBusy, ...ids.map(i => ({ [i]: false }))), sel: {} }));
+      if (ids.length === 1) { if (bad.length) this.flash('err', 'Gửi nhắc lại thất bại', 'Kênh Zalo của chủ nuôi chưa kết nối. Bạn có thể thử lại.'); else this.flash('ok', 'Đã gửi nhắc lại lúc 11:20', 'Có thể gửi lại sau 11:20 ngày 17/10.'); }
+      else this.flash(bad.length ? 'err' : 'ok', ok.length + ' thành công, ' + bad.length + ' thất bại', (skipped ? skipped + ' mục đã gửi trong 24 giờ qua được bỏ qua. ' : '') + (bad.length ? 'Mục thất bại có thể thử lại.' : 'Đã ghi vào lịch sử nhắc.'));
+    }, 700);
+  }
+
+  renderVals() {
+    const s = this.state, view = this.view, role = this.role, vetFull = role === 'owner' || role === 'vet', canBook = role !== 'groomer';
+    const chip = on => on ? { bg: '#F5F5F4', fg: '#1C1917', bd: '#F5F5F4' } : { bg: 'transparent', fg: '#E7E5E4', bd: '#57534E' };
+    const roleOpts = [['owner', 'Owner'], ['rec', 'Lễ tân'], ['vet', 'Bác sĩ'], ['groomer', 'Groomer']].map(o => Object.assign({ label: o[1], on: () => this.setState({ role: o[0] }) }, chip(role === o[0])));
+    const slotErr = !!s.qb && s.qb.err;
+    const viewOpts = [['normal', 'Bình thường'], ['loading', 'Đang tải'], ['empty', 'Rỗng'], ['error', 'Lỗi tải'], ['slot', 'Slot vừa bị đặt'], ['restricted', 'Quyền hạn chế']].map(o => Object.assign({ label: o[1], on: () => {
+      if (o[0] === 'slot') this.setState({ view: 'normal', qb: { id: 'tom', time: 960, err: true }, tab: 0 });
+      else if (o[0] === 'restricted') this.setState({ view: 'normal', role: 'groomer', qb: null });
+      else this.setState({ view: o[0], qb: null });
+    } }, chip(o[0] === 'slot' ? slotErr : o[0] === 'restricted' ? (role === 'groomer' && view === 'normal') : (view === o[0] && !(o[0] === 'normal' && role === 'groomer')))));
+    const nav = [['Tổng quan', 'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z'], ['Lịch hẹn', 'M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18'], ['Khách hàng & Thú cưng', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'], ['Tiêm phòng', 'm18 2 4 4 m17 7 3-3 M19 9 8.7 19.3a1 1 0 0 1-1.4 0L4.7 16.7a1 1 0 0 1 0-1.4L15 5'], ['Dịch vụ', 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M20 4 8.12 15.88'], ['Nhân viên', 'M18 20a6 6 0 0 0-12 0 M12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z']].map(n => Object.assign({ label: n[0], d: n[1] }, n[0] === 'Tiêm phòng' ? { bg: 'var(--color-primary-soft)', fg: 'var(--color-text)', fw: 600 } : { bg: 'transparent', fg: 'var(--color-text-muted)', fw: 400 }));
+
+    const empty = view === 'empty';
+    const locked = role === 'groomer' && view === 'normal';
+    let base = empty ? [] : this.D.filter(r => !s.gone[r.id]);
+    const filtered = s.fSp !== 'all' || s.fKind !== 'all' || s.fVet !== 'all';
+    base = base.filter(r => (s.fSp === 'all' || r.sp === s.fSp) && (s.fKind === 'all' || r.kind === s.fKind) && (s.fVet === 'all' || r.vet === s.fVet));
+    const bucket = r => { const d = this.days(r.due); return d < 0 ? 0 : (d <= 7 ? 1 : 2); };
+    const tabDefs = [['Quá hạn', 'var(--color-danger)'], ['7 ngày tới', 'var(--color-warning)'], ['30 ngày tới', 'var(--color-info)']];
+    const tabs = tabDefs.map((t, i) => ({ label: t[0], color: t[1], n: base.filter(r => bucket(r) === i).length, bd: s.tab === i ? t[1] : 'transparent', fg: s.tab === i ? 'var(--color-text)' : 'var(--color-text-muted)', fw: s.tab === i ? 600 : 500, on: () => this.setState({ tab: i, sel: {} }) }));
+    const list = base.filter(r => bucket(r) === s.tab).sort((a, b) => a.due < b.due ? -1 : 1);
+    const selIds = list.filter(r => s.sel[r.id]).map(r => r.id);
+    const rows = list.map(r => {
+      const d = this.days(r.due), rem = s.rem[r.id] || r.rem, on = !!s.sel[r.id], bk = s.booked[r.id];
+      const color = d < 0 ? 'var(--color-danger)' : (d <= 7 ? 'var(--color-warning)' : 'var(--color-success)');
+      const label = d < 0 ? 'Quá hạn ' + (-d) + ' ngày' : (d === 0 ? 'Đến hạn hôm nay' : 'Còn ' + d + ' ngày');
+      const lockedR = rem[0] === 'sent' && !!rem[2], timeR = String(rem[1]).split(' ')[0];
+      const remind = rem[0] === 'none' ? 'Chưa gửi' : (rem[0] === 'sent' ? (lockedR ? 'Đã gửi lúc ' + timeR : 'Đã gửi ' + rem[1]) : 'Thất bại · ' + rem[1]);
+      const rcolor = rem[0] === 'none' ? 'var(--color-text-subtle)' : (rem[0] === 'sent' ? 'var(--color-success)' : 'var(--color-danger)');
+      return { sp: r.sp === 'dog' ? 'Chó' : 'Mèo', avBg: r.sp === 'dog' ? 'var(--color-accent-soft)' : 'var(--color-primary-soft)', pet: r.pet, vet: this.VET[r.vet], owner: r.owner, phone: r.phone, what: r.what, dose: r.dose, due: this.fmt(r.due), color, label, remind, rcolor,
+        rowBg: on ? 'var(--color-primary-soft)' : 'transparent', cbBd: on ? 'var(--color-primary)' : 'var(--color-border)', cbBg: on ? 'var(--color-primary)' : 'var(--color-surface)', tick: on ? 'block' : 'none', pick: () => this.setState(x => ({ sel: Object.assign({}, x.sel, { [r.id]: !x.sel[r.id] }) })),
+        booked: !!bk, bookedLabel: bk || '', canBook: !bk, onBook: () => this.setState({ qb: { id: r.id, time: null, err: false } }),
+        remBusy: !!s.remBusy[r.id], remOff: !!s.remBusy[r.id] || lockedR, remLabel: lockedR ? 'Đã gửi lúc ' + timeR : 'Gửi nhắc lại', remTip: lockedR ? 'Chỉ gửi lại được sau 24 giờ: từ ' + timeR + ' ngày 17/10' : '', remBg: lockedR ? 'var(--color-surface-muted)' : 'var(--color-surface)', remFg: lockedR ? 'var(--color-text-subtle)' : 'var(--color-text)', remCur: lockedR ? 'not-allowed' : 'pointer', onRemind: () => { if (!lockedR) this.remind([r.id], 0); },
+        markOff: !vetFull, markTip: vetFull ? 'Đánh dấu đã tiêm ở nơi khác' : 'Chỉ bác sĩ hoặc chủ tiệm được chỉnh sửa', markFg: vetFull ? 'var(--color-primary)' : 'var(--color-text-subtle)', markCur: vetFull ? 'pointer' : 'not-allowed', markLock: vetFull ? 'none' : 'block', onMark: () => this.setState({ mk: { id: r.id, place: '', err: false } }) };
+    });
+    const allOn = list.length > 0 && selIds.length === list.length;
+    const hasRows = rows.length > 0 && view !== 'loading';
+    const emptyTitle = filtered ? 'Không có mũi tiêm khớp bộ lọc' : ['Không có mũi tiêm nào quá hạn', 'Không có mũi tiêm nào đến hạn trong 7 ngày tới', 'Không có mũi tiêm nào đến hạn trong 30 ngày tới'][s.tab];
+    const emptyText = filtered ? 'Thử bỏ bớt bộ lọc loài, loại hoặc bác sĩ.' : 'Tất cả thú cưng đang theo dõi đã được tiêm đúng phác đồ.';
+    const fOpt = (key, cur, items) => items.map(it => ({ label: it[1], bd: cur === it[0] ? 'var(--color-primary)' : 'var(--color-border)', bg: cur === it[0] ? 'var(--color-primary-soft)' : 'var(--color-surface)', on: () => this.setState({ [key]: it[0], sel: {} }) }));
+    const q = s.qb, qr = q && this.D.find(r => r.id === q.id);
+    const qSlots = [900, 930, 960, 990, 1020].map(t => { const taken = q && q.err && t === 960, on = q && q.time === t; return { label: this.hm(t), deco: taken ? 'line-through' : 'none', bd: on && !taken ? 'var(--color-primary)' : 'var(--color-border)', bg: on && !taken ? 'var(--color-primary)' : (taken ? 'var(--color-surface-muted)' : 'var(--color-surface)'), fg: on && !taken ? 'var(--color-on-primary)' : (taken ? 'var(--color-text-subtle)' : 'var(--color-text)'), on: () => { if (!taken) this.setState({ qb: Object.assign({}, q, { time: t, err: false }) }); } }; });
+    const qOk = q && q.time != null && !(q.err && q.time === 960);
+    const mk = s.mk, mr = mk && this.D.find(r => r.id === mk.id);
+    return {
+      theme: this.theme, themeLabel: this.theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối', toggleTheme: () => this.setState({ theme: this.theme === 'dark' ? 'light' : 'dark' }),
+      roleOpts, viewOpts, nav, me: this.me(role), isLocked: locked, isError: view === 'error', isMain: view !== 'error' && !locked, isLoading: view === 'loading', skel: [1, 2, 3, 4, 5, 6], retry: () => this.setState({ view: 'normal' }),
+      tabs, fSpecies: fOpt('fSp', s.fSp, [['all', 'Tất cả'], ['dog', 'Chó'], ['cat', 'Mèo']]), fKind: fOpt('fKind', s.fKind, [['all', 'Tất cả'], ['vax', 'Vaccine'], ['worm', 'Tẩy giun']]), fVet: fOpt('fVet', s.fVet, [['all', 'Tất cả'], ['K', 'Trần Minh Khoa'], ['H', 'BS. Lê Thu Hà']]),
+      bulkOn: selIds.length > 0 && view !== 'loading', selCount: selIds.length, eligCount: selIds.filter(i => !this.lockedOf(i)).length, eligOff: selIds.filter(i => !this.lockedOf(i)).length === 0, eligFg: selIds.filter(i => !this.lockedOf(i)).length === 0 ? 'var(--color-text-subtle)' : 'var(--color-text)', eligCur: selIds.filter(i => !this.lockedOf(i)).length === 0 ? 'not-allowed' : 'pointer', bulkRemind: () => { const el = selIds.filter(i => !this.lockedOf(i)); if (el.length) this.remind(el, selIds.length - el.length); }, clearSel: () => this.setState({ sel: {} }),
+      showTable: hasRows, rows, allBd: allOn ? 'var(--color-primary)' : 'var(--color-border)', allBg: allOn ? 'var(--color-primary)' : 'var(--color-surface)', toggleAll: () => this.setState({ sel: allOn ? {} : Object.assign({}, ...list.map(r => ({ [r.id]: true }))) }),
+      pageInfo: 'Hiển thị ' + rows.length + ' mũi tiêm', showEmpty: !hasRows && view !== 'loading', emptyTitle, emptyText, filtered, clearFilters: () => this.setState({ fSp: 'all', fKind: 'all', fVet: 'all' }),
+      qb: { open: !!q, pet: qr ? qr.pet : '', what: qr ? qr.what + ' · ' + qr.dose : '', owner: qr ? qr.owner : '', slots: qSlots, err: !!(q && q.err), off: !qOk, bg: qOk ? 'var(--color-primary)' : 'var(--color-surface-muted)', fg: qOk ? 'var(--color-on-primary)' : 'var(--color-text-subtle)', cur: qOk ? 'pointer' : 'not-allowed',
+        suggest: [930, 990, 1020].map(t => ({ label: this.hm(t), on: () => this.setState({ qb: Object.assign({}, q, { time: t, err: false }) }) })),
+        confirm: () => { if (!qOk) return; this.setState(x => ({ qb: null, booked: Object.assign({}, x.booked, { [q.id]: this.hm(q.time) + ' T5 16/10' }) })); this.flash('ok', 'Đã đặt lịch tiêm cho ' + qr.pet + ' lúc ' + this.hm(q.time) + ' T5 16/10', qr.what + ' · ' + qr.dose); } },
+      closeQB: () => this.setState({ qb: null }),
+      mk: { open: !!mk, pet: mr ? mr.pet : '', what: mr ? mr.what : '', dose: mr ? mr.dose : '', due: mr ? this.fmt(mr.due) : '', place: mk ? mk.place : '', err: !!(mk && mk.err), bd: mk && mk.err ? 'var(--color-danger)' : 'var(--color-border)' },
+      onPlace: e => this.setState({ mk: Object.assign({}, mk, { place: e.target.value, err: false }) }), closeMk: () => this.setState({ mk: null }),
+      saveMk: () => { if (!mk.place.trim()) return this.setState({ mk: Object.assign({}, mk, { err: true }) }); this.setState(x => ({ gone: Object.assign({}, x.gone, { [mk.id]: true }), mk: null })); this.flash('ok', 'Đã ghi ' + mr.pet + ' tiêm ở ' + mk.place, 'Bản ghi mới thêm vào hồ sơ bởi ' + this.me(role).name + '. Đã dừng nhắc mũi này.'); },
+      toast: s.toast, toastColor: s.toastColor, toastIcon: s.toastIcon, toastTitle: s.toastTitle, toastText: s.toastText
+    };
+  }
+}
+</script>
+</body>
+</html>

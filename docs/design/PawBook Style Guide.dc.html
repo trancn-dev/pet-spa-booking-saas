@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{--color-bg:#FAFAF9;--color-surface:#FFFFFF;--color-surface-muted:#F5F5F4;--color-border:#E7E5E4;--color-text:#1C1917;--color-text-muted:#57534E;--color-text-subtle:#A8A29E;--color-primary:#0D9488;--color-primary-hover:#0F766E;--color-primary-soft:#CCFBF1;--color-on-primary:#FFFFFF;--color-accent:#F97362;--color-accent-soft:#FFE4DF;--color-success:#16A34A;--color-warning:#D97706;--color-danger:#DC2626;--color-info:#2563EB;--color-boarding:#8B5CF6;--color-boarding-soft:#EDE9FE;--focus-ring:0 0 0 3px rgb(13 148 136 / .35);--shadow-sm:0 1px 2px rgb(0 0 0/.05);--shadow-md:0 4px 12px rgb(0 0 0/.08);--shadow-lg:0 12px 32px rgb(0 0 0/.12);color-scheme:light}
+[data-theme="dark"]{--color-bg:#0F1514;--color-surface:#161E1D;--color-surface-muted:#1D2826;--color-border:#2A3735;--color-text:#ECF1F0;--color-text-muted:#9DB0AD;--color-text-subtle:#6B7F7C;--color-primary:#2DD4BF;--color-primary-hover:#5EEAD4;--color-primary-soft:#123A36;--color-on-primary:#042F2E;--color-accent:#FB8A7B;--color-accent-soft:#3B201C;--color-success:#4ADE80;--color-warning:#FBBF24;--color-danger:#F87171;--color-info:#60A5FA;--color-boarding:#A78BFA;--color-boarding-soft:#2A2147;--focus-ring:0 0 0 3px rgb(45 212 191 / .4);--shadow-sm:0 0 0 1px #2A3735;--shadow-md:0 0 0 1px #2A3735;--shadow-lg:0 0 0 1px #2A3735;color-scheme:dark}
+body{margin:0;background:#FAFAF9;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:#0D9488;text-decoration:none}a:hover{color:#0F766E;text-decoration:underline}
+@keyframes pb-shimmer{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+@keyframes pb-spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width:1440px;box-sizing:border-box;padding:48px 64px 96px;background:#FAFAF9;color:#1C1917;font:400 14px/20px 'Be Vietnam Pro',system-ui,sans-serif">
+  <header id="intro" style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:32px;border-bottom:1px solid #E7E5E4">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="width:48px;height:48px;border-radius:12px;background:#0D9488;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:#fff"><circle cx="5.5" cy="11" r="2"></circle><circle cx="9.5" cy="6" r="2"></circle><circle cx="14.5" cy="6" r="2"></circle><circle cx="18.5" cy="11" r="2"></circle><path d="M12 11c-3 0-5.5 3.2-5.5 5.6 0 1.7 1.3 2.4 2.6 2.4 1 0 1.9-.5 2.9-.5s1.9.5 2.9.5c1.3 0 2.6-.7 2.6-2.4C17.5 14.200 15 11 12 11z"></path></svg></div>
+      <div><div style="font:700 32px/40px 'Be Vietnam Pro'">PawBook · Style guide</div><div style="color:#57534E">Design system v1 · Light + Dark · Stack đích: Tailwind CSS (CSS variables)</div></div>
+    </div>
+    <a href="PawBook Lịch hẹn.dc.html" style="font-weight:500">Màn S1 · Lịch hẹn →</a>
+  </header>
+
+  <section style="margin-top:48px">
+    <h2 style="font:600 20px/28px 'Be Vietnam Pro';margin:0 0 4px">1. Màu</h2>
+    <p style="margin:0 0 20px;color:#57534E">Primary teal, accent coral, neutral stone. Tương phản chữ ≥ 4.5:1; trạng thái luôn kèm chữ hoặc icon.</p>
+    <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;overflow:hidden">
+      <div style="display:grid;grid-template-columns:220px 1fr 160px 160px;padding:10px 16px;background:#F5F5F4;font:500 13px/18px 'Be Vietnam Pro';color:#57534E"><div>Token</div><div>Dùng cho</div><div>Light</div><div>Dark</div></div>
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="17">
+        <div style="display:grid;grid-template-columns:220px 1fr 160px 160px;align-items:center;padding:8px 16px;border-top:1px solid #E7E5E4">
+          <div style="font:400 12px/16px 'JetBrains Mono',monospace">{{ t.name }}</div>
+          <div style="color:#57534E">{{ t.use }}</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:6px;border:1px solid #E7E5E4;background:{{ t.light }}"></span><span style="font:400 12px/16px 'JetBrains Mono',monospace">{{ t.light }}</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:6px;border:1px solid #E7E5E4;background:{{ t.dark }}"></span><span style="font:400 12px/16px 'JetBrains Mono',monospace">{{ t.dark }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px">
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Trạng thái lịch hẹn</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ statuses }}" as="s" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:12px;height:12px;border-radius:50%;background:{{ s.color }}"></span><span style="font-weight:500;width:110px">{{ s.label }}</span><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">{{ s.key }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Màu nhân viên</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{ staffColors }}" as="c" hint-placeholder-count="8">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:40px;height:40px;border-radius:50%;background:{{ c }}"></span><span style="font:400 11px/14px 'JetBrains Mono',monospace;color:#57534E">{{ c }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Loại dịch vụ</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ serviceTypes }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:24px;border-radius:6px;background:{{ s.soft }};border-left:4px solid {{ s.color }}"></span><span style="font-weight:500;width:90px">{{ s.label }}</span><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">{{ s.color }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-top:64px">
+    <h2 style="font:600 20px/28px 'Be Vietnam Pro';margin:0 0 4px">2. Typography</h2>
+    <p style="margin:0 0 20px;color:#57534E">Be Vietnam Pro cho UI, JetBrains Mono cho mã lịch hẹn và số lô. Số, giờ, tiền dùng tabular-nums.</p>
+    <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:8px 24px">
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">display</span><span style="font:700 32px/40px 'Be Vietnam Pro'">Tổng quan hôm nay: 14 lịch</span><span style="color:#57534E;font-size:12px">32 / 40 · 700</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">h1</span><span style="font:600 24px/32px 'Be Vietnam Pro'">Lịch hẹn Thứ 5, 16/10/2026</span><span style="color:#57534E;font-size:12px">24 / 32 · 600</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">h2</span><span style="font:600 20px/28px 'Be Vietnam Pro'">Tiêm phòng đến hạn</span><span style="color:#57534E;font-size:12px">20 / 28 · 600</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">h3</span><span style="font:600 16px/24px 'Be Vietnam Pro'">Thông tin thú cưng</span><span style="color:#57534E;font-size:12px">16 / 24 · 600</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">body-lg</span><span style="font:400 16px/24px 'Be Vietnam Pro'">Mochi · Tắm + cắt tỉa · 60 phút · 350.000 ₫</span><span style="color:#57534E;font-size:12px">16 / 24 · 400 · portal</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">body</span><span style="font:400 14px/20px 'Be Vietnam Pro'">Khách đã được nhắc lịch qua email 24 giờ trước giờ hẹn.</span><span style="color:#57534E;font-size:12px">14 / 20 · 400</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">label</span><span style="font:500 13px/18px 'Be Vietnam Pro'">Số điện thoại chủ nuôi</span><span style="color:#57534E;font-size:12px">13 / 18 · 500</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0;border-bottom:1px solid #E7E5E4"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">caption</span><span style="font:400 12px/16px 'Be Vietnam Pro'">Cập nhật lúc 11:20 · Giờ theo tiệm (GMT+7)</span><span style="color:#57534E;font-size:12px">12 / 16 · 400</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr 200px;align-items:center;padding:12px 0"><span style="font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">mono</span><span style="font:400 13px/18px 'JetBrains Mono',monospace">#01JA8K2M · Lô VX7-2409-118</span><span style="color:#57534E;font-size:12px">JetBrains Mono · 400</span></div>
+    </div>
+    <div style="margin-top:12px;font-variant-numeric:tabular-nums;color:#57534E">Tabular-nums: <span style="color:#1C1917;font-weight:500">350.000 ₫ · 14:30 · 1.234.567 ₫ · 08:00–20:00</span></div>
+  </section>
+
+  <section style="margin-top:64px">
+    <h2 style="font:600 20px/28px 'Be Vietnam Pro';margin:0 0 4px">3. Spacing · Radius · Shadow</h2>
+    <p style="margin:0 0 20px;color:#57534E">Lưới 4px. Chiều cao control 36px (app), 44px (portal). Motion 150ms hover, 200ms drawer/modal.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Spacing</h3>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="11">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font:400 12px/16px 'JetBrains Mono',monospace;color:#57534E">{{ s }}</span><span style="height:12px;width:{{ s }}px;background:#0D9488;border-radius:2px"></span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#fff;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Radius</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start"><span style="width:72px;height:56px;background:#CCFBF1;border:1px solid #0D9488;border-radius:6px"></span><span style="font-size:12px;color:#57534E">sm · 6px · input, badge</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start"><span style="width:72px;height:56px;background:#CCFBF1;border:1px solid #0D9488;border-radius:10px"></span><span style="font-size:12px;color:#57534E">md · 10px · button, card</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start"><span style="width:72px;height:56px;background:#CCFBF1;border:1px solid #0D9488;border-radius:16px"></span><span style="font-size:12px;color:#57534E">lg · 16px · modal, sheet</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start"><span style="width:56px;height:56px;background:#CCFBF1;border:1px solid #0D9488;border-radius:999px"></span><span style="font-size:12px;color:#57534E">full · avatar, chip</span></div>
+        </div>
+      </div>
+      <div style="border:1px solid #E7E5E4;border-radius:10px;background:#FAFAF9;padding:20px">
+        <h3 style="font:600 16px/24px 'Be Vietnam Pro';margin:0 0 12px">Shadow</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="height:44px;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgb(0 0 0/.05);display:flex;align-items:center;padding:0 16px;font-size:12px">sm · card</div>
+          <div style="height:44px;border-radius:10px;background:#fff;box-shadow:0 4px 12px rgb(0 0 0/.08);display:flex;align-items:center;padding:0 16px;font-size:12px">md · dropdown, popover</div>
+          <div style="height:44px;border-radius:10px;background:#fff;box-shadow:0 12px 32px rgb(0 0 0/.12);display:flex;align-items:center;padding:0 16px;font-size:12px">lg · modal</div>
+          <div style="font-size:12px;color:#57534E">Dark mode thay shadow bằng viền --color-border.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-top:64px">
+    <h2 style="font:600 20px/28px 'Be Vietnam Pro';margin:0 0 4px">4. Component</h2>
+    <p style="margin:0 0 20px;color:#57534E">Mỗi component hiển thị ở Light và Dark, dùng cùng token.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+      <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+        <div data-theme="{{ th.id }}" style="background:var(--color-bg);color:var(--color-text);border:1px solid var(--color-border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:32px;font:400 14px/20px 'Be Vietnam Pro',system-ui,sans-serif">
+          <div style="font:600 12px/16px 'JetBrains Mono',monospace;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.08em">{{ th.label }}</div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Button</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+              <button style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer" style-hover="background:var(--color-primary-hover)" style-focus="box-shadow:var(--focus-ring)">+ Đặt lịch</button>
+              <button style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer" style-hover="background:var(--color-surface-muted)">Dời lịch</button>
+              <button style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer" style-hover="background:var(--color-surface-muted)">Bỏ qua</button>
+              <button style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:var(--color-danger);color:#fff;font:500 14px 'Be Vietnam Pro';cursor:pointer">Hủy lịch</button>
+              <button style="display:inline-flex;align-items:center;height:36px;padding:0;border:0;background:transparent;color:var(--color-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer;text-decoration:underline">Xem tất cả</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+              <button style="display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;min-width:150px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:progress;opacity:.9"><span style="width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:pb-spin .8s linear infinite"></span>Đang đặt…</button>
+              <button title="Chỉ bác sĩ được chỉnh sửa" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted);color:var(--color-text-subtle);font:500 14px 'Be Vietnam Pro';cursor:not-allowed"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.lock }}"></path></svg>Ghi khám</button>
+              <button style="display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 13px 'Be Vietnam Pro'">sm 28</button>
+              <button style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 24px;border-radius:10px;border:0;background:var(--color-accent);color:#1C1917;font:600 16px 'Be Vietnam Pro'">Tiếp tục</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 13px/18px 'Be Vietnam Pro'">Số điện thoại</label>
+              <div style="display:flex;height:36px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface);overflow:hidden"><span style="display:flex;align-items:center;padding:0 10px;background:var(--color-surface-muted);color:var(--color-text-muted);border-right:1px solid var(--color-border)">+84</span><span style="display:flex;align-items:center;padding:0 10px;color:var(--color-text-subtle)">903 123 456</span></div>
+              <span style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Tìm theo 4 số cuối</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 13px/18px 'Be Vietnam Pro'">Cân nặng</label>
+              <div style="display:flex;height:36px;border:1px solid var(--color-primary);box-shadow:var(--focus-ring);border-radius:6px;background:var(--color-surface);overflow:hidden"><span style="flex:1;display:flex;align-items:center;padding:0 10px;font-variant-numeric:tabular-nums">5,2</span><span style="display:flex;align-items:center;padding:0 10px;background:var(--color-surface-muted);color:var(--color-text-muted);border-left:1px solid var(--color-border)">kg</span></div>
+              <span style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Focus · gợi ý cỡ S</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 13px/18px 'Be Vietnam Pro'">Họ tên</label>
+              <div style="display:flex;align-items:center;height:36px;padding:0 10px;border:1px solid var(--color-danger);border-radius:6px;background:var(--color-surface);color:var(--color-text-subtle)">Nhập họ tên</div>
+              <span style="display:flex;align-items:center;gap:4px;font-size:12px;line-height:16px;color:var(--color-danger)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.alert }}"></path></svg>Vui lòng nhập họ tên</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 13px/18px 'Be Vietnam Pro'">Dịch vụ</label>
+              <div style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface)"><span>Tắm + sấy</span><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m6 9 6 6 6-6"></path></svg></div>
+              <span style="font-size:12px;line-height:16px;color:var(--color-text-muted)">45 phút · Chó cỡ S</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Combobox tìm chủ nuôi</div>
+            <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-md);overflow:hidden">
+              <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-bottom:1px solid var(--color-border)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round"><path d="{{ ic.search }}"></path></svg><span style="font-variant-numeric:tabular-nums">3456</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--color-primary-soft)"><span style="width:32px;height:32px;border-radius:50%;background:var(--color-surface-muted);display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">NL</span><div style="flex:1"><div style="font-weight:500">Nguyễn Thị Lan</div><div style="font-size:12px;line-height:16px;color:var(--color-text-muted);font-variant-numeric:tabular-nums">0903 123 456</div></div><span style="font-size:12px;color:var(--color-text-muted)">2 pet</span></div>
+              <div style="padding:10px 12px;color:var(--color-primary);font-weight:500;border-top:1px solid var(--color-border)">+ Tạo chủ nuôi mới</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Badge</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ statuses }}" as="s" hint-placeholder-count="6">
+                <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text);background:color-mix(in oklab,{{ s.cssVar }} 16%,transparent);border:1px {{ s.border }} {{ s.cssVar }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ s.cssVar }}"></span><span style="text-decoration:{{ s.deco }}">{{ s.label }}</span></span>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';background:var(--color-accent-soft);color:var(--color-text);border-left:3px solid var(--color-accent)">Grooming</span>
+              <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';background:var(--color-primary-soft);color:var(--color-text);border-left:3px solid var(--color-primary)">Y tế</span>
+              <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';background:var(--color-boarding-soft);color:var(--color-text);border-left:3px solid var(--color-boarding)">Lưu chuồng</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text);background:color-mix(in oklab,var(--color-success) 16%,transparent)">Đúng hạn</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text);background:color-mix(in oklab,var(--color-warning) 16%,transparent)">Sắp đến hạn</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text);background:color-mix(in oklab,var(--color-danger) 16%,transparent)">Quá hạn</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text);background:color-mix(in oklab,var(--color-danger) 16%,transparent)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--color-danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.alert }}"></path></svg>Dị ứng: dầu gội có hương liệu</span>
+              <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font:500 12px/16px 'Be Vietnam Pro';background:var(--color-surface-muted);border:1px solid var(--color-border);color:var(--color-text-muted)">Lễ tân</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Avatar · Pet chip</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+              <sc-for list="{{ avatars }}" as="a" hint-placeholder-count="5">
+                <span style="width:36px;height:36px;border-radius:50%;box-shadow:0 0 0 2px var(--color-surface),0 0 0 4px {{ a.color }};background:var(--color-surface-muted);display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ a.ini }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;border:1px solid var(--color-border);background:var(--color-surface)"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-soft);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--color-accent)"><circle cx="6" cy="11" r="2"></circle><circle cx="10" cy="6" r="2"></circle><circle cx="14" cy="6" r="2"></circle><circle cx="18" cy="11" r="2"></circle><path d="M12 11c-3 0-5.500 3.200-5.500 5.600 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span><span style="font-weight:500">Mochi</span><span style="font-size:12px;color:var(--color-text-muted)">Poodle · S · 5,2 kg</span></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;border:1px solid var(--color-border);background:var(--color-surface)"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center;font:600 11px 'Be Vietnam Pro'">Mèo</span><span style="font-weight:500">Bơ</span><span style="font-size:12px;color:var(--color-text-muted)">Anh lông ngắn · 4,8 kg</span></span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Calendar block</div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+              <div style="position:relative;height:64px;border-radius:6px;border-left:4px solid #F97362;background:var(--color-accent-soft);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px"><div style="font-weight:600">14:00 Mochi</div><div style="color:var(--color-text-muted)">Tắm + cắt tỉa · Đã xác nhận</div></div>
+              <div style="height:64px;border-radius:6px;border-left:4px solid #8B5CF6;background:var(--color-primary-soft);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px;opacity:.6"><div style="font-weight:600">09:30 Sushi</div><div style="color:var(--color-text-muted)">Tiêm phòng · Hoàn thành</div></div>
+              <div style="height:64px;border-radius:6px;border-left:4px solid #0EA5E9;background:var(--color-accent-soft);border-top:1px dashed var(--color-warning);border-right:1px dashed var(--color-warning);border-bottom:1px dashed var(--color-warning);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px"><div style="font-weight:600">12:30 Lu</div><div style="color:var(--color-text-muted)">Chờ xác nhận</div></div>
+              <div style="display:flex;flex-direction:column"><div style="height:44px;border-radius:6px 6px 0 0;border-left:4px solid #F97362;background:var(--color-accent-soft);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px"><div style="font-weight:600">11:00 Sushi</div><div style="color:var(--color-text-muted)">Tắm + sấy</div></div><div style="height:16px;border-radius:0 0 6px 6px;background:repeating-linear-gradient(135deg,var(--color-surface-muted) 0 5px,var(--color-border) 5px 6px);font-size:11px;line-height:16px;padding:0 8px;color:var(--color-text-muted)">Dọn dẹp 15'</div></div>
+              <div style="height:64px;border-radius:6px;border-left:4px solid #F97362;background:var(--color-surface-muted);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px;color:var(--color-text-subtle);text-decoration:line-through"><div style="font-weight:600">16:00 Tôm</div><div>Đã hủy</div></div>
+              <div style="height:64px;border-radius:6px;border:1px solid var(--color-danger);border-left:4px solid var(--color-danger);background:color-mix(in oklab,var(--color-danger) 12%,transparent);padding:4px 8px;box-sizing:border-box;font-size:12px;line-height:16px"><div style="font-weight:600">Trùng lịch</div><div style="color:var(--color-text-muted)">Mochi 14:00</div></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:4px">
+              <span style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Lịch hôm nay</span>
+              <span style="font:700 32px/40px 'Be Vietnam Pro';font-variant-numeric:tabular-nums">5<span style="font-size:16px;color:var(--color-text-muted);font-weight:500"> / 14</span></span>
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:var(--color-success);font-weight:500">+12% so với T5 trước</span><span style="display:flex;align-items:flex-end;gap:2px;height:18px"><i style="width:4px;height:6px;background:var(--color-primary);opacity:.4"></i><i style="width:4px;height:10px;background:var(--color-primary);opacity:.5"></i><i style="width:4px;height:8px;background:var(--color-primary);opacity:.6"></i><i style="width:4px;height:14px;background:var(--color-primary);opacity:.8"></i><i style="width:4px;height:18px;background:var(--color-primary)"></i></span></div>
+            </div>
+            <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-sm);padding:16px;display:flex;flex-direction:column;gap:8px">
+              <span style="font:500 13px/18px 'Be Vietnam Pro'">Lịch tháng 10: 412/500</span>
+              <div style="height:8px;border-radius:999px;background:var(--color-surface-muted)"><div style="width:82%;height:8px;border-radius:999px;background:var(--color-warning)"></div></div>
+              <span style="font-size:12px;color:var(--color-text-muted)">Đã dùng 82% · vàng khi ≥ 80%, đỏ khi 100%</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Banner · Toast</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid var(--color-warning);background:color-mix(in oklab,var(--color-warning) 12%,transparent)"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:var(--color-warning);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.alert }}"></path></svg><span style="flex:1">Đã dùng 82% lịch hẹn tháng này.</span><a href="#" style="font-weight:500">Nâng cấp</a></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-lg)"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:var(--color-success);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.check }}"></path></svg><span style="flex:1">Đã hủy lịch của Mochi lúc 14:00</span><a href="#" style="font-weight:500">Hoàn tác</a></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid var(--color-danger);background:var(--color-surface);box-shadow:var(--shadow-lg)"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:var(--color-danger);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.alert }}"></path></svg><span style="flex:1">Khung giờ 14:00 vừa có người đặt</span></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="border:1px dashed var(--color-border);border-radius:10px;background:var(--color-surface);padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+              <span style="width:44px;height:44px;border-radius:50%;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:var(--color-primary)"><circle cx="6" cy="11" r="2"></circle><circle cx="10" cy="6" r="2"></circle><circle cx="14" cy="6" r="2"></circle><circle cx="18" cy="11" r="2"></circle><path d="M12 11c-3 0-5.500 3.200-5.500 5.600 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span>
+              <span style="font-weight:500">Chưa có lịch hẹn</span><span style="font-size:12px;color:var(--color-text-muted)">Ngày này chưa có ai đặt.</span>
+              <button style="height:32px;padding:0 12px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 13px 'Be Vietnam Pro'">+ Đặt lịch</button>
+            </div>
+            <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:32px;height:32px;border-radius:50%;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><i style="height:10px;width:60%;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="height:10px;width:40%;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i></span></div>
+              <i style="height:48px;border-radius:6px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i>
+              <i style="height:48px;border-radius:6px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i>
+              <span style="font-size:12px;color:var(--color-text-muted)">Skeleton</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Segmented · Tabs · Stepper</div>
+            <div style="display:inline-flex;align-self:flex-start;padding:2px;border-radius:10px;background:var(--color-surface-muted);border:1px solid var(--color-border)"><span style="padding:6px 14px;border-radius:8px;color:var(--color-text-muted)">Ngày</span><span style="padding:6px 14px;border-radius:8px;color:var(--color-text-muted)">Tuần</span><span style="padding:6px 14px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-sm);font-weight:500">Theo nhân viên</span></div>
+            <div style="display:flex;gap:24px;border-bottom:1px solid var(--color-border)"><span style="padding:8px 0;color:var(--color-danger);font-weight:500;border-bottom:2px solid var(--color-danger);margin-bottom:-1px">Quá hạn · 12</span><span style="padding:8px 0;color:var(--color-text-muted)">7 ngày tới</span><span style="padding:8px 0;color:var(--color-text-muted)">30 ngày tới</span></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+                <span style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro';background:{{ s.bg }};color:{{ s.fg }};border:1px solid {{ s.bd }}">{{ s.n }}</span><span style="font-size:12px;color:{{ s.tc }};font-weight:500">{{ s.label }}</span><span style="width:16px;height:1px;background:var(--color-border)"></span></span>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Bảng</div>
+            <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);overflow:hidden;font-size:13px">
+              <div style="display:grid;grid-template-columns:1.3fr 1.2fr 1fr 1fr;padding:8px 12px;background:var(--color-surface-muted);font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)"><span>Thú cưng</span><span>Vaccine / thuốc</span><span>Đến hạn</span><span>Trạng thái</span></div>
+              <div style="display:grid;grid-template-columns:1.3fr 1.2fr 1fr 1fr;padding:10px 12px;border-top:1px solid var(--color-border);align-items:center"><span style="font-weight:500">Tôm</span><span>Tẩy giun</span><span style="font-variant-numeric:tabular-nums">04/10/2026</span><span style="color:var(--color-danger);font-weight:500">Quá hạn 12 ngày</span></div>
+              <div style="display:grid;grid-template-columns:1.3fr 1.2fr 1fr 1fr;padding:10px 12px;border-top:1px solid var(--color-border);background:var(--color-surface-muted);align-items:center"><span style="font-weight:500">Sushi</span><span>Vaccine 7 bệnh · mũi 2</span><span style="font-variant-numeric:tabular-nums">06/11/2026</span><span style="color:var(--color-success);font-weight:500">Đúng hạn</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)">Timeline · Icon Lucide 1.5px</div>
+            <div style="display:flex;flex-direction:column;gap:0;padding-left:6px">
+              <div style="display:flex;gap:12px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-primary);margin-top:5px"></span><span style="flex:1;width:1px;background:var(--color-border)"></span></div><div style="padding-bottom:12px"><div style="font-weight:500">Tiêm vaccine 7 bệnh · mũi 2</div><div style="font-size:12px;color:var(--color-text-muted)">16/10/2026 · BS. Lê Thu Hà</div></div></div>
+              <div style="display:flex;gap:12px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-border);margin-top:5px"></span></div><div><div style="font-weight:500">Tiêm vaccine 7 bệnh · mũi 1</div><div style="font-size:12px;color:var(--color-text-muted)">25/09/2026 · Trần Minh Khoa</div></div></div>
+            </div>
+            <div style="display:flex;gap:16px;color:var(--color-text);padding-top:4px">
+              <sc-for list="{{ iconList }}" as="i" hint-placeholder-count="8"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ i }}"></path></svg></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1800}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tk = (name, use, light, dark) => ({ name, use, light, dark });
+    const st = (key, label, v, border, deco) => ({ key, label, cssVar: v, color: ({primary:'#0D9488',warning:'#D97706',info:'#2563EB',success:'#16A34A',subtle:'#A8A29E',danger:'#DC2626'})[v.slice(8,-1)] , border, deco });
+    const ic = {
+      lock: 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4',
+      alert: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01',
+      search: 'M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z m10 18-4.3-4.3',
+      check: 'M20 6 9 17l-5-5'
+    };
+    const statuses = [
+      st('pending','Chờ xác nhận','var(--color-warning)','dashed','none'),
+      st('confirmed','Đã xác nhận','var(--color-primary)','solid','none'),
+      st('checked_in','Đã đến','var(--color-info)','solid','none'),
+      st('completed','Hoàn thành','var(--color-success)','solid','none'),
+      st('cancelled','Đã hủy','var(--color-text-subtle)','solid','line-through'),
+      st('no_show','Không đến','var(--color-danger)','solid','none')
+    ];
+    // swatch colour for the light-only status table
+    const lightMap = { pending:'#D97706', confirmed:'#0D9488', checked_in:'#2563EB', completed:'#16A34A', cancelled:'#A8A29E', no_show:'#DC2626' };
+    statuses.forEach(s => { s.color = lightMap[s.key]; });
+    return {
+      ic,
+      tokens: [
+        tk('--color-bg','nền trang','#FAFAF9','#0F1514'), tk('--color-surface','card, panel, modal','#FFFFFF','#161E1D'),
+        tk('--color-surface-muted','nền phụ, sidebar','#F5F5F4','#1D2826'), tk('--color-border','viền, divider','#E7E5E4','#2A3735'),
+        tk('--color-text','chữ chính','#1C1917','#ECF1F0'), tk('--color-text-muted','chữ phụ, label','#57534E','#9DB0AD'),
+        tk('--color-text-subtle','placeholder, disabled','#A8A29E','#6B7F7C'), tk('--color-primary','nút chính, link, focus','#0D9488','#2DD4BF'),
+        tk('--color-primary-hover','hover','#0F766E','#5EEAD4'), tk('--color-primary-soft','chip primary, ô được chọn','#CCFBF1','#123A36'),
+        tk('--color-on-primary','chữ trên nút primary','#FFFFFF','#042F2E'), tk('--color-accent','điểm nhấn, CTA portal','#F97362','#FB8A7B'),
+        tk('--color-accent-soft','nền accent','#FFE4DF','#3B201C'), tk('--color-success','hoàn thành, đã gửi','#16A34A','#4ADE80'),
+        tk('--color-warning','sắp đến hạn, gần hết quota','#D97706','#FBBF24'), tk('--color-danger','hủy, lỗi, quá hạn, xóa','#DC2626','#F87171'),
+        tk('--color-info','thông tin, đã check-in','#2563EB','#60A5FA')
+      ],
+      statuses,
+      staffColors: ['#0D9488','#F97362','#8B5CF6','#0EA5E9','#EAB308','#EC4899','#22C55E','#64748B'],
+      serviceTypes: [
+        { label:'Grooming', color:'#F97362', soft:'#FFE4DF' }, { label:'Medical', color:'#0D9488', soft:'#CCFBF1' }, { label:'Boarding', color:'#8B5CF6', soft:'#EDE9FE' }
+      ],
+      spacing: [2,4,8,12,16,20,24,32,40,48,64],
+      themes: [{ id:'light', label:'Light mode' }, { id:'dark', label:'Dark mode' }],
+      avatars: [{ini:'TK',color:'#0D9488'},{ini:'LH',color:'#8B5CF6'},{ini:'NA',color:'#F97362'},{ini:'QB',color:'#0EA5E9'},{ini:'VM',color:'#EAB308'}],
+      steps: [
+        { n:'✓', label:'Dịch vụ', bg:'var(--color-primary)', fg:'var(--color-on-primary)', bd:'var(--color-primary)', tc:'var(--color-text-muted)' },
+        { n:'2', label:'Thú cưng', bg:'var(--color-primary-soft)', fg:'var(--color-text)', bd:'var(--color-primary)', tc:'var(--color-text)' },
+        { n:'3', label:'Chọn giờ', bg:'transparent', fg:'var(--color-text-muted)', bd:'var(--color-border)', tc:'var(--color-text-muted)' },
+        { n:'4', label:'Xác nhận', bg:'transparent', fg:'var(--color-text-muted)', bd:'var(--color-border)', tc:'var(--color-text-muted)' }
+      ],
+      iconList: [
+        'M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18',
+        'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+        'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0',
+        'M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
+        'M5 12h14 M12 5v14', 'M20 6 9 17l-5-5', 'M18 6 6 18 M6 6l12 12',
+        'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

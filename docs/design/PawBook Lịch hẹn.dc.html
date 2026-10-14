@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{--color-bg:#FAFAF9;--color-surface:#FFFFFF;--color-surface-muted:#F5F5F4;--color-border:#E7E5E4;--color-text:#1C1917;--color-text-muted:#57534E;--color-text-subtle:#A8A29E;--color-primary:#0D9488;--color-primary-hover:#0F766E;--color-primary-soft:#CCFBF1;--color-on-primary:#FFFFFF;--color-accent:#F97362;--color-accent-soft:#FFE4DF;--color-success:#16A34A;--color-warning:#D97706;--color-danger:#DC2626;--color-info:#2563EB;--color-boarding-soft:#EDE9FE;--focus-ring:0 0 0 3px rgb(13 148 136 / .35);--shadow-sm:0 1px 2px rgb(0 0 0/.05);--shadow-md:0 4px 12px rgb(0 0 0/.08);--shadow-lg:0 12px 32px rgb(0 0 0/.12);--scrim:rgb(28 25 23/.32)}
+[data-theme="dark"]{--color-bg:#0F1514;--color-surface:#161E1D;--color-surface-muted:#1D2826;--color-border:#2A3735;--color-text:#ECF1F0;--color-text-muted:#9DB0AD;--color-text-subtle:#6B7F7C;--color-primary:#2DD4BF;--color-primary-hover:#5EEAD4;--color-primary-soft:#123A36;--color-on-primary:#042F2E;--color-accent:#FB8A7B;--color-accent-soft:#3B201C;--color-success:#4ADE80;--color-warning:#FBBF24;--color-danger:#F87171;--color-info:#60A5FA;--color-boarding-soft:#2A2147;--focus-ring:0 0 0 3px rgb(45 212 191 / .4);--shadow-sm:0 0 0 1px #2A3735;--shadow-md:0 0 0 1px #2A3735;--shadow-lg:0 0 0 1px #2A3735;--scrim:rgb(0 0 0/.55)}
+body{margin:0;background:#FAFAF9;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:#0D9488;text-decoration:none}a:hover{color:#0F766E;text-decoration:underline}
+@keyframes pb-shimmer{0%{opacity:.45}50%{opacity:1}100%{opacity:.45}}
+@keyframes pb-slide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pb-pulse{0%,100%{box-shadow:0 0 0 0 rgb(220 38 38/.4)}50%{box-shadow:0 0 0 4px rgb(220 38 38/0)}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="width:1440px;height:100vh;min-height:760px;display:flex;flex-direction:column;background:var(--color-bg);color:var(--color-text);font:400 14px/20px 'Be Vietnam Pro',system-ui,sans-serif;position:relative;overflow:hidden">
+
+  <div style="flex:none;height:76px;box-sizing:border-box;background:#1C1917;color:#E7E5E4;display:flex;flex-wrap:wrap;align-content:center;align-items:center;gap:8px 20px;padding:0 16px;font-size:12px">
+    <span style="font-weight:600;color:#fff">Demo</span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="color:#A8A29E">Trạng thái</span>
+      <sc-for list="{{ viewOpts }}" as="o" hint-placeholder-count="7"><button onClick="{{ o.on }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:{{ o.fg }};font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+    <div style="display:flex;align-items:center;gap:6px"><span style="color:#A8A29E">Vai trò</span>
+      <sc-for list="{{ roleOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid {{ o.bd }};background:{{ o.bg }};color:{{ o.fg }};font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for></div>
+    <div style="display:flex;align-items:center;gap:6px"><span style="color:#A8A29E">Kéo-thả</span>
+      <sc-for list="{{ dragOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.on }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid #57534E;background:transparent;color:#E7E5E4;font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ o.label }}</button></sc-for><span style="color:#A8A29E">hoặc kéo trực tiếp một block</span><span style="color:#FBBF24">· Chế độ Tuần: số lịch các ngày khác hôm nay là dữ liệu giả</span></div>
+    <button onClick="{{ toggleTheme }}" style="margin-left:auto;height:26px;padding:0 10px;border-radius:6px;border:1px solid #57534E;background:transparent;color:#E7E5E4;font:500 12px 'Be Vietnam Pro';cursor:pointer">{{ themeLabel }}</button>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex">
+    <aside style="flex:none;width:248px;background:var(--color-surface-muted);border-right:1px solid var(--color-border);display:flex;flex-direction:column;padding:16px 12px;box-sizing:border-box;gap:4px">
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px"><span style="width:32px;height:32px;border-radius:8px;background:var(--color-primary);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:var(--color-on-primary)"><circle cx="5.5" cy="11" r="2"></circle><circle cx="9.5" cy="6" r="2"></circle><circle cx="14.5" cy="6" r="2"></circle><circle cx="18.5" cy="11" r="2"></circle><path d="M12 11c-3 0-5.5 3.2-5.5 5.6 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span><span style="font:700 18px/24px 'Be Vietnam Pro'">PawBook</span></div>
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+        <div style="display:flex;align-items:center;gap:12px;height:36px;padding:0 12px;border-radius:10px;background:{{ n.bg }};color:{{ n.fg }};font-weight:{{ n.fw }};cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ n.d }}"></path></svg>{{ n.label }}</div>
+      </sc-for>
+      <div style="margin-top:auto;padding:12px;border-radius:10px;background:var(--color-surface);border:1px solid var(--color-border)">
+        <div style="font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted)">Gói Pro · Tháng 10</div>
+        <div style="margin:8px 0 6px;height:6px;border-radius:999px;background:var(--color-surface-muted)"><div style="width:82%;height:6px;border-radius:999px;background:var(--color-warning)"></div></div>
+        <div style="font-size:12px;line-height:16px;font-variant-numeric:tabular-nums">412/500 lịch hẹn</div>
+      </div>
+    </aside>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <header style="flex:none;height:56px;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--color-surface);border-bottom:1px solid var(--color-border)">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:10px;border:1px solid var(--color-border);cursor:pointer"><span style="width:24px;height:24px;border-radius:6px;background:var(--color-accent);color:#1C1917;font:700 12px/24px 'Be Vietnam Pro';text-align:center">PH</span><span style="font-weight:600">Paw House Spa &amp; Vet</span><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m7 15 5 5 5-5 M7 9l5-5 5 5"></path></svg></div>
+        <div style="flex:1;max-width:460px;display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--color-border);background:var(--color-surface-muted);color:var(--color-text-muted)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z m10 18-4.3-4.3"></path></svg><span style="flex:1">Tìm chủ nuôi, SĐT, tên pet…</span><kbd style="font:500 11px 'JetBrains Mono',monospace;padding:1px 6px;border-radius:4px;border:1px solid var(--color-border);background:var(--color-surface)">/</kbd></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <button onClick="{{ goBook }}" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer" style-hover="background:var(--color-primary-hover)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M5 12h14 M12 5v14"></path></svg>Đặt lịch<kbd style="font:500 11px 'JetBrains Mono',monospace;padding:0 5px;border-radius:4px;background:rgb(255 255 255/.2)">N</kbd></button>
+          <span style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><span style="position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--color-accent)"></span></span>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:32px;height:32px;border-radius:50%;background:var(--color-surface-muted);box-shadow:0 0 0 2px var(--color-surface),0 0 0 4px {{ me.color }};display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ me.ini }}</span><div style="line-height:16px"><div style="font-weight:500;font-size:13px">{{ me.name }}</div><div style="font-size:12px;color:var(--color-text-muted)">{{ me.role }}</div></div></div>
+        </div>
+      </header>
+
+      <div style="flex:none;display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--color-surface);border-bottom:1px solid var(--color-border)">
+        <div style="display:flex;align-items:center;gap:4px">
+          <button style="width:32px;height:32px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></button>
+          <button style="height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">Hôm nay</button>
+          <button style="width:32px;height:32px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--color-border)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18"></path></svg><span style="font:600 14px 'Be Vietnam Pro';font-variant-numeric:tabular-nums">Thứ 5, 16/10/2026</span></div>
+        <div style="display:inline-flex;padding:2px;border-radius:10px;background:var(--color-surface-muted);border:1px solid var(--color-border)"><sc-for list="{{ modeOpts }}" as="m" hint-placeholder-count="3"><span onClick="{{ m.on }}" style="padding:4px 14px;border-radius:8px;cursor:pointer;background:{{ m.bg }};box-shadow:{{ m.sh }};font-weight:{{ m.fw }};color:{{ m.fg }}">{{ m.label }}</span></sc-for></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:8px"><span style="font-size:12px;color:var(--color-text-muted)">Nhân viên</span>
+          <sc-for list="{{ staffFilter }}" as="s" hint-placeholder-count="4"><span title="{{ s.name }}" style="width:30px;height:30px;border-radius:50%;box-sizing:border-box;background:var(--color-surface-muted);border:2px solid {{ s.color }};opacity:{{ s.op }};display:flex;align-items:center;justify-content:center;font:600 11px 'Be Vietnam Pro'">{{ s.ini }}</span></sc-for></div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--color-border);color:var(--color-text-muted)">Tất cả dịch vụ<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m6 9 6 6 6-6"></path></svg></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:14px;font-size:12px;color:var(--color-text-muted)">
+          <span style="display:flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:var(--color-accent-soft);border-left:3px solid var(--color-accent)"></i>Grooming</span>
+          <span style="display:flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:var(--color-primary-soft);border-left:3px solid var(--color-primary)"></i>Y tế</span>
+          <span style="display:flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--color-surface-muted) 0 3px,var(--color-border) 3px 4px)"></i>Ngoài ca / dọn dẹp</span>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;position:relative;background:var(--color-surface)">
+        <div style="position:absolute;inset:0;overflow:auto;padding:20px 24px;box-sizing:border-box;display:{{ dayDisp }}"><div style="max-width:1040px;margin:0 auto;border:1px solid var(--color-border);border-radius:10px;overflow:hidden">
+  <div style="display:grid;grid-template-columns:130px 1.1fr 1.6fr 1.4fr 150px 110px;padding:10px 16px;background:var(--color-surface-muted);font:500 13px/18px 'Be Vietnam Pro';color:var(--color-text-muted)"><span>Giờ</span><span>Thú cưng</span><span>Dịch vụ</span><span>Nhân viên</span><span>Trạng thái</span><span style="text-align:right">Giá</span></div>
+  <sc-for list="{{ dayRows }}" as="r" hint-placeholder-count="6"><div role="button" tabindex="0" onClick="{{ r.on }}" style="display:grid;grid-template-columns:130px 1.1fr 1.6fr 1.4fr 150px 110px;align-items:center;padding:10px 16px;border-top:1px solid var(--color-border);cursor:pointer;opacity:{{ r.op }}" style-hover="background:var(--color-surface-muted)">
+    <span style="font-variant-numeric:tabular-nums;font-weight:500">{{ r.time }}</span>
+    <span style="display:flex;align-items:center;gap:6px;font-weight:600;text-decoration:{{ r.deco }}">{{ r.pet }}<sc-if value="{{ r.flag }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:var(--color-danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01"></path></svg></sc-if></span>
+    <span style="display:flex;align-items:center;gap:8px;text-decoration:{{ r.deco }}"><i style="width:10px;height:10px;border-radius:3px;background:{{ r.typeBg }};border-left:3px solid {{ r.typeColor }}"></i>{{ r.svc }}</span>
+    <span style="display:flex;align-items:center;gap:8px"><i style="width:10px;height:10px;border-radius:50%;background:{{ r.staffColor }}"></i>{{ r.staff }}</span>
+    <span style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:50%;background:{{ r.dot }}"></i>{{ r.statusLabel }}</span>
+    <span style="text-align:right;font-variant-numeric:tabular-nums">{{ r.price }}</span>
+  </div></sc-for>
+</div></div>
+<div style="position:absolute;inset:0;overflow:auto;display:{{ weekDisp }}"><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-height:100%">
+  <sc-for list="{{ weekDays }}" as="w" hint-placeholder-count="7"><div style="border-right:1px solid var(--color-border);padding:12px;display:flex;flex-direction:column;gap:8px;background:{{ w.bg }}">
+    <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:600 14px/20px 'Be Vietnam Pro'">{{ w.name }} <span style="font-weight:400;color:var(--color-text-muted);font-variant-numeric:tabular-nums">{{ w.date }}</span></span><span style="font-size:12px;color:var(--color-text-muted)">{{ w.n }} lịch</span></div>
+    <div style="height:6px;border-radius:999px;background:var(--color-surface-muted)"><div style="width:{{ w.load }}%;height:6px;border-radius:999px;background:{{ w.loadColor }}"></div></div>
+    <sc-if value="{{ w.today }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:4px">
+      <sc-for list="{{ w.items }}" as="it" hint-placeholder-count="14"><div role="button" tabindex="0" onClick="{{ it.on }}" style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;border-left:4px solid {{ it.staffColor }};background:{{ it.bg }};opacity:{{ it.op }};font:500 12px/16px 'Be Vietnam Pro';cursor:pointer;text-decoration:{{ it.deco }}"><span style="font-variant-numeric:tabular-nums">{{ it.time }}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.pet }}</span><i style="width:6px;height:6px;border-radius:50%;background:{{ it.dot }}"></i></div></sc-for>
+    </div></sc-if>
+    <sc-if value="{{ w.other }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">{{ w.note }}</div></sc-if>
+  </div></sc-for>
+</div></div>
+<div style="position:absolute;inset:0;overflow:auto;display:{{ staffDisp }}">
+          <div style="display:grid;grid-template-columns:{{ gridCols }};position:sticky;top:0;z-index:5;background:var(--color-surface);border-bottom:1px solid var(--color-border)">
+            <div style="border-right:1px solid var(--color-border)"></div>
+            <sc-for list="{{ columns }}" as="c" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-right:1px solid var(--color-border);min-width:0">
+                <span style="flex:none;width:36px;height:36px;border-radius:50%;background:var(--color-surface-muted);box-shadow:0 0 0 2px var(--color-surface),0 0 0 4px {{ c.color }};display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ c.ini }}</span>
+                <div style="min-width:0;line-height:18px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div><div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">{{ c.role }} · <span style="font-variant-numeric:tabular-nums">{{ c.count }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="position:relative;display:grid;grid-template-columns:{{ gridCols }};height:896px">
+            <div style="position:relative;border-right:1px solid var(--color-border)">
+              <sc-for list="{{ hours }}" as="h" hint-placeholder-count="15"><span style="position:absolute;right:8px;top:{{ h.top }}px;font:400 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted);font-variant-numeric:tabular-nums">{{ h.label }}</span></sc-for>
+            </div>
+            <sc-for list="{{ columns }}" as="c" hint-placeholder-count="4">
+              <div data-col="{{ c.id }}" style="position:relative;border-right:1px solid var(--color-border);background:repeating-linear-gradient(to bottom,var(--color-border) 0 1px,transparent 1px 64px),repeating-linear-gradient(to bottom,color-mix(in oklab,var(--color-border) 45%,transparent) 0 1px,transparent 1px 16px)">
+                <sc-for list="{{ c.off }}" as="o" hint-placeholder-count="2">
+                  <div style="position:absolute;left:0;right:0;top:{{ o.top }}px;height:{{ o.h }}px;background:{{ o.bg }};display:flex;align-items:flex-start;justify-content:center;padding-top:28px;box-sizing:border-box;font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted)">{{ o.label }}</div>
+                </sc-for>
+                <sc-for list="{{ c.blocks }}" as="b" hint-placeholder-count="3">
+                  <div style="position:absolute;left:4px;right:6px;top:{{ b.bufTop }}px;height:{{ b.buf }}px;border-radius:0 0 6px 6px;background:repeating-linear-gradient(135deg,var(--color-surface-muted) 0 5px,var(--color-border) 5px 6px);opacity:{{ b.op }};font:400 11px/16px 'Be Vietnam Pro';color:var(--color-text-muted);padding:0 8px;box-sizing:border-box;display:{{ b.bufShow }}">Dọn dẹp 15'</div>
+                  <div role="button" tabindex="0" onMouseDown="{{ b.down }}" onKeyDown="{{ b.key }}" style="position:absolute;left:4px;right:6px;top:{{ b.top }}px;height:{{ b.h }}px;box-sizing:border-box;border-radius:6px;background:{{ b.bg }};border:1px {{ b.bstyle }} {{ b.bcolor }};border-left:4px solid {{ c.color }};opacity:{{ b.op }};padding:{{ b.pad }};overflow:hidden;cursor:pointer;box-shadow:{{ b.ring }};outline:none" style-hover="box-shadow:var(--shadow-md);z-index:3" style-focus="box-shadow:var(--focus-ring)">
+                    <div style="display:flex;align-items:center;gap:6px;font:600 12px/16px 'Be Vietnam Pro';color:{{ b.tc }};text-decoration:{{ b.deco }};white-space:nowrap">
+                      <span style="font-variant-numeric:tabular-nums">{{ b.time }}</span><span style="overflow:hidden;text-overflow:ellipsis">{{ b.pet }}</span>
+                      <sc-if value="{{ b.flag }}" hint-placeholder-val="{{ false }}"><svg title="{{ b.flagText }}" viewBox="0 0 24 24" style="width:12px;height:12px;flex:none;fill:none;stroke:var(--color-danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01"></path></svg></sc-if>
+                      <span style="margin-left:auto;display:flex;align-items:center;gap:4px;font:500 11px/16px 'Be Vietnam Pro';color:var(--color-text);flex:none"><i style="width:6px;height:6px;border-radius:50%;background:{{ b.dot }}"></i>{{ b.statusLabel }}</span>
+                    </div>
+                    <sc-if value="{{ b.tall }}" hint-placeholder-val="{{ false }}"><div style="font:400 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted);text-decoration:{{ b.deco }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.svc }}</div></sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ c.dg }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;left:4px;right:6px;top:{{ c.dgTop }}px;height:{{ c.dgH }}px;box-sizing:border-box;border-radius:6px;border:2px solid {{ c.dgColor }};background:{{ c.dgBg }};z-index:6;pointer-events:none;padding:4px 8px;box-shadow:var(--shadow-md)">
+                    <div style="font:600 12px/16px 'Be Vietnam Pro';font-variant-numeric:tabular-nums">{{ c.dgLabel }}</div>
+                    <div style="position:absolute;left:0;top:-34px;max-width:100%;padding:4px 10px;border-radius:6px;background:{{ c.dgColor }};color:{{ c.dgFg }};font:500 12px/16px 'Be Vietnam Pro';white-space:nowrap;box-shadow:var(--shadow-md)">{{ c.dgTip }}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ c.ghost }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;left:4px;right:6px;top:{{ c.ghostTop }}px;height:64px;box-sizing:border-box;border-radius:6px;border:1px solid var(--color-danger);border-left:4px solid var(--color-danger);background:repeating-linear-gradient(135deg,color-mix(in oklab,var(--color-danger) 14%,transparent) 0 6px,color-mix(in oklab,var(--color-danger) 6%,transparent) 6px 12px);padding:4px 8px;animation:pb-pulse 1.6s infinite">
+                    <div style="font:600 12px/16px 'Be Vietnam Pro'">16:30 · Vừa có người đặt</div><div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Khung giờ không còn trống</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ showNow }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:56px;right:0;top:277px;height:0;border-top:2px solid var(--color-danger);z-index:4;pointer-events:none"><span style="position:absolute;left:-6px;top:-7px;width:10px;height:10px;border-radius:50%;background:var(--color-danger)"></span><span style="position:absolute;left:-54px;top:-11px;padding:0 6px;border-radius:4px;background:var(--color-danger);color:#fff;font:600 11px/18px 'Be Vietnam Pro'">11:20</span></div></sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:8;background:var(--color-surface);overflow:hidden" aria-busy="true">
+            <div style="display:grid;grid-template-columns:{{ gridCols }};border-bottom:1px solid var(--color-border)">
+              <div></div>
+              <sc-for list="{{ columns }}" as="c" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-right:1px solid var(--color-border)"><i style="width:36px;height:36px;border-radius:50%;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><span style="display:flex;flex-direction:column;gap:6px"><i style="width:110px;height:10px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i><i style="width:70px;height:8px;border-radius:4px;background:var(--color-surface-muted);animation:pb-shimmer 1.4s infinite"></i></span></div></sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:{{ gridCols }}">
+              <div></div>
+              <sc-for list="{{ columns }}" as="c" hint-placeholder-count="4"><div style="position:relative;height:760px;border-right:1px solid var(--color-border)">
+                <sc-for list="{{ c.skel }}" as="k" hint-placeholder-count="3"><i style="position:absolute;left:4px;right:6px;top:{{ k.top }}px;height:{{ k.h }}px;border-radius:6px;background:var(--color-surface-muted);border-left:4px solid var(--color-border);animation:pb-shimmer 1.4s infinite"></i></sc-for>
+              </div></sc-for>
+            </div>
+            <div style="position:absolute;left:50%;top:120px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-md);color:var(--color-text-muted)"><span style="width:14px;height:14px;border-radius:50%;border:2px solid var(--color-primary);border-right-color:transparent;animation:pb-spin .8s linear infinite"></span>Đang tải lịch hẹn…</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:7;background:color-mix(in oklab,var(--color-surface) 78%,transparent);display:flex;align-items:center;justify-content:center">
+            <div style="width:380px;padding:32px;border-radius:16px;border:1px dashed var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-md);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+              <span style="width:56px;height:56px;border-radius:50%;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:30px;height:30px;fill:var(--color-primary)"><circle cx="5.5" cy="11" r="2"></circle><circle cx="9.5" cy="6" r="2"></circle><circle cx="14.5" cy="6" r="2"></circle><circle cx="18.5" cy="11" r="2"></circle><path d="M12 11c-3 0-5.5 3.2-5.5 5.6 0 1.700 1.300 2.400 2.600 2.400 1 0 1.900-.5 2.900-.5s1.900.5 2.900.5c1.300 0 2.600-.7 2.600-2.400C17.500 14.200 15 11 12 11z"></path></svg></span>
+              <div style="font:600 20px/28px 'Be Vietnam Pro'">{{ emptyTitle }}</div>
+              <div style="color:var(--color-text-muted)">{{ emptyText }}</div>
+              <sc-if value="{{ emptyCta }}" hint-placeholder-val="{{ true }}"><button onClick="{{ goBook }}" style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer">+ Đặt lịch</button></sc-if>
+              <sc-if value="{{ isClosed }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goNormal }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Xem ngày làm việc gần nhất: T6 17/10</button></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:7;background:var(--color-surface);display:flex;align-items:center;justify-content:center">
+            <div role="alert" style="width:420px;padding:32px;border-radius:16px;border:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-md);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+              <span style="width:56px;height:56px;border-radius:50%;background:color-mix(in oklab,var(--color-danger) 14%,transparent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:none;stroke:var(--color-danger);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01"></path></svg></span>
+              <div style="font:600 20px/28px 'Be Vietnam Pro'">Không tải được lịch hẹn</div>
+              <div style="color:var(--color-text-muted)">Mất kết nối tới máy chủ. Dữ liệu của tiệm vẫn an toàn. Vui lòng thử lại.</div>
+              <div style="font:400 12px/16px 'JetBrains Mono',monospace;color:var(--color-text-subtle)">Mã lỗi: NET_TIMEOUT · 11:20</div>
+              <div style="display:flex;gap:8px"><button onClick="{{ goNormal }}" style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer">Thử lại</button><button onClick="{{ goNormal }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Báo sự cố</button></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:absolute;inset:76px 0 0 0;background:var(--scrim);z-index:20"></div>
+    <aside role="dialog" aria-label="Chi tiết lịch hẹn" style="position:absolute;top:76px;right:0;bottom:0;width:480px;z-index:21;background:var(--color-surface);border-left:1px solid var(--color-border);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;animation:pb-slide .2s ease-out">
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--color-border)">
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font:500 12px/16px 'JetBrains Mono',monospace;color:var(--color-text-muted)">{{ sel.code }}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;align-self:flex-start;height:22px;padding:0 8px;border-radius:6px;font:500 12px/16px 'Be Vietnam Pro';background:color-mix(in oklab,{{ sel.dot }} 16%,transparent)"><i style="width:6px;height:6px;border-radius:50%;background:{{ sel.dot }}"></i>{{ sel.statusLabel }}</span></div>
+        <button title="Dời, Hủy, In phiếu" style="width:32px;height:32px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg></button>
+        <button onClick="{{ closeDrawer }}" aria-label="Đóng (Esc)" style="width:32px;height:32px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted)">
+            <span style="width:48px;height:48px;border-radius:50%;background:var(--color-accent-soft);display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ sel.species }}</span>
+            <div><div style="font:600 16px/24px 'Be Vietnam Pro'">{{ sel.pet }}</div><div style="font-size:13px;color:var(--color-text-muted)">{{ sel.petDesc }}</div></div>
+          </div>
+          <sc-if value="{{ sel.alert }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:4px 10px;border-radius:6px;font:500 13px/18px 'Be Vietnam Pro';background:color-mix(in oklab,var(--color-danger) 16%,transparent);border:1px solid var(--color-danger)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--color-danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01"></path></svg>{{ sel.alert }}</span></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="width:36px;height:36px;border-radius:50%;background:var(--color-surface-muted);display:flex;align-items:center;justify-content:center;font:600 12px 'Be Vietnam Pro'">{{ sel.ownerIni }}</span>
+          <div style="flex:1"><div style="font-weight:500">{{ sel.owner }}</div><div style="font-size:13px;color:var(--color-primary);font-variant-numeric:tabular-nums">{{ sel.phone }}</div></div>
+          <button style="height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">Gọi</button>
+          <button style="height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 13px 'Be Vietnam Pro';cursor:pointer">Telegram</button>
+        </div>
+        <div style="border:1px solid var(--color-border);border-radius:10px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:120px 1fr;padding:10px 16px"><span style="color:var(--color-text-muted)">Dịch vụ</span><span style="font-weight:500">{{ sel.svc }}</span></div>
+          <div style="display:grid;grid-template-columns:120px 1fr;padding:10px 16px;border-top:1px solid var(--color-border)"><span style="color:var(--color-text-muted)">Nhân viên</span><span style="display:flex;align-items:center;gap:8px;font-weight:500"><i style="width:10px;height:10px;border-radius:50%;background:{{ sel.staffColor }}"></i>{{ sel.staff }}</span></div>
+          <div style="display:grid;grid-template-columns:120px 1fr;padding:10px 16px;border-top:1px solid var(--color-border)"><span style="color:var(--color-text-muted)">Thời gian</span><span style="font-weight:500;font-variant-numeric:tabular-nums">{{ sel.range }} · T5 16/10/2026<span style="display:block;font-weight:400;font-size:12px;color:var(--color-text-muted)">{{ sel.dur }} · Giờ theo tiệm (GMT+7)</span></span></div>
+          <div style="display:grid;grid-template-columns:120px 1fr;padding:10px 16px;border-top:1px solid var(--color-border)"><span style="color:var(--color-text-muted)">Giá</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ sel.price }}<span style="display:block;font-weight:400;font-size:12px;color:var(--color-text-muted)">Giá tại thời điểm đặt</span></span></div>
+        </div>
+
+        <sc-if value="{{ sel.medical }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:600 16px/24px 'Be Vietnam Pro';flex:1">Hồ sơ y tế</span>
+              <sc-if value="{{ sel.locked }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;background:var(--color-surface-muted);border:1px solid var(--color-border);font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Chỉ đọc · Chỉ bác sĩ được chỉnh sửa</span></sc-if></div>
+            <div style="padding:12px 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted)"><div style="font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted)">Tiêm phòng &amp; tẩy giun</div><div style="margin-top:2px">{{ sel.vax }}</div></div>
+            <sc-if value="{{ sel.locked }}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:10px;border:1px dashed var(--color-border)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4"></path></svg><div style="font-size:13px;color:var(--color-text-muted)"><span style="font-weight:600;color:var(--color-text)">Chẩn đoán và ghi chú của bác sĩ được ẩn.</span> Vai trò của bạn chỉ xem được tiêm phòng và cảnh báo dị ứng.</div></div>
+            </sc-if>
+            <sc-if value="{{ sel.canEditMedical }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:12px 16px;border-radius:10px;border:1px solid var(--color-border)"><div style="font:500 12px/16px 'Be Vietnam Pro';color:var(--color-text-muted)">Chẩn đoán &amp; điều trị</div><div style="margin-top:2px">{{ sel.medNote }}</div></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font:600 16px/24px 'Be Vietnam Pro'">Lịch sử nhắc</div>
+          <div style="display:flex;align-items:center;gap:10px"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-success);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg><span>Đã gửi email nhắc 24h · 15/10 14:00</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:var(--color-danger);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg><span style="flex:1">Telegram thất bại</span><a href="#" style="font-weight:500">Thử lại</a></div>
+        </div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:8px;padding:16px 24px;border-top:1px solid var(--color-border);background:var(--color-surface)">
+        <button style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Dời lịch</button>
+        <button style="height:36px;padding:0 14px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--color-danger);font:500 14px 'Be Vietnam Pro';cursor:pointer">Hủy lịch</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <sc-if value="{{ sel.showGhiKham }}" hint-placeholder-val="{{ false }}">
+            <button title="{{ sel.ghiKhamTip }}" disabled="{{ sel.ghiKhamOff }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--color-border);background:{{ sel.ghiKhamBg }};color:{{ sel.ghiKhamFg }};font:500 14px 'Be Vietnam Pro';cursor:{{ sel.ghiKhamCursor }}"><svg viewBox="0 0 24 24" style="width:16px;height:16px;display:{{ sel.lockIc }};fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Ghi khám</button>
+          </sc-if>
+          <sc-if value="{{ sel.action }}" hint-placeholder-val="{{ false }}"><button onClick="{{ doAction }}" style="height:36px;padding:0 18px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer" style-hover="background:var(--color-primary-hover)">{{ sel.actionLabel }}</button></sc-if>
+        </div>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:absolute;inset:76px 0 0 0;background:var(--scrim);z-index:30"></div>
+    <div role="dialog" aria-label="Dời lịch hẹn" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:31;width:460px;padding:24px;border-radius:16px;background:var(--color-surface);border:1px solid var(--color-border);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center"><span style="flex:1;font:600 20px/28px 'Be Vietnam Pro'">Dời lịch hẹn</span><button onClick="{{ closeModal }}" aria-label="Đóng (Esc)" style="border:0;background:transparent;color:var(--color-text-muted);cursor:pointer"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button></div>
+      <div style="font-size:15px;line-height:22px">{{ modal.text }}</div>
+      <div style="display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;gap:8px">
+        <div style="padding:10px 12px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted)"><div style="font-size:12px;color:var(--color-text-muted)">Từ</div><div style="font-weight:600;font-variant-numeric:tabular-nums">{{ modal.from }}</div><div style="font-size:12px;color:var(--color-text-muted)">{{ modal.fromStaff }}</div></div>
+        <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:var(--color-text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14 m-6-6 6 6-6 6"></path></svg>
+        <div style="padding:10px 12px;border-radius:10px;border:1px solid var(--color-primary);background:var(--color-primary-soft)"><div style="font-size:12px;color:var(--color-text-muted)">Sang</div><div style="font-weight:600;font-variant-numeric:tabular-nums">{{ modal.to }}</div><div style="font-size:12px;color:var(--color-text-muted)">{{ modal.toStaff }}</div></div>
+      </div>
+      <label onClick="{{ toggleNotify }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><span style="width:36px;height:20px;border-radius:999px;background:{{ notifyBg }};position:relative;flex:none"><i style="position:absolute;top:2px;left:{{ notifyLeft }}px;width:16px;height:16px;border-radius:50%;background:#fff"></i></span>Gửi thông báo cho khách</label>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button onClick="{{ closeModal }}" style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro';cursor:pointer">Để nguyên</button><button onClick="{{ confirmMove }}" style="height:36px;padding:0 18px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro';cursor:pointer">Xác nhận dời</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="alert" aria-live="assertive" style="position:absolute;right:24px;bottom:24px;z-index:40;width:400px;padding:14px 16px;border-radius:10px;background:var(--color-surface);border:1px solid {{ toastColor }};box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:12px;align-items:flex-start"><svg viewBox="0 0 24 24" style="width:20px;height:20px;flex:none;margin-top:2px;fill:none;stroke:{{ toastColor }};stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ toastIcon }}"></path></svg>
+        <div style="flex:1"><div style="font-weight:600">{{ toastTitle }}</div><div style="font-size:13px;color:var(--color-text-muted)">{{ toastText }}</div></div>
+        <button onClick="{{ hideToast }}" aria-label="Đóng" style="border:0;background:transparent;color:var(--color-text-muted);cursor:pointer;padding:0"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button></div>
+      <sc-if value="{{ toastSuggest }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding-left:32px"><span style="font-size:12px;color:var(--color-text-muted)">Gợi ý gần nhất</span>
+        <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="3"><button onClick="{{ hideToast }}" style="height:28px;padding:0 12px;border-radius:999px;border:1px solid var(--color-primary);background:var(--color-primary-soft);color:var(--color-text);font:500 13px 'Be Vietnam Pro';font-variant-numeric:tabular-nums;cursor:pointer">{{ s }}</button></sc-for></div></sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rec&quot;,&quot;vet&quot;,&quot;groomer&quot;],&quot;default&quot;:&quot;rec&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;},&quot;viewState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;normal&quot;,&quot;loading&quot;,&quot;empty&quot;,&quot;closed&quot;,&quot;error&quot;,&quot;conflict&quot;,&quot;restricted&quot;],&quot;default&quot;:&quot;normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hiển thị&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, role: null, theme: null, mode: 'staff', sel: null, over: {}, moved: {}, drag: null, modal: null, notify: true, toast: null, toastTitle: '', toastText: '' };
+  H = 64; T0 = 420;
+  px = m => (m - this.T0) / 60 * this.H;
+  hm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  money = n => n.toLocaleString('vi-VN') + ' ₫';
+  STAFF = [
+    { id: 'K', name: 'Trần Minh Khoa', ini: 'TK', role: 'Owner · Bác sĩ', color: '#0D9488', groom: false, svcs: ['Khám tổng quát', 'Tiêm phòng', 'Cắt móng + vệ sinh tai'], off: [[420, 480, 'Ngoài ca'], [1080, 1260, 'Ngoài ca']] },
+    { id: 'H', name: 'BS. Lê Thu Hà', ini: 'LH', role: 'Bác sĩ', color: '#8B5CF6', groom: false, svcs: ['Khám tổng quát', 'Tiêm phòng', 'Tắm + sấy'], off: [[420, 480, 'Ngoài ca'], [780, 1260, 'Nghỉ phép']] },
+    { id: 'A', name: 'Nguyễn Ngọc Anh', ini: 'NA', role: 'Groomer', color: '#F97362', groom: true, svcs: ['Tắm + sấy', 'Tắm + cắt tỉa trọn gói', 'Cắt móng + vệ sinh tai'], off: [[420, 480, 'Ngoài ca'], [720, 840, 'Nghỉ giữa ca'], [1140, 1260, 'Ngoài ca']] },
+    { id: 'B', name: 'Phạm Quốc Bảo', ini: 'QB', role: 'Groomer', color: '#0EA5E9', groom: true, svcs: ['Tắm + sấy', 'Tắm + cắt tỉa trọn gói', 'Cắt móng + vệ sinh tai'], off: [[420, 480, 'Ngoài ca'], [1200, 1260, 'Ngoài ca']] }
+  ];
+  PETS = {
+    'Mochi': { sp: 'Chó', d: 'Poodle · Cái · 3 tuổi · 5,2 kg · Cỡ S', o: 'Nguyễn Thị Lan', ph: '0903 123 456', al: 'Dị ứng: dầu gội có hương liệu', vax: 'Chưa ghi nhận mũi tiêm nào tại tiệm.', med: 'Chưa có ghi khám cho lịch hẹn này.' },
+    'Bơ': { sp: 'Mèo', d: 'Mèo Anh lông ngắn · Đực · 2 tuổi · 4,8 kg', o: 'Nguyễn Thị Lan', ph: '0903 123 456', al: '', vax: 'Chưa ghi nhận mũi tiêm nào tại tiệm.', med: 'Chưa có ghi khám cho lịch hẹn này.' },
+    'Lu': { sp: 'Chó', d: 'Golden Retriever · Đực · 5 tuổi · 32 kg · Cỡ L', o: 'Hoàng Văn Nam', ph: '0912 987 654', al: 'Sợ máy sấy', vax: 'Chưa ghi nhận mũi tiêm nào tại tiệm.', med: 'Chưa có ghi khám cho lịch hẹn này.' },
+    'Sushi': { sp: 'Chó', d: 'Corgi · Cái · 6 tháng · 9 kg · Cỡ M', o: 'Đặng Mỹ Linh', ph: '0938 555 222', al: '', vax: 'Vaccine 7 bệnh: mũi 2/4. Mũi 3 dự kiến 06/11/2026.', med: 'Chưa có ghi khám cho lịch hẹn này.' },
+    'Tôm': { sp: 'Mèo', d: 'Mèo ta · Đực · 1 tuổi · 3,5 kg', o: 'Bùi Gia Huy', ph: '0977 246 810', al: '', vax: 'Tẩy giun: quá hạn 12 ngày.', med: 'Chưa có ghi khám cho lịch hẹn này.' }
+  };
+  SVC = { 'Tắm + sấy': 'g', 'Tắm + cắt tỉa trọn gói': 'g', 'Cắt móng + vệ sinh tai': 'g', 'Khám tổng quát': 'm', 'Tiêm phòng': 'm' };
+  APTS = [
+    ['k1','K',510,30,'Bơ','Khám tổng quát','completed',150000,'01JA8K2M'],
+    ['k2','K',570,15,'Sushi','Tiêm phòng','completed',350000,'01JA8K3P'],
+    ['k3','K',660,30,'Mochi','Khám tổng quát','checked_in',150000,'01JA8K5R'],
+    ['k4','K',870,30,'Tôm','Khám tổng quát','confirmed',150000,'01JA8K9T'],
+    ['h1','H',510,30,'Tôm','Khám tổng quát','no_show',150000,'01JA8K2N'],
+    ['h2','H',720,15,'Sushi','Tiêm phòng','confirmed',350000,'01JA8K6V'],
+    ['h3','H',750,30,'Lu','Khám tổng quát','pending',150000,'01JA8K7W'],
+    ['a1','A',480,20,'Tôm','Cắt móng + vệ sinh tai','completed',80000,'01JA8K1X'],
+    ['a2','A',540,90,'Bơ','Tắm + cắt tỉa trọn gói','completed',450000,'01JA8K2Y'],
+    ['a3','A',660,60,'Sushi','Tắm + sấy','checked_in',300000,'01JA8K4Z'],
+    ['a4','A',960,60,'Tôm','Tắm + sấy','cancelled',200000,'01JA8KAB'],
+    ['b1','B',540,90,'Lu','Tắm + sấy','completed',400000,'01JA8K3C'],
+    ['b2','B',840,60,'Mochi','Tắm + cắt tỉa trọn gói','confirmed',350000,'01JA8K8D'],
+    ['b3','B',990,20,'Bơ','Cắt móng + vệ sinh tai','confirmed',80000,'01JA8KBE']
+  ].map(a => ({ id: a[0], staff: a[1], start: a[2], dur: a[3], pet: a[4], svc: a[5], status: a[6], price: a[7], code: '#' + a[8], buf: a[5].startsWith('Tắm') ? 15 : 0 }));
+  ST = {
+    pending: ['Chờ xác nhận', 'var(--color-warning)'], confirmed: ['Đã xác nhận', 'var(--color-primary)'], checked_in: ['Đã đến', 'var(--color-info)'],
+    completed: ['Hoàn thành', 'var(--color-success)'], cancelled: ['Đã hủy', 'var(--color-text-subtle)'], no_show: ['Không đến', 'var(--color-danger)']
+  };
+  ic = { alert: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z M12 9v4 M12 17h.01', check: 'M20 6 9 17l-5-5' };
+
+  get view() { return this.state.view ?? this.props.viewState ?? 'normal'; }
+  get role() { return this.state.role ?? this.props.role ?? 'rec'; }
+  get theme() { return this.state.theme ?? this.props.theme ?? 'light'; }
+  eff() { const mv = this.state.moved, ov = this.state.over; return this.APTS.map(a => Object.assign({}, a, mv[a.id] || {}, { status: ov[a.id] || a.status })); }
+  setView = v => this.setState(s => ({ view: v, mode: 'staff', drag: null, modal: null, sel: v === 'restricted' ? 'k3' : (v === 'normal' ? s.sel : null), role: v === 'restricted' ? 'rec' : s.role, toast: v === 'conflict' ? 'conflict' : null }));
+  showToast = (kind, title, text) => { this.setState({ toast: kind, toastTitle: title || '', toastText: text || '' }); clearTimeout(this._t); this._t = setTimeout(() => this.setState(s => s.toast === 'conflict' ? null : { toast: null }), 5000); };
+  goBook = () => { try { window.location.href = 'PawBook Đặt lịch mới.dc.html'; } catch (e) {} };
+  componentDidMount() { this._k = e => { if (e.key === 'Escape') this.setState({ sel: null, modal: null, drag: null }); }; document.addEventListener('keydown', this._k); }
+  componentWillUnmount() { document.removeEventListener('keydown', this._k); }
+
+  check(id, staffId, start) {
+    const list = this.eff(), a = list.find(x => x.id === id), st = this.STAFF.find(s => s.id === staffId);
+    if (st.svcs.indexOf(a.svc) < 0) return { ok: false, reason: st.name + ' không nhận dịch vụ này' };
+    const end = start + a.dur + a.buf;
+    if (end > 1260) return { ok: false, reason: 'Ngoài giờ mở cửa' };
+    for (const o of st.off) if (start < o[1] && start + a.dur > o[0]) return { ok: false, reason: (o[2] === 'Ngoài ca' ? 'Ngoài ca làm việc' : o[2]) + ' · ' + st.name };
+    for (const o of list) if (o.id !== id && o.staff === staffId && o.status !== 'cancelled' && start < o.start + o.dur + o.buf && o.start < end) return { ok: false, reason: 'Trùng lịch với ' + o.pet + ' ' + this.hm(o.start) };
+    return { ok: true };
+  }
+  onDown(e, id) {
+    if (e.button !== 0 || this.view !== 'normal') return;
+    e.preventDefault();
+    const r = e.currentTarget.getBoundingClientRect();
+    this._d = { id, sx: e.clientX, sy: e.clientY, offY: e.clientY - r.top, moved: false };
+    document.addEventListener('mousemove', this._mm); document.addEventListener('mouseup', this._mu);
+  }
+  _mm = e => {
+    const d = this._d; if (!d) return;
+    if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 5) return;
+    d.moved = true;
+    const cols = Array.from(document.querySelectorAll('[data-col]')); if (!cols.length) return;
+    let col = cols.find(c => { const r = c.getBoundingClientRect(); return e.clientX >= r.left && e.clientX < r.right; });
+    if (!col) col = e.clientX < cols[0].getBoundingClientRect().left ? cols[0] : cols[cols.length - 1];
+    const r = col.getBoundingClientRect(), a = this.eff().find(x => x.id === d.id);
+    let m = Math.round((this.T0 + (e.clientY - r.top - d.offY) / this.H * 60) / 15) * 15;
+    m = Math.max(this.T0, Math.min(1260 - a.dur, m));
+    const staff = col.getAttribute('data-col');
+    this.setState({ drag: Object.assign({ id: d.id, staff, start: m }, this.check(d.id, staff, m)) });
+  };
+  _mu = () => {
+    document.removeEventListener('mousemove', this._mm); document.removeEventListener('mouseup', this._mu);
+    const d = this._d; this._d = null; if (!d) return;
+    if (!d.moved) { this.setState({ sel: d.id, drag: null }); return; }
+    const g = this.state.drag; if (!g) return;
+    const a = this.eff().find(x => x.id === d.id);
+    if (!g.ok) { this.setState({ drag: null }); this.showToast('err', 'Không thể dời lịch của ' + a.pet, g.reason + '. Lịch được giữ nguyên vị trí cũ.'); return; }
+    if (g.staff === a.staff && g.start === a.start) { this.setState({ drag: null }); return; }
+    this.setState({ drag: null, modal: { id: d.id, staff: g.staff, start: g.start } });
+  };
+  preset(k) {
+    this.setState({ view: 'normal', mode: 'staff', sel: null, toast: null });
+    if (k === 'ok') this.setState({ modal: null, drag: { id: 'b2', staff: 'A', start: 870, ok: true } });
+    if (k === 'bad') this.setState({ modal: null, drag: { id: 'b3', staff: 'B', start: 870, ok: false, reason: 'Trùng lịch với Mochi 14:00' } });
+    if (k === 'modal') this.setState({ drag: null, modal: { id: 'b2', staff: 'A', start: 870 } });
+    if (k === 'reject') { this.setState({ drag: null, modal: null }); this.showToast('err', 'Không thể dời lịch của Bơ', 'Trùng lịch với Mochi 14:00 (Phạm Quốc Bảo). Lịch được giữ nguyên vị trí cũ.'); }
+  }
+
+  renderVals() {
+    const view = this.view, role = this.role, over = this.state.over, mode = this.state.mode, drag = this.state.drag, md = this.state.modal;
+    const chip = (active) => active ? { bg: '#F5F5F4', fg: '#1C1917', bd: '#F5F5F4' } : { bg: 'transparent', fg: '#E7E5E4', bd: '#57534E' };
+    const viewOpts = [['normal', 'Bình thường'], ['loading', 'Đang tải'], ['empty', 'Rỗng'], ['closed', 'Tiệm đóng cửa'], ['error', 'Lỗi tải'], ['conflict', 'Slot vừa bị đặt'], ['restricted', 'Quyền hạn chế']]
+      .map(([k, l]) => Object.assign({ label: l, on: () => this.setView(k) }, chip(view === k)));
+    const roleOpts = [['rec', 'Lễ tân'], ['vet', 'Bác sĩ'], ['groomer', 'Groomer']].map(([k, l]) => Object.assign({ label: l, on: () => this.setState({ role: k }) }, chip(role === k)));
+    const dragOpts = [['ok', 'Đang kéo · hợp lệ'], ['bad', 'Đang kéo · trùng lịch'], ['modal', 'Xác nhận dời'], ['reject', 'Dời bị từ chối']].map(([k, l]) => ({ label: l, on: () => this.preset(k) }));
+    const modeOpts = [['day', 'Ngày'], ['week', 'Tuần'], ['staff', 'Theo nhân viên']].map(([k, l]) => ({ label: l, on: () => this.setState({ mode: k, drag: null }), bg: mode === k ? 'var(--color-surface)' : 'transparent', sh: mode === k ? 'var(--shadow-sm)' : 'none', fw: mode === k ? 500 : 400, fg: mode === k ? 'var(--color-text)' : 'var(--color-text-muted)' }));
+    const me = { rec: { name: 'Võ Thị Mai', ini: 'VM', role: 'Lễ tân', color: '#EAB308' }, vet: { name: 'Trần Minh Khoa', ini: 'TK', role: 'Owner · Bác sĩ', color: '#0D9488' }, groomer: { name: 'Nguyễn Ngọc Anh', ini: 'NA', role: 'Groomer', color: '#F97362' } }[role];
+    const navDef = [['Tổng quan', 'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z'], ['Lịch hẹn', 'M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18'], ['Khách hàng & Thú cưng', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75'], ['Tiêm phòng', 'm18 2 4 4 m17 7 3-3 M19 9 8.7 19.3a1 1 0 0 1-1.4 0L4.7 16.7a1 1 0 0 1 0-1.4L15 5 m9 11 4 4 m5 19-3 3'], ['Dịch vụ', 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M20 4 8.12 15.88 M14.47 14.48 20 20 M8.12 8.12 12 12'], ['Nhân viên', 'M18 20a6 6 0 0 0-12 0 M12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'], ['Báo cáo', 'M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3'], ['Cài đặt', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1 7 17 M17 7l2.1-2.1']];
+    const nav = navDef.filter(n => !(n[0] === 'Báo cáo' && role !== 'vet')).map(n => Object.assign({ label: n[0], d: n[1] }, n[0] === 'Lịch hẹn' ? { bg: 'var(--color-primary-soft)', fg: 'var(--color-text)', fw: 600 } : { bg: 'transparent', fg: 'var(--color-text-muted)', fw: 400 }));
+
+    const all = this.eff();
+    const cols = role === 'groomer' ? this.STAFF.filter(s => s.id === 'A') : this.STAFF;
+    const showData = !(view === 'empty' || view === 'closed' || view === 'error');
+    const draggingId = drag ? drag.id : null;
+    const columns = cols.map(s => {
+      const list = all.filter(a => a.staff === s.id);
+      const blocks = showData ? list.map(a => {
+        const status = a.status, sl = this.ST[status][0], dot = this.ST[status][1];
+        const type = this.SVC[a.svc], h = a.dur / 60 * this.H, pet = this.PETS[a.pet];
+        const canc = status === 'cancelled', comp = status === 'completed';
+        return {
+          top: this.px(a.start), bufTop: this.px(a.start) + h, h, buf: a.buf / 60 * this.H, bufShow: a.buf && !canc ? 'block' : 'none', op: draggingId === a.id ? .3 : (canc ? .55 : (comp ? .6 : 1)),
+          bg: canc ? 'var(--color-surface-muted)' : (type === 'g' ? 'var(--color-accent-soft)' : 'var(--color-primary-soft)'),
+          bstyle: status === 'pending' ? 'dashed' : 'solid', bcolor: status === 'pending' ? 'var(--color-warning)' : (status === 'no_show' ? 'var(--color-danger)' : 'transparent'),
+          tc: canc ? 'var(--color-text-subtle)' : 'var(--color-text)', deco: canc ? 'line-through' : 'none',
+          pad: h >= 40 ? '4px 8px' : '0 8px', ring: this.state.sel === a.id ? '0 0 0 2px var(--color-primary)' : 'none',
+          time: this.hm(a.start), pet: a.pet, svc: a.svc, flag: !!pet.al, flagText: pet.al, statusLabel: sl, dot, tall: h >= 40,
+          down: e => this.onDown(e, a.id), key: e => { if (e.key === 'Enter') this.setState({ sel: a.id }); }
+        };
+      }) : [];
+      const off = s.off.map(o => ({ top: this.px(o[0]), h: (o[1] - o[0]) / 60 * this.H, label: o[2] === 'Ngoài ca' ? '' : o[2], bg: o[2] === 'Nghỉ phép' ? 'var(--color-border)' : 'repeating-linear-gradient(135deg,var(--color-surface-muted) 0 6px,var(--color-border) 6px 7px)' }));
+      const skel = [[40, 56], [120, 90], [250, 60], [380, 90], [520, 56], [640, 64]].map(k => ({ top: k[0], h: k[1] }));
+      const g = {};
+      if (drag && drag.staff === s.id) {
+        const da = all.find(x => x.id === drag.id);
+        g.dg = true; g.dgTop = this.px(drag.start); g.dgH = da.dur / 60 * this.H;
+        g.dgColor = drag.ok ? 'var(--color-primary)' : 'var(--color-danger)'; g.dgFg = drag.ok ? 'var(--color-on-primary)' : '#fff';
+        g.dgBg = drag.ok ? 'var(--color-primary-soft)' : 'color-mix(in oklab,var(--color-danger) 16%,var(--color-surface))';
+        g.dgLabel = this.hm(drag.start) + '–' + this.hm(drag.start + da.dur) + ' · ' + da.pet;
+        g.dgTip = drag.ok ? 'Dời sang ' + this.hm(drag.start) + ' · ' + s.name : drag.reason;
+      } else { g.dg = false; g.dgTop = 0; g.dgH = 0; g.dgColor = ''; g.dgFg = ''; g.dgBg = ''; g.dgLabel = ''; g.dgTip = ''; }
+      return Object.assign({ id: s.id, name: s.name, ini: s.ini, role: s.role, color: s.color, count: list.length + ' lịch', blocks, off, skel, ghost: view === 'conflict' && s.id === 'A', ghostTop: this.px(990) }, g);
+    });
+    const hours = []; for (let m = 420; m <= 1260; m += 60) hours.push({ label: this.hm(m), top: this.px(m) - 8 + (m === 420 ? 8 : 0) });
+
+    const vis = all.filter(a => cols.some(c => c.id === a.staff)).sort((x, y) => x.start - y.start);
+    const dayRows = showData ? vis.map(a => {
+      const st = this.STAFF.find(s => s.id === a.staff), t = this.SVC[a.svc], canc = a.status === 'cancelled', pet = this.PETS[a.pet];
+      return { time: this.hm(a.start) + '–' + this.hm(a.start + a.dur), pet: a.pet, flag: !!pet.al, svc: a.svc, typeBg: t === 'g' ? 'var(--color-accent-soft)' : 'var(--color-primary-soft)', typeColor: t === 'g' ? 'var(--color-accent)' : 'var(--color-primary)', staff: st.name, staffColor: st.color, statusLabel: this.ST[a.status][0], dot: this.ST[a.status][1], price: this.money(a.price), deco: canc ? 'line-through' : 'none', op: canc ? .55 : (a.status === 'completed' ? .65 : 1), on: () => this.setState({ sel: a.id }) };
+    }) : [];
+    const wk = [['T2', '12/10', 11], ['T3', '13/10', 9], ['T4', '14/10', 12], ['T5', '15/10', 10], ['T5', '16/10', 14], ['T6', '17/10', 8], ['T7', '18/10', 4]];
+    wk[3][0] = 'T5'; wk[4][0] = 'T5';
+    const wnames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    const wdates = ['12/10', '13/10', '14/10', '15/10', '16/10', '17/10', '18/10'];
+    const wn = [11, 9, 12, 10, 14, 8, 4];
+    const weekDays = wnames.map((nm, i) => {
+      const today = i === 4;
+      const load = Math.round(wn[i] / 16 * 100);
+      return { name: nm === 'T6' ? 'T5' : nm, date: wdates[i], n: showData ? wn[i] : 0, today: today && showData, other: !today || !showData, note: today ? '' : (i < 4 ? 'Đã qua · ' + wn[i] + ' lịch hẹn' : 'Sắp tới · ' + wn[i] + ' lịch đã đặt. Mở chế độ Ngày để xem chi tiết.'),
+        bg: today ? 'color-mix(in oklab,var(--color-primary-soft) 45%,transparent)' : 'transparent', load: showData ? load : 0, loadColor: load >= 85 ? 'var(--color-warning)' : 'var(--color-primary)',
+        items: today ? vis.map(a => ({ time: this.hm(a.start), pet: a.pet, staffColor: this.STAFF.find(s => s.id === a.staff).color, bg: a.status === 'cancelled' ? 'var(--color-surface-muted)' : (this.SVC[a.svc] === 'g' ? 'var(--color-accent-soft)' : 'var(--color-primary-soft)'), dot: this.ST[a.status][1], op: a.status === 'cancelled' ? .55 : (a.status === 'completed' ? .65 : 1), deco: a.status === 'cancelled' ? 'line-through' : 'none', on: () => this.setState({ sel: a.id }) })) : [] };
+    });
+    weekDays[4].name = 'T5'; weekDays[3].name = 'T4'; weekDays[2].name = 'T3'; weekDays[1].name = 'T2'; weekDays[0].name = 'T2';
+    const wd = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; weekDays.forEach((w, i) => { w.name = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][i]; });
+
+    const a = all.find(x => x.id === this.state.sel);
+    const drawerOpen = !!a && showData && view !== 'loading';
+    let sel = {};
+    if (a) {
+      const sl = this.ST[a.status][0], dot = this.ST[a.status][1], p = this.PETS[a.pet], st = this.STAFF.find(s => s.id === a.staff);
+      const med = this.SVC[a.svc] === 'm', vet = role === 'vet';
+      const act = { confirmed: 'Check-in', checked_in: 'Hoàn thành' }[a.status] || '';
+      sel = {
+        code: a.code, statusLabel: sl, dot, pet: a.pet, species: p.sp, petDesc: p.d, alert: p.al, owner: p.o, ownerIni: p.o.split(' ').slice(-2).map(w => w[0]).join(''), phone: p.ph,
+        svc: a.svc, staff: st.name, staffColor: st.color, range: this.hm(a.start) + '–' + this.hm(a.start + a.dur + a.buf), dur: a.dur + ' phút' + (a.buf ? ' + ' + a.buf + ' phút dọn dẹp' : ''), price: this.money(a.price),
+        medical: med, locked: med && !vet, canEditMedical: med && vet, medNote: p.med, vax: p.vax,
+        showGhiKham: med && a.status !== 'cancelled' && a.status !== 'no_show', ghiKhamOff: !vet, ghiKhamTip: vet ? 'Mở form ghi khám' : 'Chỉ bác sĩ được chỉnh sửa',
+        ghiKhamBg: vet ? 'var(--color-surface)' : 'var(--color-surface-muted)', ghiKhamFg: vet ? 'var(--color-text)' : 'var(--color-text-subtle)', ghiKhamCursor: vet ? 'pointer' : 'not-allowed', lockIc: vet ? 'none' : 'block',
+        action: !!act, actionLabel: act
+      };
+    }
+    let modal = null;
+    if (md) {
+      const ma = all.find(x => x.id === md.id), os = this.STAFF.find(s => s.id === ma.staff), ns = this.STAFF.find(s => s.id === md.staff);
+      modal = { text: 'Dời ' + ma.pet + ' từ ' + this.hm(ma.start) + ' sang ' + this.hm(md.start) + (ns.id !== os.id ? ', chuyển sang ' + ns.name : '') + '?', from: this.hm(ma.start) + '–' + this.hm(ma.start + ma.dur), fromStaff: os.name, to: this.hm(md.start) + '–' + this.hm(md.start + ma.dur), toStaff: ns.name };
+    }
+    const tk = this.state.toast;
+    const tv = tk === 'conflict' ? { c: 'var(--color-danger)', i: this.ic.alert, t: 'Khung giờ 16:30 vừa có người đặt', x: 'Không dời được lịch của Bơ. Thông tin bạn đã nhập vẫn được giữ nguyên.', s: true }
+      : tk === 'err' ? { c: 'var(--color-danger)', i: this.ic.alert, t: this.state.toastTitle, x: this.state.toastText, s: false }
+      : { c: 'var(--color-success)', i: this.ic.check, t: this.state.toastTitle, x: this.state.toastText, s: false };
+    const emptyMap = { empty: ['Chưa có lịch hẹn nào hôm nay', 'Ngày này chưa có ai đặt. Tạo lịch hẹn đầu tiên cho khách.'], closed: ['Tiệm nghỉ: Quốc khánh 2/9', 'Ngày đóng cửa theo cấu hình của tiệm. Không nhận đặt lịch.'] };
+    const em = emptyMap[view] || ['', ''];
+    const nt = this.state.notify;
+
+    return {
+      theme: this.theme, themeLabel: this.theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối', toggleTheme: () => this.setState({ theme: this.theme === 'dark' ? 'light' : 'dark' }),
+      viewOpts, roleOpts, dragOpts, modeOpts, me, nav, columns, hours, gridCols: '56px repeat(' + cols.length + ',minmax(0,1fr))',
+      staffDisp: mode === 'staff' ? 'block' : 'none', dayDisp: mode === 'day' ? 'block' : 'none', weekDisp: mode === 'week' ? 'block' : 'none', dayRows, weekDays,
+      staffFilter: this.STAFF.map(s => ({ name: s.name, ini: s.ini, color: s.color, op: cols.includes(s) ? 1 : .35 })),
+      showNow: showData && view !== 'loading', isLoading: view === 'loading', isEmpty: view === 'empty' || view === 'closed', isClosed: view === 'closed', emptyCta: view === 'empty', emptyTitle: em[0], emptyText: em[1],
+      isError: view === 'error', goNormal: () => this.setView('normal'), goBook: this.goBook,
+      drawerOpen, sel, closeDrawer: () => this.setState({ sel: null }),
+      doAction: () => { const nx = a.status === 'confirmed' ? 'checked_in' : 'completed'; this.setState(s => ({ over: Object.assign({}, s.over, { [a.id]: nx }) })); this.showToast('ok', nx === 'checked_in' ? 'Đã check-in cho ' + a.pet : 'Đã hoàn thành lịch của ' + a.pet, this.hm(a.start) + ' · ' + a.svc); },
+      modal, closeModal: () => this.setState({ modal: null }), toggleNotify: () => this.setState({ notify: !nt }), notifyBg: nt ? 'var(--color-primary)' : 'var(--color-border)', notifyLeft: nt ? 18 : 2,
+      confirmMove: () => { const m = this.state.modal; const ma = all.find(x => x.id === m.id); this.setState(s => ({ moved: Object.assign({}, s.moved, { [m.id]: { staff: m.staff, start: m.start } }), modal: null })); this.showToast('ok', 'Đã dời lịch của ' + ma.pet + ' sang ' + this.hm(m.start), nt ? 'Đã gửi thông báo cho ' + this.PETS[ma.pet].o + '.' : 'Không gửi thông báo cho khách.'); },
+      toast: !!tk, toastColor: tv.c, toastIcon: tv.i, toastTitle: tv.t, toastText: tv.x, toastSuggest: tv.s, suggestions: ['15:30', '16:15', '17:00'], hideToast: () => this.setState({ toast: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
