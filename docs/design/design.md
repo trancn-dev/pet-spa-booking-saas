@@ -2,12 +2,15 @@
 
 > File này là input cho **Claude Design**. Hãy đọc hết rồi sinh prototype theo đúng design system, danh sách màn hình và luồng bên dưới. Ưu tiên làm **sâu** các màn hình P0 trước.
 > Tên sản phẩm "PawBook" là tên tạm, có thể đổi.
+>
+> **v2 (17/10/2026):** thêm đa chi nhánh, tiếp nhận + hàng đợi, lượt khám, hóa đơn (MVP), kho + điều chuyển (Giai đoạn 2), chấm công + lương (Giai đoạn 3). Các màn đã duyệt (S1-S14, file `.dc.html`) **giữ nguyên**; chỉ thêm màn mới ở **mục 10** và ghi chú chỗ thay đổi ở màn cũ.
 
 ---
 
 ## 0. Hướng dẫn cho Claude Design
 
 - **Nền tảng:** web app responsive. App nội bộ (staff app) thiết kế desktop-first (1440px), vẫn dùng được ở tablet 1024px (lễ tân thường dùng iPad). Cổng đặt lịch công khai (portal) thiết kế **mobile-first** (390px).
+- (v2) **Web app của khách = mobile-first** (390px, thử cả 360px): mọi màn khách dùng (S6, S14, S21, S25) thiết kế cho điện thoại trước, desktop chỉ là bản giãn rộng một cột. Không có màn khách nào chỉ dùng được trên desktop.
 - **Ngôn ngữ UI:** tiếng Việt. Tiền tệ VND (`350.000 ₫`), ngày `dd/MM/yyyy`, giờ 24h `14:30`, tuần bắt đầu Thứ 2.
 - **Stack đích:** Laravel + Inertia + Vue 3 + Tailwind CSS. Dùng token ở mục 3 dưới dạng CSS variables / Tailwind theme để dễ chuyển sang code.
 - **Icon:** Lucide (nét 1.5px, cỡ 16/20/24).
@@ -39,9 +42,11 @@ SaaS **multi-tenant** đặt lịch hẹn cho **pet spa (grooming)** và **phòn
 | **Lễ tân (Receptionist)** | Nhân viên quầy | Nhận khách, đặt/dời/hủy lịch nhanh, check-in | iPad / PC quầy | Đặt lịch, sửa chủ nuôi/pet; **chỉ xem** hồ sơ y tế |
 | **Bác sĩ (Vet)** | Bác sĩ thú y | Xem lịch của mình, ghi khám, ghi mũi tiêm | PC phòng khám, tablet | **Duy nhất được sửa** hồ sơ y tế và ghi tiêm phòng |
 | **Groomer** | Thợ cắt tỉa | Xem lịch hôm nay, đánh dấu hoàn thành | Điện thoại | Xem lịch của mình, ghi chú dịch vụ |
-| **Chủ nuôi (Pet owner)** | Khách hàng, không có tài khoản | Đặt lịch nhanh qua link, nhận nhắc | Điện thoại | Chỉ portal công khai |
+| **Chủ nuôi (Pet owner)** | Khách hàng; đăng nhập portal bằng **SĐT + OTP SMS** (v2) | Đặt/dời lịch, xem lịch sử khám, nhận nhắc | Điện thoại | Chỉ portal công khai |
+| **Bảo vệ, lao công, phụ việc** (v2) | Nhân viên không có tài khoản | Chấm công | Kiosk ở quầy | Chỉ chấm công bằng mã NV + PIN |
 
 Một user có thể làm ở **nhiều workspace** → cần **workspace switcher**.
+v2: một workspace (một chủ) có **nhiều chi nhánh** → cần **branch switcher** cạnh tên workspace (mục 10.1).
 
 UI phải phản ánh quyền: nút bị ẩn hoặc disabled kèm tooltip "Chỉ bác sĩ được chỉnh sửa", không để người dùng bấm rồi mới báo lỗi.
 
@@ -120,8 +125,10 @@ Tương phản tối thiểu WCAG AA (4.5:1 cho chữ thường). Trạng thái 
 
 - **Staff app:** sidebar trái 248px (thu gọn 64px), topbar 56px chứa workspace switcher, ô tìm kiếm toàn cục (chủ nuôi, SĐT, tên pet; phím tắt `/`), nút "+ Đặt lịch" (phím tắt `N`), chuông thông báo, avatar. Nội dung max-width 1280px, trừ màn Lịch dùng full width.
 - **Sidebar items:** Tổng quan · Lịch hẹn · Khách hàng & Thú cưng · Tiêm phòng · Dịch vụ · Nhân viên · Báo cáo (owner) · Cài đặt.
+- **Sidebar v2** (chèn thêm, giữ thứ tự cũ): Tổng quan · **Tiếp nhận & Hàng đợi** · Lịch hẹn · **Thu ngân** · Khách hàng & Thú cưng · Tiêm phòng · Dịch vụ · **Kho** (GĐ2) · Nhân viên (thêm tab **Xếp ca**, **Chấm công**: GĐ3) · **Lương** (owner, GĐ3, icon khóa) · Báo cáo · Cài đặt (thêm **Chi nhánh**).
 - Tablet < 1024px: sidebar thành drawer. Mobile < 640px: bottom nav 4 mục (Hôm nay, Lịch, Khách, Thêm).
 - **Portal:** một cột, max-width 480px, header có logo + tên tiệm, footer "Đặt lịch bởi PawBook".
+- **(v2) Khung web app khách trên điện thoại** (sau khi đăng nhập OTP): header 56px (logo tiệm, chi nhánh đang chọn, avatar), **bottom nav 4 mục** cố định: **Trang chủ** (lịch sắp tới + nút "Đặt lịch") · **Lịch hẹn** · **Thú cưng** (hồ sơ, lịch sử khám/spa, lịch tiêm) · **Tài khoản**. Mục "Sản phẩm" (GĐ2) vào từ Trang chủ. Chừa vùng an toàn iOS (`env(safe-area-inset-bottom)`), CTA chính dính đáy phía trên bottom nav.
 
 ### 3.5 Component
 
@@ -370,4 +377,147 @@ Owner mời email + vai trò → nhân viên mở email → đăng nhập/đăng
 
 ## 9. Ngoài phạm vi prototype
 
-Thanh toán tại quầy/POS, quản lý kho, lưu chuồng chi tiết theo phòng, app native, chat với khách, đa ngôn ngữ ngoài tiếng Việt.
+~~Thanh toán tại quầy/POS, quản lý kho,~~ (v2: đã đưa vào, xem mục 10) Lưu chuồng chi tiết theo phòng, app native, chat với khách, **bán hàng online / giỏ hàng** (sản phẩm chỉ trưng bày), đa ngôn ngữ ngoài tiếng Việt.
+
+---
+
+## 10. Bổ sung v2: màn mới và màn thay đổi
+
+Chỉ liệt kê bố cục, trạng thái và quy tắc; dùng lại design system mục 3. Ưu tiên: **MVP** làm cùng P0/P1 hiện có; **GĐ2**, **GĐ3** làm sau.
+
+| # | Màn hình | Giai đoạn | Vai trò |
+|---|---|---|---|
+| 10.1 | Branch switcher + Cài đặt › Chi nhánh | MVP | Tất cả staff / Owner |
+| S15 | Tiếp nhận khách (check-in, vãng lai, thú hoang) | MVP | Lễ tân |
+| S16 | Bảng hàng đợi hôm nay | MVP | Lễ tân, Bác sĩ, Groomer |
+| S17 | Lượt khám / lượt spa | MVP | Bác sĩ, Groomer |
+| S18 | Thu ngân: lập hóa đơn, thanh toán | MVP | Lễ tân, Owner |
+| S19 | Bán lẻ nhanh tại quầy | MVP (sản phẩm có từ GĐ2) | Lễ tân |
+| S20 | Thông báo nhắc gọi khách | MVP | Lễ tân |
+| S21 | Portal: đăng nhập OTP + lịch sử khám (**mobile-first**) | MVP | Chủ nuôi |
+| S22 | Kho: tồn kho, lô & hạn dùng | GĐ2 | Owner, Lễ tân, Bác sĩ |
+| S23 | Tra tồn liên chi nhánh + Điều chuyển | GĐ2 | Lễ tân, Bác sĩ, Owner |
+| S24 | Phiếu nhập, nhà cung cấp, kiểm kê | GĐ2 | Owner |
+| S25 | Portal: trưng bày sản phẩm (**mobile-first**) | GĐ2 | Chủ nuôi |
+| S26 | Xếp ca + phủ ca | GĐ3 | Owner |
+| S27 | Kiosk chấm công | GĐ3 | Mọi nhân viên |
+| S28 | Bảng công | GĐ3 | Owner |
+| S29 | Lương (khóa cấp 2) | GĐ3 | Chỉ Owner |
+
+### 10.1 Branch switcher, Cài đặt › Chi nhánh
+- Topbar: `Paw House Spa & Vet › CN Quận 3 ▾`. Nhân viên chỉ thấy chi nhánh mình được phân; Owner có thêm "Tất cả chi nhánh" (chỉ ở Tổng quan, Báo cáo).
+- Đổi chi nhánh: toast "Đang làm việc tại CN Quận 7". Mọi màn vận hành (hàng đợi, lịch, thu ngân, kho) hiển thị badge chi nhánh ở tiêu đề để tránh thao tác nhầm.
+- Cài đặt › Chi nhánh: bảng (mã, tên, địa chỉ, SĐT, số nhân viên, đang hoạt động), form chi nhánh có mục IP/WiFi chấm công (GĐ3).
+
+### S15. Tiếp nhận khách
+- Ô lớn "Nhập SĐT khách" (focus sẵn, phím tắt `F2`). Kết quả: chủ nuôi + danh sách pet (pet chip). Nếu khách có lịch hẹn hôm nay ở chi nhánh này: card nổi bật "Có lịch 14:00 · Tắm + cắt tỉa · Ngọc Anh" + nút **Check-in**.
+- Không tìm thấy: form tạo nhanh (họ tên, SĐT bắt buộc) → thêm pet (tên, loài, giống, cân nặng). SĐT là khóa: trùng thì mở hồ sơ cũ, không tạo mới.
+- Nút phụ "**Thú hoang / vô chủ**": tạo pet "Thú hoang #12" (sửa tên được), bắt buộc loài + cân nặng ước lượng + ghi chú tình trạng.
+- Chọn loại lượt: **Khám bệnh** / **Spa** + lý do đến → "Tạo lượt" → hiện số thứ tự lớn (`Số 042`) + nút In phiếu số.
+- Ghi chú: khách **chỉ mua hàng** không đi qua màn này, dùng S19.
+
+### S16. Bảng hàng đợi hôm nay
+- Hai cột tab: **Khám bệnh** · **Spa**. Mỗi thẻ: số thứ tự (mono, lớn), pet chip + badge an toàn, giờ đến, loại (Có hẹn 14:00 / Vãng lai), thời gian chờ (đổi warning > 30 phút, danger > 60 phút), người phụ trách.
+- Cột trạng thái: Đang chờ · Đang khám · Xong (chờ thanh toán) · Đã thanh toán.
+- Bác sĩ/groomer bấm "**Nhận khách**" → mở S17. Nếu người khác vừa nhận: toast "Số 042 đã được BS. Thu Hà nhận", thẻ tự cập nhật.
+- Chế độ màn hình TV ở phòng chờ (tùy chọn): chỉ số thứ tự + tên pet, không SĐT.
+- Empty: "Chưa có khách nào hôm nay".
+
+### S17. Lượt khám / lượt spa
+- Header: số thứ tự, pet (chip lớn + dị ứng), chủ nuôi, lịch sử 3 lần gần nhất (thu gọn).
+- **Khám bệnh:** khối Chẩn đoán/Điều trị (= ghi khám, chỉ bác sĩ sửa), khối **Dịch vụ đã làm** (thêm từ danh mục, giá tự điền), khối **Thuốc kê** (GĐ2: ô tìm thuốc hiện tồn tại chi nhánh; hết hàng → dòng "CN Quận 7 còn 12 · Tạo yêu cầu chuyển", mở S23), khối Tiêm phòng (dùng lại S4).
+- **Spa:** dịch vụ, ghi chú (dầu gội dùng, tình trạng lông/da), ảnh trước/sau (tùy chọn).
+- Footer: tạm tính (chỉ giá bán) + nút "**Hoàn tất lượt**" → trạng thái "Chờ thanh toán", lễ tân nhận thông báo.
+- Read-only cho lễ tân (khóa + "Chỉ bác sĩ được chỉnh sửa").
+
+### S18. Thu ngân
+- Danh sách "Chờ thanh toán" (từ S16) bên trái; bên phải hóa đơn nháp sinh sẵn từ lượt khám: dòng dịch vụ / thuốc / sản phẩm, giảm giá (theo dòng hoặc cả đơn, có lý do), thuế, tổng.
+- Thêm sản phẩm bán kèm (quét mã vạch hoặc tìm tên).
+- Thanh toán: chọn cách trả (Tiền mặt / Chuyển khoản / QR / Thẻ), cho phép **nhiều lần trả** (vd 500.000 tiền mặt + phần còn lại QR); tiền mặt có ô "Khách đưa" → "Tiền thối".
+- Đã thanh toán: hóa đơn **khóa**, badge "Đã thanh toán", chỉ còn In / Gửi Zalo / **Hủy hóa đơn** (modal: lý do bắt buộc, "Hủy và lập hóa đơn mới"). Hoàn tiền là thao tác riêng.
+- Trạng thái: nút thanh toán chặn double-click; hóa đơn vừa bị người khác hủy → banner + tải lại.
+- Lễ tân và nhân viên **không bao giờ thấy giá nhập**.
+
+### S19. Bán lẻ nhanh tại quầy
+- Kiểu POS: ô quét mã vạch/tìm sản phẩm, giỏ bên phải, thanh toán như S18.
+- **Không bắt buộc thông tin khách.** Ô "SĐT khách (không bắt buộc)" để lưu lịch sử mua nếu khách muốn.
+- Chỉ bán sản phẩm bán lẻ (thức ăn, đồ chơi, phụ kiện); thuốc kê đơn và dịch vụ không thêm được ở đây, tooltip "Thuốc/dịch vụ phải đi qua lượt khám".
+
+### S20. Thông báo nhắc gọi khách
+- Chuông topbar + trang "Cần gọi hôm nay": danh sách lịch hẹn **ngày mai** của chi nhánh, mỗi dòng: giờ, khách, SĐT (click-to-call), pet, dịch vụ, trạng thái nhắc tự động (SMS/Zalo đã gửi / thất bại).
+- Action: "Đã gọi · Khách xác nhận", "Dời lịch" (mở modal dời của S3), "Không liên lạc được".
+- Thông báo được tạo trước 1 ngày; hiển thị đếm trên chuông.
+
+### S21. Portal: đăng nhập OTP + lịch sử
+- Đăng nhập: nhập SĐT → mã OTP 6 số (đếm ngược 60s gửi lại, sai 5 lần khóa 15 phút).
+- Trang "Của tôi": pet của tôi, lịch hẹn sắp tới (Dời / Hủy), **lịch sử khám/spa** (ngày, chi nhánh, dịch vụ; chẩn đoán dạng tóm tắt), lịch tiêm sắp tới.
+- Dời lịch: nếu còn ít hơn hạn dời (chủ tiệm cấu hình, vd 24h) thì nút Dời disabled + "Vui lòng gọi tiệm để dời lịch trong vòng 24 giờ".
+- Thay đổi S6: bước 2 dùng đăng nhập OTP thay cho nhập SĐT tự do khi khách muốn chọn pet đã có.
+
+### S22. Kho (GĐ2)
+- Tabs: **Tồn kho** · **Lô & hạn dùng** · **Sổ kho** (lịch sử nhập/xuất).
+- Tồn kho: sản phẩm, loại (Thuốc / Vật tư / Bán lẻ), tồn, đang giữ, khả dụng, đơn vị, giá bán; **cột Giá vốn và Giá trị tồn chỉ Owner** (role khác: cột không tồn tại, không chỉ ẩn).
+- Badge: "Sắp hết" (warning), "Hết hàng" (danger), "Lô hết hạn trong 30 ngày".
+- Lô & hạn dùng: lô, HSD, số lượng; lô quá hạn gạch ngang, không xuất được.
+
+### S23. Tra tồn liên chi nhánh + Điều chuyển (GĐ2)
+- Tìm sản phẩm → bảng các chi nhánh: tồn khả dụng, HSD gần nhất, khoảng cách/ghi chú. Chi nhánh hiện tại ở dòng đầu.
+- "**Yêu cầu chuyển**" (chọn chi nhánh nguồn, số lượng, gắn khách đang chờ + "hẹn lấy ngày 18/10") → tạo phiếu.
+- Danh sách phiếu: tabs Gửi đi / Nhận về; trạng thái **Yêu cầu → Đã duyệt → Đang vận chuyển → Đã nhận / Đã hủy** (stepper ngang trên chi tiết phiếu).
+- Chi nhánh nguồn: Duyệt / Từ chối, chọn lô, nhập shipper (tên, SĐT, mã vận đơn). Chi nhánh nhận: "Xác nhận đã nhận" với số lượng thực nhận (lệch thì bắt buộc ghi chú).
+- Nhận xong: thông báo cho lễ tân "Thuốc XYZ cho khách Nguyễn Thị Lan đã về, giữ đến 19/10".
+
+### S24. Phiếu nhập, nhà cung cấp, kiểm kê (GĐ2, Owner)
+- Phiếu nhập: nhà cung cấp, số hóa đơn NCC, dòng (sản phẩm, lô, HSD, SL, giá nhập), tổng; Lưu nháp / **Ghi sổ** (sau khi ghi sổ không sửa).
+- Kiểm kê: chọn chi nhánh, nhập số đếm thực tế, hiển thị chênh lệch, ghi sổ điều chỉnh.
+
+### 10.5 Quy tắc mobile cho web app khách (áp dụng S6, S14, S21, S25)
+- Touch target ≥ 44px, chữ body 16px (tránh iOS tự zoom khi focus input), một cột, không bảng ngang: dữ liệu dạng card/list.
+- Input: SĐT dùng `inputmode="tel"`; OTP 6 ô dùng `autocomplete="one-time-code"` để iOS/Android tự điền từ SMS; ngày giờ dùng dải chip ngang có thể vuốt thay cho date picker nhỏ.
+- Hành động chính luôn dính đáy (sticky), một nút; hành động phụ trong bottom sheet thay cho dropdown/modal giữa màn.
+- Lịch sử khám/spa: timeline dọc, mỗi lần một card (ngày, chi nhánh, dịch vụ, tóm tắt chẩn đoán), chạm để mở chi tiết toàn màn.
+- Click-to-call SĐT tiệm, nút chỉ đường (mở Google Maps), chia sẻ lịch hẹn (.ics / Zalo).
+- **PWA nhẹ:** manifest + icon để "Thêm vào màn hình chính"; không cần offline. Phiên đăng nhập OTP giữ 30 ngày trên thiết bị (**[Mặc định, cần xác nhận]**).
+- Hiệu năng trên 4G: trang đầu < 200KB JS, ảnh sản phẩm lazy-load + kích thước theo màn hình, skeleton thay spinner.
+- Thiết kế đủ trạng thái trên mobile: chưa đăng nhập, OTP sai/hết hạn, không có pet, không có lịch, mất mạng (toast "Mất kết nối, thử lại").
+
+### S25. Portal: trưng bày sản phẩm (GĐ2)
+- Lưới sản phẩm công khai 2 cột trên điện thoại (ảnh, tên, giá bán, "Còn hàng tại CN Quận 3"), lọc theo loại bằng chip ngang. **Không có giỏ hàng / nút mua**; CTA "Đến tiệm mua" + chỉ đường.
+
+### S26. Xếp ca + phủ ca (GĐ3, Owner)
+- Lưới tuần: hàng = nhân viên (cả nhân viên không có tài khoản), cột = ngày, ô = chip ca (Ca sáng / Ca chiều / Ca tối; ca tối có icon trăng). Kéo-thả chip để xếp.
+- Thanh phủ ca dưới lưới theo từng ngày/ca: "Bác sĩ 1/2 · Lễ tân 1/1 · Bảo vệ 0/1" (thiếu = danger).
+- Cài đặt mẫu ca (giờ, hệ số lương) và yêu cầu tối thiểu theo vai trò.
+
+### S27. Kiosk chấm công (GĐ3)
+- Màn toàn màn hình trên tablet ở quầy, chữ lớn: đồng hồ, tên chi nhánh, bàn phím số "Mã nhân viên" → "PIN" → "Chào Phạm Quốc Bảo · Vào ca 07:58 · Ca sáng".
+- Lỗi: sai PIN, thiết bị chưa đăng ký, mạng không thuộc chi nhánh.
+
+### S28. Bảng công (GĐ3, Owner)
+- Bảng tháng: nhân viên × ngày, ô = giờ vào/ra; "Quên chấm ra" badge warning cần duyệt; Owner sửa giờ (bắt buộc lý do, ghi lịch sử).
+
+### S29. Lương (GĐ3, chỉ Owner)
+- Vào trang: modal "Nhập lại mật khẩu để xem lương" → mở 10 phút, đồng hồ đếm ngược ở header ("Tự khóa sau 09:12"), nút "Khóa ngay". Hết giờ: nội dung mờ + modal mở lại.
+- Bảng kỳ lương: nhân viên, ngày công, giờ ca tối, tăng ca, ngày lễ, lương cơ bản, phụ cấp ca, thưởng/phạt/tạm ứng, **thực lãnh**. Click dòng → chi tiết công thức từng ca.
+- Cài đặt lương theo nhân viên: kiểu lương, mức, ngày công chuẩn, hệ số tăng ca/ngày lễ/ca đêm (validate mức tối thiểu theo luật, báo lỗi inline).
+- "**Chốt kỳ lương**" (modal xác nhận) → khóa, badge "Đã chốt". Tab "Lịch sử truy cập" (ai mở trang lương, lúc nào).
+
+### 10.2 Thay đổi ở màn đã có (không vẽ lại)
+- **S1 Lịch:** lọc theo chi nhánh hiện tại. Block lịch có trạng thái `checked_in` thêm số thứ tự lượt.
+- **S3 Chi tiết lịch hẹn:** nút "Check-in" giờ tạo lượt khám và hiện số thứ tự; "Ghi khám" chuyển sang mở S17.
+- **S5 Dashboard:** Owner thêm KPI doanh thu thực thu hôm nay, lợi nhuận gộp (GĐ2), lọc chi nhánh. **Lễ tân chỉ xem số liệu hôm nay của chi nhánh mình** (không có bộ chọn ngày).
+- **S11 Nhân viên:** thêm nhân viên **không có tài khoản** (vai trò Bảo vệ / Lao công / Phụ việc), cột chi nhánh, nút "Đặt PIN chấm công".
+- **S12 Cài đặt:** thêm "Hạn khách tự dời/hủy lịch (giờ)", thuế mặc định, mẫu SMS/Zalo nhắc hẹn.
+
+### 10.3 Luồng mới
+- **F8. Một lượt khám từ đầu đến cuối:** S15 nhập SĐT → (có hẹn: Check-in / vãng lai: tạo lượt) → số 042 → S16 bác sĩ "Nhận khách" → S17 ghi khám + dịch vụ + thuốc → "Hoàn tất lượt" → S18 lễ tân thấy hóa đơn nháp → thanh toán 2 lần (tiền mặt + QR) → hóa đơn khóa.
+- **F9. Hết thuốc, chi nhánh khác còn (GĐ2):** S17 kê thuốc XYZ → "Hết tại CN Q3 · CN Q7 còn 12" → hẹn khách mai lấy → S23 yêu cầu chuyển (giữ hàng ở Q7) → Q7 duyệt + giao shipper → Q3 xác nhận nhận → thông báo lễ tân, giữ hàng 48h cho khách → khách đến, S18 bán.
+- **F10. Khách chỉ mua thức ăn:** S19 quét sản phẩm → (tùy chọn SĐT) → thanh toán. Không tạo hồ sơ.
+- **F11. Chấm công và tính lương (GĐ3):** nhân viên chấm ở S27 → Owner xem S28, duyệt "quên chấm ra" → cuối tháng S29 mở khóa, kiểm tra, chốt kỳ.
+
+### 10.4 Dữ liệu mẫu bổ sung
+- Chi nhánh: **CN Quận 3** (`Q3`, chi nhánh chính) và **CN Quận 7** (`Q7`).
+- Nhân viên không tài khoản: Lê Văn Tư (Bảo vệ, Q3), Nguyễn Thị Sáu (Lao công, Q3).
+- Hàng đợi hôm nay ở Q3: 9 lượt (6 khám, 3 spa), trong đó 1 thú hoang "Thú hoang #3" (mèo, ~2kg, bị thương chân).
+- Kho: thuốc "Amoxicillin 250mg" hết ở Q3, Q7 còn 12 viên (lô `AMX2409`, HSD 03/2027); dầu gội "Bio-Groom" sắp hết ở Q3; thức ăn "Royal Canin Mini Adult 2kg" giá bán 420.000 ₫.
+- Lương: Bảo vệ 6.500.000 ₫/tháng, 26 công chuẩn, ca tối ×1,3, tăng ca ×1,5, ngày lễ ×3.
