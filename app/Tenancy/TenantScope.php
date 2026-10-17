@@ -16,7 +16,7 @@ class TenantScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $context = app(CurrentTenant::class);
+        $context = app(TenantContext::class);
 
         if ($context->isBypassed()) {
             return;

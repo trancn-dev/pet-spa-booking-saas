@@ -6,12 +6,12 @@ namespace Tests\Feature\Settings;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Tests\Concerns\ActsOnTenantHost;
+use Tests\Concerns\ActsOnTenant;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
 {
-    use ActsOnTenantHost, RefreshDatabase;
+    use ActsOnTenant, RefreshDatabase;
 
     public function test_password_can_be_updated()
     {

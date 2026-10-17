@@ -10,7 +10,7 @@ use Closure;
 /**
  * Holds the tenant for the current request / job. Registered as a scoped singleton.
  */
-class CurrentTenant
+class TenantContext
 {
     private ?Tenant $tenant = null;
 
@@ -51,7 +51,7 @@ class CurrentTenant
      * @param  Closure(): TReturn  $callback
      * @return TReturn
      */
-    public function run(Tenant $tenant, Closure $callback): mixed
+    public function runAs(Tenant $tenant, Closure $callback): mixed
     {
         $previous = $this->tenant;
         $this->tenant = $tenant;

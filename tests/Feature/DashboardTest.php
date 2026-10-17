@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\ActsOnTenantHost;
+use Tests\Concerns\ActsOnTenant;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
-    use ActsOnTenantHost, RefreshDatabase;
+    use ActsOnTenant, RefreshDatabase;
 
     public function test_guests_are_redirected_to_the_login_page()
     {
-        $response = $this->get('/dashboard');
-        $response->assertRedirect('/login');
+        $this->get('/dashboard')->assertRedirect('/login');
+        $this->get('/app/acme/dashboard')->assertRedirect('/login');
     }
 
     public function test_authenticated_users_can_visit_the_dashboard()
@@ -23,7 +23,7 @@ class DashboardTest extends TestCase
         $user = $this->tenantUser();
         $this->actingAs($user);
 
-        $response = $this->get('/dashboard');
-        $response->assertStatus(200);
+        $this->get('/dashboard')->assertRedirect('/app/acme/dashboard');
+        $this->get('/app/acme/dashboard')->assertStatus(200);
     }
 }

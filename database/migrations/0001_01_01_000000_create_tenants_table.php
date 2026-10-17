@@ -13,8 +13,11 @@ return new class extends Migration
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('domain')->nullable()->unique();
+            $table->string('slug', 63)->unique();
+            $table->string('timezone', 64)->default('Asia/Ho_Chi_Minh');
+            $table->string('locale', 10)->default('vi');
+            $table->char('currency', 3)->default('VND');
+            $table->string('status', 20)->default('active');
             $table->timestamps();
         });
     }

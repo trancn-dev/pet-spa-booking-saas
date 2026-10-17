@@ -21,3 +21,19 @@ it('applies BelongsToTenant to every model with a tenant_id column', function ()
 
     expect($unscoped)->toBe([]);
 });
+
+/*
+| Global scopes are only ever bypassed through TenantContext::withoutTenancy(), never ad hoc.
+*/
+it('never calls withoutGlobalScope(s) outside the whitelist', function () {
+    $whitelist = [];
+
+    $offenders = collect(new RecursiveIteratorIterator(new RecursiveDirectoryIterator(app_path())))
+        ->filter(fn (SplFileInfo $f) => $f->isFile() && $f->getExtension() === 'php')
+        ->filter(fn (SplFileInfo $f) => preg_match('/withoutGlobalScopes?\s*\(/', (string) file_get_contents($f->getPathname())) === 1)
+        ->map(fn (SplFileInfo $f) => str_replace(base_path().'/', '', $f->getPathname()))
+        ->reject(fn (string $path) => in_array($path, $whitelist, true))
+        ->values()->all();
+
+    expect($offenders)->toBe([]);
+});

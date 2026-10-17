@@ -5,49 +5,51 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Tenant;
-use App\Tenancy\CurrentTenant;
+use App\Tenancy\TenantContext;
+use App\Tenancy\TenantMembership;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Resolves the tenant from the `{tenant}` (slug) route parameter, `/app/{tenant}/...`.
+ * Unknown slug, or a logged-in user who is not a member → 404 (never reveal existence).
+ * Guests pass through so `auth` can redirect them to login.
+ */
 class ResolveTenant
 {
-    public function __construct(private readonly CurrentTenant $current) {}
+    public function __construct(
+        private readonly TenantContext $context,
+        private readonly TenantMembership $membership,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $tenant = $this->resolve($request->getHost());
+        $slug = $request->route('tenant');
+        $tenant = $slug instanceof Tenant
+            ? $slug
+            : (is_string($slug) ? Tenant::query()->where('slug', $slug)->first() : null);
 
-        abort_if($tenant === null, 404, 'Tenant not found.');
+        abort_if($tenant === null || $tenant->status !== 'active', 404);
 
-        $this->current->set($tenant);
+        $user = $request->user();
+        if ($user !== null) {
+            abort_unless($this->membership->isMember($user, $tenant), 404);
+
+            if ($user->last_tenant_id !== $tenant->getKey()) {
+                $user->forceFill(['last_tenant_id' => $tenant->getKey()])->saveQuietly();
+            }
+        }
+
+        $request->route()?->setParameter('tenant', $tenant);
+        URL::defaults(['tenant' => $tenant->slug]);
+        $this->context->set($tenant);
 
         try {
             return $next($request);
         } finally {
-            $this->current->forget();
+            $this->context->forget();
         }
-    }
-
-    private function resolve(string $host): ?Tenant
-    {
-        $host = strtolower($host);
-
-        $byDomain = Tenant::query()->where('domain', $host)->first();
-        if ($byDomain !== null) {
-            return $byDomain;
-        }
-
-        $suffix = '.'.strtolower((string) config('tenancy.central_domain'));
-        if (! str_ends_with($host, $suffix)) {
-            return null;
-        }
-
-        $slug = substr($host, 0, -strlen($suffix));
-        if ($slug === '' || str_contains($slug, '.')) {
-            return null;
-        }
-
-        return Tenant::query()->where('slug', $slug)->first();
     }
 }

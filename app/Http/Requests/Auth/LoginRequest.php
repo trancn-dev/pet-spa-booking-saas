@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
-use App\Tenancy\CurrentTenant;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -84,9 +83,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        // Per tenant, so failed logins on one tenant cannot lock the same email out of another.
-        $tenant = app(CurrentTenant::class)->id();
-
-        return Str::transliterate($tenant.'|'.Str::lower((string) $this->input('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower((string) $this->input('email')).'|'.$this->ip());
     }
 }

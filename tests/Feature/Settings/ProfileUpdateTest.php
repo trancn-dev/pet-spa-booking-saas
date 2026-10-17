@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Settings;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\ActsOnTenantHost;
+use Tests\Concerns\ActsOnTenant;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
 {
-    use ActsOnTenantHost, RefreshDatabase;
+    use ActsOnTenant, RefreshDatabase;
 
     public function test_profile_page_is_displayed()
     {

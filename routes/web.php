@@ -2,20 +2,25 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\WorkspaceRedirectController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Everything below belongs to a tenant: the host must resolve to one, and it
-// is resolved before `auth` touches the session user.
-Route::middleware('tenant')->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('Welcome');
-    })->name('home');
+// Central routes: users are global identities, so home, auth and account settings are not tenant-bound.
+Route::get('/', function () {
+    return Inertia::render('Welcome');
+})->name('home');
 
+// Sends a logged-in user to their (last) workspace.
+Route::get('dashboard', WorkspaceRedirectController::class)
+    ->middleware(['auth', 'verified'])->name('dashboard');
+
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
+
+// Everything below belongs to one tenant, resolved from the slug; members only.
+Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('Dashboard');
-    })->middleware(['auth', 'verified'])->name('dashboard');
-
-    require __DIR__.'/settings.php';
-    require __DIR__.'/auth.php';
+    })->middleware(['auth', 'verified'])->name('tenant.dashboard');
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Settings;
 
 use App\Models\User;
-use App\Tenancy\CurrentTenant;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,9 +26,7 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)
-                    ->where('tenant_id', app(CurrentTenant::class)->id())
-                    ->ignore($this->user()->id),
+                Rule::unique(User::class)->ignore($this->user()->id),
             ],
         ];
     }

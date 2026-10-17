@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\ActsOnTenantHost;
+use Tests\Concerns\ActsOnTenant;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
-    use ActsOnTenantHost, RefreshDatabase;
+    use ActsOnTenant, RefreshDatabase;
 
     public function test_login_screen_can_be_rendered()
     {

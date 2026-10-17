@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => ResolveTenant::class,
         ]);
 
-        // The tenant must be resolved before anything touches the user (auth, session user lookup).
+        // Resolve the tenant (and check membership) before auth/route-binding run.
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: ResolveTenant::class);
 
         $middleware->web(append: [

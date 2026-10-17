@@ -2,40 +2,64 @@
 
 declare(strict_types=1);
 
+use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
-    config(['tenancy.central_domain' => 'spa.test']);
+    Route::middleware(['web', 'tenant'])->prefix('app/{tenant:slug}')
+        ->get('__staff', fn () => Staff::pluck('display_name'));
 
-    Route::middleware('tenant')->get('/__tenant/users', fn () => User::pluck('email'));
-
-    $a = Tenant::factory()->create(['slug' => 'a']);
-    $b = Tenant::factory()->create(['slug' => 'b', 'domain' => 'booking.bee.com']);
-    User::factory()->create(['tenant_id' => $a->id, 'email' => 'a@example.com']);
-    User::factory()->create(['tenant_id' => $b->id, 'email' => 'b@example.com']);
+    $this->a = Tenant::factory()->create(['slug' => 'a']);
+    $this->b = Tenant::factory()->create(['slug' => 'b']);
+    Staff::factory()->create(['tenant_id' => $this->a->id, 'display_name' => 'staff-a']);
+    Staff::factory()->create(['tenant_id' => $this->b->id, 'display_name' => 'staff-b']);
 });
 
-it('serves only the data of the tenant resolved from the subdomain', function () {
-    $this->get('http://a.spa.test/__tenant/users')->assertOk()->assertExactJson(['a@example.com']);
+it('serves only the data of the tenant in the URL slug', function () {
+    $this->get('/app/a/__staff')->assertOk()->assertExactJson(['staff-a']);
+    $this->get('/app/b/__staff')->assertOk()->assertExactJson(['staff-b']);
 });
 
-it('serves only the data of the tenant resolved from a custom domain', function () {
-    $this->get('http://booking.bee.com/__tenant/users')->assertOk()->assertExactJson(['b@example.com']);
+it('returns 404 for an unknown or suspended tenant', function () {
+    $this->get('/app/nope/__staff')->assertNotFound();
+
+    $this->b->update(['status' => 'suspended']);
+    $this->get('/app/b/__staff')->assertNotFound();
 });
 
-it('returns 404 for unknown tenants and hosts', function (string $url) {
-    $this->get($url)->assertNotFound();
-})->with([
-    'unknown subdomain' => 'http://nope.spa.test/__tenant/users',
-    'central domain' => 'http://spa.test/__tenant/users',
-    'nested subdomain' => 'http://x.a.spa.test/__tenant/users',
-    'foreign host' => 'http://evil.com/__tenant/users',
-]);
+it('returns 404 when a logged-in user is not a member of the tenant', function () {
+    $user = User::factory()->create();
+    Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id]);
+
+    $this->actingAs($user)->get('/app/a/__staff')->assertOk();
+    $this->actingAs($user)->get('/app/b/__staff')->assertNotFound();
+});
+
+it('ignores members whose staff row is disabled or deleted', function () {
+    $user = User::factory()->create();
+    $staff = Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id, 'status' => 'disabled']);
+
+    $this->actingAs($user)->get('/app/a/__staff')->assertNotFound();
+
+    $staff->update(['status' => 'active']);
+    $staff->delete();
+    $this->actingAs($user)->get('/app/a/__staff')->assertNotFound();
+});
+
+it('remembers the last opened tenant', function () {
+    $user = User::factory()->create();
+    Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id]);
+    Staff::factory()->create(['tenant_id' => $this->b->id, 'user_id' => $user->id]);
+
+    $this->actingAs($user)->get('/app/b/__staff')->assertOk();
+
+    expect($user->fresh()->last_tenant_id)->toBe($this->b->id);
+});
 
 it('does not leak tenant context between requests', function () {
-    $this->get('http://a.spa.test/__tenant/users')->assertOk();
-    $this->get('http://nope.spa.test/__tenant/users')->assertNotFound();
-    $this->get('http://booking.bee.com/__tenant/users')->assertExactJson(['b@example.com']);
+    $this->get('/app/a/__staff')->assertOk();
+    $this->get('/app/nope/__staff')->assertNotFound();
+    $this->get('/app/b/__staff')->assertExactJson(['staff-b']);
 });

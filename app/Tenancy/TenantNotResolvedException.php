@@ -11,6 +11,6 @@ class TenantNotResolvedException extends RuntimeException
     public static function forModel(string $model): self
     {
         return new self("No current tenant: refusing to query or write tenant-owned model [{$model}]. "
-            .'Resolve a tenant first (ResolveTenant middleware / CurrentTenant::run) or use CurrentTenant::withoutTenancy() explicitly.');
+            .'Resolve a tenant first (ResolveTenant middleware / TenantContext::run) or use TenantContext::withoutTenancy() explicitly.');
     }
 }
