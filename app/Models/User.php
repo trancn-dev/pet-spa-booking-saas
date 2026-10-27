@@ -40,6 +40,13 @@ class User extends Authenticatable
     ];
 
     /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'last_tenant_id' => null,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -49,6 +56,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_tenant_id' => 'integer',
         ];
     }
 }

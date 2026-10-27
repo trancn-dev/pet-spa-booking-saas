@@ -27,7 +27,7 @@ Giai đoạn:
 
 Tham chiếu trong prompt: "db-schema 2.5" = `docs/database/db-schema.md` mục 2.5; "design S2" = màn S2 trong `docs/design/design.md`; "F3" = luồng F3 (design mục 7).
 
-> **Tiến độ thực tế (nhánh `dev`):** đã xong phase 1 (Laravel 12 + Docker + Pint/Larastan/Pest + CI), phase 2 (TenantContext, BelongsToTenant fail closed, ResolveTenant theo `/app/{tenant:slug}`), starter kit Vue/Inertia + auth với `users` toàn cục, bảng `staff` tối thiểu. Nhánh `main` là bản cũ: **đừng dựa vào `main`**. Chưa có migration nghiệp vụ nào cần giữ: task 3.1 viết lại migration theo `db-schema.md` hiện tại (được sửa/xóa migration chưa lên production). Việc tiếp theo: 1.3 → 3.1 → 3.2 → Phase 4. Task đã làm chỉ chạy prompt "Kiểm tra & bổ sung".
+> **Tiến độ thực tế (nhánh `dev`, 2026-10-27):** đã xong phase 1 (Laravel 12 + Docker + Pint/Larastan/Pest + CI, Makefile, mailpit, MySQL UTC), phase 2 + "Kiểm tra & bổ sung" (fail closed cả đọc lẫn ghi, `TenantRule`, `tenant_cache_key`, job `TenantAware`, route binding 404 chéo shop, `Model::shouldBeStrict`, test chạy MySQL), starter kit Vue/Inertia + auth với `users` toàn cục. **Task 3.1: xong** (migration + model + enum + factory cho toàn bộ bảng MVP, test ràng buộc DB ở `tests/Feature/Database/SchemaConstraintsTest.php`; `composer ci` xanh, 83 test). Còn nợ của task 1.2: Larastan level 8, ESLint/Prettier + coverage trong CI. Nhánh `main` là bản cũ: **đừng dựa vào `main`**. Việc tiếp theo: 3.2 → Phase 4.
 
 ### Lộ trình gợi ý (buổi tối/cuối tuần)
 

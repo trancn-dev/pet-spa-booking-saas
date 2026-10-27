@@ -19,8 +19,8 @@ beforeEach(function () {
 
     $this->userA = User::factory()->create();
     $this->userB = User::factory()->create();
-    Staff::factory()->create(['tenant_id' => $this->tenantA->id, 'user_id' => $this->userA->id]);
-    Staff::factory()->create(['tenant_id' => $this->tenantB->id, 'user_id' => $this->userB->id]);
+    inTenant($this->tenantA, fn () => Staff::factory()->create(['user_id' => $this->userA->id]));
+    inTenant($this->tenantB, fn () => Staff::factory()->create(['user_id' => $this->userB->id]));
 });
 
 it('lets a member open their tenant dashboard and 404s on another tenant', function () {

@@ -13,8 +13,8 @@ beforeEach(function () {
 
     $this->a = Tenant::factory()->create(['slug' => 'a']);
     $this->b = Tenant::factory()->create(['slug' => 'b']);
-    Staff::factory()->create(['tenant_id' => $this->a->id, 'display_name' => 'staff-a']);
-    Staff::factory()->create(['tenant_id' => $this->b->id, 'display_name' => 'staff-b']);
+    inTenant($this->a, fn () => Staff::factory()->create(['display_name' => 'staff-a']));
+    inTenant($this->b, fn () => Staff::factory()->create(['display_name' => 'staff-b']));
 });
 
 it('serves only the data of the tenant in the URL slug', function () {
@@ -22,16 +22,27 @@ it('serves only the data of the tenant in the URL slug', function () {
     $this->get('/app/b/__staff')->assertOk()->assertExactJson(['staff-b']);
 });
 
-it('returns 404 for an unknown or suspended tenant', function () {
+it('returns 404 for an unknown, suspended or cancelled tenant', function () {
     $this->get('/app/nope/__staff')->assertNotFound();
 
     $this->b->update(['status' => 'suspended']);
     $this->get('/app/b/__staff')->assertNotFound();
+
+    $this->b->update(['status' => 'cancelled']);
+    $this->get('/app/b/__staff')->assertNotFound();
+});
+
+it('serves trial and past-due shops (still usable, db-schema 2.1)', function () {
+    $this->b->update(['status' => 'trial']);
+    $this->get('/app/b/__staff')->assertOk();
+
+    $this->b->update(['status' => 'past_due']);
+    $this->get('/app/b/__staff')->assertOk();
 });
 
 it('returns 404 when a logged-in user is not a member of the tenant', function () {
     $user = User::factory()->create();
-    Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id]);
+    inTenant($this->a, fn () => Staff::factory()->create(['user_id' => $user->id]));
 
     $this->actingAs($user)->get('/app/a/__staff')->assertOk();
     $this->actingAs($user)->get('/app/b/__staff')->assertNotFound();
@@ -39,7 +50,7 @@ it('returns 404 when a logged-in user is not a member of the tenant', function (
 
 it('ignores members whose staff row is disabled or deleted', function () {
     $user = User::factory()->create();
-    $staff = Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id, 'status' => 'disabled']);
+    $staff = inTenant($this->a, fn () => Staff::factory()->create(['user_id' => $user->id, 'status' => 'disabled']));
 
     $this->actingAs($user)->get('/app/a/__staff')->assertNotFound();
 
@@ -50,8 +61,8 @@ it('ignores members whose staff row is disabled or deleted', function () {
 
 it('remembers the last opened tenant', function () {
     $user = User::factory()->create();
-    Staff::factory()->create(['tenant_id' => $this->a->id, 'user_id' => $user->id]);
-    Staff::factory()->create(['tenant_id' => $this->b->id, 'user_id' => $user->id]);
+    inTenant($this->a, fn () => Staff::factory()->create(['user_id' => $user->id]));
+    inTenant($this->b, fn () => Staff::factory()->create(['user_id' => $user->id]));
 
     $this->actingAs($user)->get('/app/b/__staff')->assertOk();
 

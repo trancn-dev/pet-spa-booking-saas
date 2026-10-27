@@ -14,7 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Resolves the tenant from the `{tenant}` (slug) route parameter, `/app/{tenant}/...`.
- * Unknown slug, or a logged-in user who is not a member → 404 (never reveal existence).
+ * Unknown / closed shop (see TenantStatus::isAccessible), or a logged-in user who is not a member
+ * → 404 (never reveal existence).
  * Guests pass through so `auth` can redirect them to login.
  */
 class ResolveTenant
@@ -31,7 +32,7 @@ class ResolveTenant
             ? $slug
             : (is_string($slug) ? Tenant::query()->where('slug', $slug)->first() : null);
 
-        abort_if($tenant === null || $tenant->status !== 'active', 404);
+        abort_if($tenant === null || ! $tenant->status->isAccessible(), 404);
 
         $user = $request->user();
         if ($user !== null) {
