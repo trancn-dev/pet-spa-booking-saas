@@ -1,8 +1,8 @@
 # Sơ đồ đặt lịch đồng thời (chống vượt hạn mức online)
 
-Minh họa cho `design/db-schema.md` mục 5.1 và `design/adr/0002-booking-capacity-lock.md`. Action `BookAppointment` dùng chung cho Site và lễ tân. Bản xem trực quan: `design/so-do-dat-lich.html`.
+Minh họa cho `docs/database/db-schema.md` mục 5.1 và `docs/adr/0002-booking-capacity-lock.md`. Action `BookAppointment` dùng chung cho Site và lễ tân. Bản xem trực quan: `docs/design/so-do-dat-lich.html`.
 
-> **Lưu ý:** sơ đồ 1 và 4 vẽ theo **2 đề xuất trong ADR-0002 đang chờ xác nhận**: (a) transaction chạy `READ COMMITTED`, (b) kiểm `idempotency_key` sau khi khóa `customers`. Lý do ở sơ đồ 3.
+> **Đã chốt (27/10/2026):** kết nối MySQL chạy `READ COMMITTED` (ADR-0002 a); kiểm `idempotency_key` sau khi khóa `customers` và khóa hạn mức (ADR-0002 b); chỗ online còn = `min(hạn mức online − dòng online đang chiếm, người trực − tổng dòng đang chiếm)`; pet vừa khám vừa spa trong một lịch chạy nối tiếp (mặc định khám trước). Nguyên tắc: **khóa trước, đọc sau**.
 
 ---
 
@@ -15,39 +15,37 @@ sequenceDiagram
   autonumber
   participant A as Request A (khách An)
   participant B as Request B (khách Bình)
-  participant DB as MySQL
-  Note over A,DB: Khung 09:00 · khám · CS1 · hạn mức online 1 · đang chiếm 0
-  par Trước transaction (autocommit)
-    A->>DB: INSERT IGNORE booking_capacity_locks (t1, CS1, medical, 05/11)
-    DB-->>A: 1 row (tạo hàng)
+  participant DB as MySQL (READ COMMITTED)
+  Note over A,DB: Khung 09:00 · khám · CS1 · hạn mức online 1 · người trực 3 · đang chiếm 0
+  par Bước 0, ngoài transaction (autocommit)
+    A->>DB: INSERT booking_capacity_locks (t1, CS1, medical, 05/11) ON DUPLICATE KEY UPDATE tenant_id = tenant_id
+    DB-->>A: tạo hàng
   and
-    B->>DB: INSERT IGNORE cùng hàng
-    DB-->>B: 0 row (đã có, bỏ qua)
+    B->>DB: INSERT … ON DUPLICATE KEY UPDATE (cùng hàng)
+    DB-->>B: đã có, không đổi gì
   end
-  A->>DB: BEGIN (READ COMMITTED)
-  B->>DB: BEGIN (READ COMMITTED)
+  A->>DB: BEGIN
+  B->>DB: BEGIN
   A->>DB: SELECT customers An FOR UPDATE
   B->>DB: SELECT customers Bình FOR UPDATE
   Note over A,B: Khác khách nên không chờ nhau
-  A->>DB: idempotency_key đã có? Chưa
-  B->>DB: idempotency_key đã có? Chưa
-  A->>DB: Kiểm pet của khách, dịch vụ ở cơ sở, giờ mở cửa
-  B->>DB: Kiểm pet của khách, dịch vụ ở cơ sở, giờ mở cửa
   A->>DB: SELECT booking_capacity_locks (CS1, medical, 05/11) FOR UPDATE
-  DB-->>A: Cấp khóa X
+  DB-->>A: Cấp khóa X (đếm: 1 hàng = đủ)
   B->>DB: SELECT booking_capacity_locks (CS1, medical, 05/11) FOR UPDATE
   Note right of B: Chờ A nhả khóa
-  A->>DB: Đếm dòng online chồng giờ nhóm khám
-  DB-->>A: 0
-  Note over A: 0 + 1 dòng mới ≤ 1 → còn chỗ
+  A->>DB: idempotency_key đã có? Chưa
+  A->>DB: Kiểm pet của khách, dịch vụ ở cơ sở, giờ mở cửa, giới hạn đặt online
+  A->>DB: Đếm dòng chồng khung: online 0, tất cả 0
+  Note over A: min(1 − 0, 3 − 0) = 1 ≥ 1 dòng mới → còn chỗ
   A->>DB: Pet của An có dòng khác chồng giờ? Không
   A->>DB: UPDATE tenant_usage SET count = count + 1 WHERE count < quota
-  A->>DB: INSERT appointments, appointment_items, appointment_changes
+  A->>DB: INSERT appointments, appointment_items (source=online), appointment_changes
   A->>DB: COMMIT
   DB-->>B: Cấp khóa X
-  B->>DB: Đếm dòng online chồng giờ nhóm khám
-  DB-->>B: 1 (thấy dòng A vừa commit)
-  Note over B: 1 + 1 > 1 → hết chỗ
+  B->>DB: idempotency_key đã có? Chưa
+  B->>DB: Đếm dòng chồng khung (snapshot mới, thấy dòng A)
+  DB-->>B: online 1, tất cả 1
+  Note over B: min(1 − 1, 3 − 1) = 0 < 1 → hết chỗ
   B->>DB: ROLLBACK
   B-->>B: SlotTakenException → 409 + 3 khung gần nhất còn chỗ
   A-->>A: Sau commit: AppointmentBooked → tạo reminders
@@ -55,24 +53,25 @@ sequenceDiagram
 
 Điểm cần thấy:
 - Chỉ **một hàng** bị khóa cho cả ngày × nhóm × cơ sở. Không khóa dải `appointment_items`, nên không có gap lock.
-- Hai khách khác nhau chỉ chờ nhau ở hàng khóa hạn mức. Cùng khách thì chờ nhau từ hàng `customers` (chặn 1 pet bị đặt 2 lịch chồng giờ ở 2 nhóm khác nhau).
+- Mọi câu đọc dùng để quyết định (idempotency, đếm chỗ, chồng giờ pet) chạy **sau** khi đã giữ khóa.
+- Hai khách khác nhau chỉ chờ nhau ở hàng khóa hạn mức. Cùng khách thì chờ nhau từ hàng `customers` (chặn 1 pet bị đặt 2 lịch chồng giờ ở 2 nhóm khác nhau, và chặn 2 request trùng `idempotency_key`).
 - `tenant_usage` là hàng nóng của cả shop nên khóa **cuối cùng**, giữ ngắn nhất.
-- Lễ tân đặt (`source=staff`) đi cùng đường nhưng không bị chặn ở bước đếm; vượt số người trực thì chỉ trả cờ cảnh báo.
+- Lễ tân đặt (`source=staff`) đi cùng đường nhưng không bị chặn ở bước đếm; vượt số người trực thì chỉ trả cờ cảnh báo. Dòng lễ tân vẫn làm giảm chỗ online qua vế `người trực − tổng dòng`.
 
 ---
 
-## 2. Vì sao không `INSERT IGNORE` hàng khóa trong transaction
+## 2. Vì sao tạo hàng khóa ngoài transaction, và không dùng `INSERT IGNORE`
 
-Hàng khóa đã tồn tại từ trước. Nếu `INSERT IGNORE` nằm trong transaction, bản ghi trùng làm InnoDB đặt khóa **S** lên hàng đó.
+Nếu câu tạo hàng nằm **trong** transaction, bản ghi trùng làm InnoDB đặt khóa **S** lên hàng đó.
 
 ```mermaid
 sequenceDiagram
   participant A as Transaction A
   participant B as Transaction B
   participant DB as MySQL
-  A->>DB: BEGIN · INSERT IGNORE hàng khóa (trùng)
+  A->>DB: BEGIN · INSERT hàng khóa (trùng)
   DB-->>A: Bỏ qua, nhưng A giữ khóa S
-  B->>DB: BEGIN · INSERT IGNORE hàng khóa (trùng)
+  B->>DB: BEGIN · INSERT hàng khóa (trùng)
   DB-->>B: Bỏ qua, B cũng giữ khóa S
   A->>DB: SELECT … FOR UPDATE (xin nâng lên X)
   Note right of A: Chờ B nhả S
@@ -82,11 +81,14 @@ sequenceDiagram
   Note over A,B: Với 20 tiến trình, gần như mọi lần chạy đều gặp
 ```
 
-Cách chặn: `INSERT IGNORE` chạy **autocommit trước** transaction. Khóa S nhả ngay khi câu lệnh xong. Trong transaction chỉ còn `SELECT … FOR UPDATE`.
+Cách chặn:
+- Bước 0 chạy **autocommit trước** `DB::transaction`; code assert `DB::transactionLevel() === 0` để không ai gọi lồng trong transaction khác. Khóa của câu INSERT nhả ngay khi câu lệnh xong. Trong transaction chỉ còn `SELECT … FOR UPDATE`.
+- Dùng `INSERT … ON DUPLICATE KEY UPDATE tenant_id = tenant_id`, không dùng `INSERT IGNORE`: `INSERT IGNORE` biến cả lỗi FK (branch của shop khác) thành cảnh báo, câu lệnh "thành công" mà không có hàng.
+- Sau `SELECT … FOR UPDATE`, **đếm số hàng khóa được**; thiếu (hàng bị xóa, sai tham số) thì ném exception thay vì chạy tiếp mà không có khóa.
 
 ---
 
-## 3. Lỗ hổng nếu giữ REPEATABLE READ (lý do của đề xuất a)
+## 3. Lỗ hổng nếu giữ REPEATABLE READ (lý do chọn READ COMMITTED)
 
 InnoDB ở REPEATABLE READ (mặc định) chụp snapshot ở **câu đọc thường đầu tiên** trong transaction, không phải lúc lấy khóa. `SELECT … FOR UPDATE` đọc bản mới nhất, nhưng câu `COUNT` đếm chỗ là đọc thường, nên vẫn đọc theo snapshot cũ.
 
@@ -95,8 +97,8 @@ sequenceDiagram
   participant A as Request A
   participant B as Request B
   participant DB as MySQL (REPEATABLE READ)
-  A->>DB: BEGIN · đọc services, idempotency (đọc thường)
-  B->>DB: BEGIN · đọc services, idempotency (đọc thường)
+  A->>DB: BEGIN · đọc services (đọc thường)
+  B->>DB: BEGIN · đọc services (đọc thường)
   Note right of B: Snapshot của B chụp ở đây (T0)
   A->>DB: SELECT hàng khóa FOR UPDATE · cấp X
   B->>DB: SELECT hàng khóa FOR UPDATE
@@ -110,9 +112,11 @@ sequenceDiagram
   Note over A,B: 2 lịch trong khung chỉ có 1 chỗ: vượt hạn mức
 ```
 
-Mục 5.1 hiện tại có bước 1 (kiểm idempotency) và bước 2 (kiểm dịch vụ, giờ mở cửa) đều là đọc thường, nằm **trước** bước khóa 3. Nên lỗi này xảy ra thật. Test 20 tiến trình có thể bắt được, nhưng chập chờn tùy thời điểm.
+Chỉ cần một câu đọc thường bất kỳ chạy trước khi lấy khóa (model binding, kiểm quyền, middleware, hay chính code của Action) là lỗi xảy ra. Sắp xếp "khóa trước, đọc sau" giảm rủi ro nhưng không đủ, vì không kiểm soát được mọi câu đọc trước đó trong cùng transaction.
 
-Cách chặn (đề xuất a trong ADR-0002): đặt `isolation_level = READ COMMITTED` cho kết nối MySQL của app (Laravel `config/database.php`, khóa `isolation_level`). Ở READ COMMITTED mỗi câu đọc thường lấy snapshot mới, nên câu đếm chạy sau khi có khóa luôn thấy dữ liệu đã commit. Đặt ở mức kết nối, không dùng `SET TRANSACTION` trước `DB::transaction()`, vì `SET TRANSACTION` chỉ áp cho **một** transaction kế tiếp, lần retry do deadlock sẽ quay lại REPEATABLE READ.
+Cách chặn: `isolation_level = READ COMMITTED` ở kết nối MySQL của app (`config/database.php`). Ở READ COMMITTED mỗi câu đọc thường lấy snapshot mới, nên câu đếm chạy sau khi có khóa luôn thấy dữ liệu đã commit. Đặt ở mức kết nối, không dùng `SET TRANSACTION` trước `DB::transaction()`, vì `SET TRANSACTION` chỉ áp cho **một** transaction kế tiếp, lần retry do deadlock sẽ quay lại REPEATABLE READ. Server cần `binlog_format=ROW` (mặc định MySQL 8.4).
+
+Test giữ lâu dài: chạy đúng kịch bản trên bằng 2 kết nối, một kết nối RR (test chứng minh vượt hạn mức) và một kết nối RC (đúng hạn mức).
 
 ---
 
@@ -120,25 +124,33 @@ Cách chặn (đề xuất a trong ADR-0002): đặt `isolation_level = READ COM
 
 ```mermaid
 flowchart TD
-  S([Request đặt / dời / thêm dòng]) --> P0["Bước 0: INSERT IGNORE hàng booking_capacity_locks<br/>mọi (ngày, nhóm) liên quan · autocommit"]
+  S([Request đặt / dời / thêm dòng]) --> A0{"DB::transactionLevel() === 0?"}
+  A0 -- không --> E0([LogicException: không gọi lồng])
+  A0 -- có --> P0["Bước 0: INSERT … ON DUPLICATE KEY UPDATE<br/>hàng booking_capacity_locks mọi (ngày, nhóm) · autocommit"]
   P0 --> T{{"BEGIN · READ COMMITTED"}}
   T --> L1["Khóa 1: customers FOR UPDATE"]
-  L1 --> I{"idempotency_key<br/>đã có?"}
-  I -- có --> R1([Trả lịch cũ])
-  I -- chưa --> V["Kiểm: pet của khách · dịch vụ có ở cơ sở<br/>cơ sở mở cửa · giờ trong khung trực"]
-  V --> L2["Khóa 2: booking_capacity_locks FOR UPDATE<br/>(ngày, nhóm) tăng dần · medical trước grooming"]
-  L2 --> C{"Nguồn online:<br/>chiếm + dòng mới > hạn mức<br/>ở khung nào?"}
+  L1 --> L2["Khóa 2: booking_capacity_locks FOR UPDATE<br/>(ngày, nhóm) tăng dần · medical trước grooming"]
+  L2 --> N{"Số hàng khóa được<br/>= số (ngày, nhóm)?"}
+  N -- thiếu --> E4([Exception: thiếu hàng khóa])
+  N -- đủ --> I{"idempotency_key<br/>đã có?"}
+  I -- "có, đúng khách" --> R1([Trả lịch cũ])
+  I -- "có, khách khác" --> R2([422])
+  I -- chưa --> V["Kiểm: pet của khách · dịch vụ có ở cơ sở<br/>cơ sở mở cửa · giờ trong khung trực<br/>giới hạn đặt online · xếp dòng nối tiếp"]
+  V --> C{"Nguồn online:<br/>dòng mới > min(hạn mức online − online chiếm,<br/>người trực − tổng chiếm) ở khung nào?"}
   C -- vượt --> E1([SlotTakenException · 409 + gợi ý giờ])
   C -- đủ chỗ / lễ tân --> PET{"Pet có dòng khác<br/>chồng giờ?"}
   PET -- có --> E2([Lỗi trùng lịch pet])
   PET -- không --> L3["Khóa 3: tenant_usage<br/>UPDATE … WHERE count < quota<br/>(bỏ qua khi dời lịch)"]
   L3 --> Q{"affected = 0?"}
   Q -- có --> E3([QuotaExceededException])
-  Q -- không --> W["INSERT appointments, appointment_items,<br/>appointment_changes"]
+  Q -- không --> W["INSERT appointments, appointment_items (chép source),<br/>appointment_changes"]
   W --> CM{{COMMIT}}
+  W -. "duplicate idempotency_key (lưới an toàn)" .-> I
   CM --> EV([AppointmentBooked afterCommit → reminders])
-  CM -. deadlock / lock wait timeout .-> RT["Retry tối đa 3 lần<br/>(DB::transaction attempts: 3)"]
+  CM -. deadlock / lock wait timeout .-> RT["Retry tối đa 3 lần<br/>(DB::transaction(fn, 3))"]
   RT -.-> T
 ```
 
 Dời lịch sang ngày hoặc nhóm khác: bước 0 tạo hàng cho cả (ngày, nhóm) cũ và mới, bước khóa 2 khóa tất cả theo (ngày, nhóm) tăng dần, nên 2 lần dời chéo ngày đồng thời không deadlock.
+
+Pet vừa khám vừa spa trong một lịch: hai dòng xếp nối tiếp (mặc định khám trước, spa bắt đầu khi khám kết thúc), mỗi dòng có `starts_at` riêng và được đếm ở khung của chính nó. Nếu hai dòng rơi vào 2 ngày khác nhau (khám sát nửa đêm) thì bước 0 và khóa 2 gồm cả hai ngày.

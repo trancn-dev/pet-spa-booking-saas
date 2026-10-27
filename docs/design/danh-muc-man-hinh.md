@@ -1,8 +1,8 @@
 # Danh mục màn hình: PawBook
 
-Nguồn tên màn hình **duy nhất** cho Claude Design, Claude Code và Claude AI. Khi nói về một màn, luôn ghi **mã + tên** (vd `S17 Visit`). Nội dung chi tiết từng màn vẫn ở `design/design.md` mục 6; file này chỉ chốt **mã, tên, đường dẫn, thứ tự**.
+Nguồn tên màn hình **duy nhất** cho Claude Design, Claude Code và Claude AI. Khi nói về một màn, luôn ghi **mã + tên** (vd `S17 Visit`). Nội dung chi tiết từng màn vẫn ở `docs/design/design.md` mục 6; file này chỉ chốt **mã, tên, đường dẫn, thứ tự**.
 
-Nguồn đối chiếu: `design/design.md` (mục 4, 5, 6), `design/db-schema.md`, `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md`, `plan/implementation-plan.md`.
+Nguồn đối chiếu: `docs/design/design.md` (mục 4, 5, 6), `docs/database/db-schema.md`, `docs/analysis/nghiep-vu-da-chot.md`, `docs/plan/implementation-plan.md`.
 
 ---
 
@@ -27,9 +27,11 @@ Mã đã cấp **không bao giờ đổi hoặc dùng lại**, kể cả khi mà
 |---|---|---|
 | Claude Design (frame) | `{Mã} {Tên} / {biến thể} / {trạng thái}` | `S17 Visit / Khám / default`, `S6 Site đặt lịch / Bước 4 / slot vừa hết` |
 | Trạng thái chuẩn | `default`, `loading`, `empty`, `error`, `no-permission`, `quota`, `suspended`, `dark`, `tablet`, `mobile` | `S18 Thu ngân / quota` |
-| Laravel route name | `app.*` (CMS), `site.*` (Site), `admin.*` (Admin), không tiền tố cho route trung tâm | `app.visits.show` |
-| Trang Vue (Inertia) | Suy từ route name: `app.visits.show` → `resources/js/Pages/App/Visits/Show.vue` | `site.booking.create` → `Pages/Site/Booking/Create.vue` |
-| Drawer / modal | Component riêng, không có trang: `Components/{Khu}/{Tên}Drawer.vue` | `AppointmentFormDrawer.vue` (S2) |
+| Laravel route name | `app.*` (CMS), `site.*` (Site), `admin.*` (Admin), `account.*` (tài khoản cá nhân), không tiền tố cho route trung tâm khác | `app.visits.show` |
+| Controller | Theo khu: `App\Http\Controllers\Cms\…` (CMS, route `app.*`), `…\Site\…`, `…\Admin\…`, `…\Account\…`, `…\Auth\…` | `Cms\VisitController@show` |
+| Trang Vue (Inertia) | Thư mục gốc **chữ thường** giữ theo starter kit: `resources/js/pages/`, `resources/js/components/`, `resources/js/layouts/`; thư mục con theo khu **PascalCase**: `Cms`, `Site`, `Admin`, `Account`, `Auth`. Suy từ route name: `app.visits.show` → `resources/js/pages/Cms/Visits/Show.vue` | `site.booking.create` → `pages/Site/Booking/Create.vue` |
+| Layout | `resources/js/layouts/{Cms,Site,Admin,Auth,Print,Bare}Layout.vue` | `Print` cho S40, `Bare` cho S16.1 TV, kiosk |
+| Drawer / modal | Component riêng, không có trang: `components/{Khu}/{Tên}Drawer.vue` | `components/Cms/AppointmentFormDrawer.vue` (S2) |
 | Branch, PR, commit | Nhắc mã màn trong mô tả | `feat(S15): tiếp nhận + cấp cứu` |
 | Test | `describe('S15 Tiếp nhận', …)` | |
 
@@ -82,7 +84,7 @@ Theo thứ tự build trong plan (Phase 4 → 12) để màn luôn có thiết k
 | 3 | Danh mục | S10 → S4 → S9 → S9.1 → S8 | 5.1–5.3 |
 | 4 | Lịch hẹn | S2 → S1 → S3 → S20 | 5.4–5.7 |
 | 5 | Quầy + Visit + tiền | S15 → S16 → S16.1 → S17 → S35 → S18 → S19 → S40 | 5.8–5.11 |
-| 6 | Nhắc, bệnh án, tiêm | S41 → S12.4 → S7 (bệnh án, sổ tiêm là tab của S4, vẽ lại nếu cần) | 6.1–6.3 |
+| 6 | Nhắc, bệnh án, tiêm | S41 → S12.4 → S44 → S7 (bệnh án, sổ tiêm là tab của S4, vẽ lại nếu cần) | 6.1–6.3 |
 | 7 | Site khách | S42 → S43 → S21 → S6 → S14 → S21.1 → S33 → S12.5 | 7.1 |
 | 8 | Tổng quan, báo cáo | S5 → S30 → S32 | 9.1 |
 | 9 | Kho (GĐ2) | S22 → S22.1 → S24 → S24.1 → S24.2 → S24.3 → S23 → S19 (bản đủ) → S31 → S25 | 11.1–11.5 |
@@ -90,7 +92,7 @@ Theo thứ tự build trong plan (Phase 4 → 12) để màn luôn có thiết k
 
 ### 2.1 Prompt mẫu cho Claude Design
 
-**Lần đầu (một lần, mở project mới):** đính kèm `design/design.md`, `design/danh-muc-man-hinh.md`, `SKILL.md` của frontend-design, rồi gửi:
+**Lần đầu (một lần, mở project mới):** đính kèm `docs/design/design.md`, `docs/design/danh-muc-man-hinh.md`, `SKILL.md` của frontend-design, rồi gửi:
 
 ```
 Đây là tài liệu thiết kế PawBook (design.md), danh mục mã màn (danh-muc-man-hinh.md) và một skill thiết kế.
@@ -140,7 +142,7 @@ Vai trò viết tắt: **Chủ** (chủ shop), **QL** (quản lý chi nhánh), *
 | S37 | Quên / đặt lại mật khẩu | Trang | `/forgot-password`, `/reset-password/{token}` | `password.request`, `password.reset` | Mọi nhân viên | users | MVP | P1 |
 | S13 | Nhận lời mời + checklist lần đầu | Trang | `/invite/{token}` | `invitations.accept` | Chủ, nhân viên | invitations, staff, users | MVP | P1 |
 | S38 | **Đã bỏ** (gộp vào trạng thái lỗi của S36: không còn shop đang hoạt động thì không cho đăng nhập) | — | — | — | — | — | — | — |
-| S39 | Tài khoản cá nhân | Trang | `/account` | `account.edit` | Mọi nhân viên | users | MVP | P1 |
+| S39 | Tài khoản cá nhân (hồ sơ, mật khẩu, giao diện). **Không có chức năng xóa tài khoản**: tài khoản dùng chung nhiều shop | Trang | `/account` (`/account/password`, `/account/appearance`) | `account.edit`, `account.password`, `account.appearance` | Mọi nhân viên | users | MVP | P1 |
 
 ### 3.3 CMS (`/app/{slug}`)
 
@@ -153,8 +155,10 @@ URL dưới đây bỏ tiền tố `/app/{slug}`; route name có tiền tố `ap
 | S5 | Tổng quan | Trang | `/dashboard` | `app.dashboard` | Chủ (bản đủ); LT, BS, Spa (rút gọn) | appointments, invoices, pet_vaccinations, tenant_usage, notifications | MVP | P0 |
 | S1 | Lịch hẹn | Trang | `/appointments` (`?view=day\|week\|staff`) | `app.appointments.index` | Mọi nhân viên | appointments, appointment_items, staff_working_hours, branch_closures | MVP | P0 |
 | S2 | Đặt lịch (CMS) | Drawer | trên S1, S5, S7, S4 | `app.appointments.store` | LT, Chủ | appointments, appointment_items, customers, pets, service_price_rules | MVP | P0 |
+
+S2 và S6: một pet vừa khám vừa spa thì hai dòng xếp **nối tiếp** (mặc định khám trước), form hiện giờ bắt đầu riêng từng dòng; lễ tân đổi được thứ tự. Lưới khung hiện "chỗ online còn" = `min(hạn mức online còn, người trực − tổng dòng đang chiếm)` (db-schema 2.5).
 | S3 | Chi tiết lịch hẹn | Drawer | `/appointments/{public_id}` | `app.appointments.show` | Mọi nhân viên | appointments, appointment_items, appointment_changes, message_deliveries | MVP | P0 |
-| S20 | Cần gọi hôm nay | Trang | `/appointments/call-list` | `app.appointments.call-list` | LT | appointments, reminders, message_deliveries | MVP | P1 |
+| S20 | Cần gọi hôm nay (+ lịch bị ảnh hưởng bởi ngày nghỉ / nghỉ đột xuất) | Trang | `/appointments/call-list` | `app.appointments.call-list` | LT | appointments, reminders, message_deliveries, branch_closures, staff_time_off | MVP | P1 |
 | S15 | Tiếp nhận | Trang | `/reception` | `app.reception.index` | LT | customers, pets, visits, invoices, appointments | MVP | P0 |
 | S16 | Hàng đợi hôm nay | Trang | `/queue` (`?group=medical\|grooming`) | `app.queue.index` | LT, BS, Spa | visits, branch_daily_counters | MVP | P0 |
 | S16.1 | Hàng đợi: chế độ TV phòng chờ | Trang | `/queue/tv` | `app.queue.tv` | Màn hình phòng chờ | visits | MVP | P1 |
@@ -174,6 +178,7 @@ URL dưới đây bỏ tiền tố `/app/{slug}`; route name có tiền tố `ap
 | S10 | Khách | Trang | `/customers`, `/customers/{id}` | `app.customers.index`, `.show` | LT, Chủ, QL | customers, pets, appointments, invoices | MVP | P1 |
 | S4 | Hồ sơ thú cưng | Trang + Tab | `/pets/{id}?tab=overview\|history\|medical\|vaccination` | `app.pets.show` | Mọi nhân viên (theo quyền) | pets, visits, medical_records, medical_entries, medical_entry_addenda, pet_vaccinations | MVP | P0 |
 | S7 | Tiêm phòng đến hạn | Trang | `/vaccinations/due` | `app.vaccinations.due` | BS, LT | pet_vaccinations, care_protocols, vaccines, reminders | MVP | P0 |
+| S44 | Phác đồ tiêm & danh mục vaccine | Trang | `/care-protocols` (`/care-protocols/{id}`) | `app.care-protocols.index`, `.show` | Chủ, BS | vaccines, care_protocols, care_protocol_steps | MVP | P1 |
 | S9 | Dịch vụ, combo | Trang | `/services` | `app.services.index` | Chủ | services, service_combo_items, branch_services | MVP | P1 |
 | S9.1 | Chi tiết dịch vụ: quy tắc giá/thời lượng (+ vật tư định mức GĐ2) | Trang + Tab | `/services/{id}` | `app.services.show` | Chủ | service_price_rules, service_consumables (GĐ2) | MVP | P1 |
 
@@ -276,9 +281,16 @@ Mã cha giữ nguyên; màn con chỉ để đưa Claude Design từng phần ch
 
 1. **S34** để trống, không dùng lại.
 2. **URL Site tiếng Việt** (`/dang-nhap`, `/tai-khoan`, `/dieu-khoan`, `/dich-vu`, `/dat-lich`, `/lich-hen/{public_id}`, `/san-pham`); CMS, Admin tiếng Anh; route name luôn tiếng Anh.
-3. **Mã mới** S36, S37, S39, S40, S41, S42, S43, K4 như bảng trên. **S38 đã bỏ**: nhân viên luôn thuộc shop (admin tạo shop → chủ shop → cơ sở → mời nhân viên), user không còn dòng `staff` active ở shop nào thì bị chặn ngay ở S36.
+3. **Mã mới** S36, S37, S39, S40, S41, S42, S43, S44, K4 như bảng trên. **S38 đã bỏ**: nhân viên luôn thuộc shop (admin tạo shop → chủ shop → cơ sở → mời nhân viên), user không còn dòng `staff` active ở shop nào thì bị chặn ngay ở S36.
 4. **Mời admin nền tảng:** chọn lời mời, có bảng `platform_admin_invitations` (db-schema 2.1) và màn A7. Admin đầu tiên vẫn tạo bằng lệnh artisan.
 5. **S19 Bán lẻ:** MVP chỉ dòng gõ tay + thanh toán, dùng khung S18; Claude Design vẽ bản đủ ở đợt 9 (GĐ2).
 6. **S27.1 Kiosk:** `/{slug}/kiosk`, ngoài `/app`, không đăng nhập user; thiết bị nhận diện bằng token `attendance_devices` (chủ đăng ký thiết bị, token lưu cookie dài hạn).
 
-`design/design.md` mục 5 trỏ sang file này; mọi mã màn chỉ chốt ở đây.
+Bổ sung 27/10/2026:
+
+7. **S44 Phác đồ tiêm & danh mục vaccine** (CRUD `vaccines`, `care_protocols`, `care_protocol_steps`), làm ở task 6.3. Landing page đổi đề xuất sang **S45** (chờ xác nhận).
+8. **S39** ở `/account`, controller `Account\…`, route `account.*`; bỏ chức năng xóa tài khoản của starter kit.
+9. Frontend giữ `resources/js/pages/`, `components/`, `layouts/` chữ thường, thư mục con PascalCase theo khu (mục 1.2). Controller CMS ở namespace `App\Http\Controllers\Cms`, route name `app.*`.
+10. Màn chưa có task trước đây nay đã gắn task trong plan: S5 khung (4.3), S12.1 (4.3), S12.5 (7.1), S12.6 (4.5, 4.6), S16.1 (5.8), S40 (5.8, 5.10, 5.11), S37 + S39 (Bước 1 / 1.3), S44 (6.3).
+
+`docs/design/design.md` mục 5 trỏ sang file này; mọi mã màn chỉ chốt ở đây.

@@ -2,7 +2,7 @@
 
 Tài liệu thiết kế giao diện, là input cho **Claude Design**. Đọc hết rồi sinh prototype theo design system, danh sách màn hình và luồng bên dưới. Tên "PawBook" là tên tạm.
 
-Nguồn nghiệp vụ: `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md`. Dữ liệu: `design/db-schema.md`. Giai đoạn: **MVP**, **GĐ2** (kho), **GĐ3** (ca, chấm công, lương), **Sau V1** (không vẽ).
+Nguồn nghiệp vụ: `docs/analysis/nghiep-vu-da-chot.md`. Dữ liệu: `docs/database/db-schema.md`. Giai đoạn: **MVP**, **GĐ2** (kho), **GĐ3** (ca, chấm công, lương), **Sau V1** (không vẽ).
 
 ---
 
@@ -212,7 +212,7 @@ Admin /admin
 
 ## 5. Danh sách màn hình
 
-Mã, tên, đường dẫn, giai đoạn, ưu tiên (**P0** vẽ trước, **P1** bố cục chuẩn) và thứ tự đưa Claude Design của **mọi** màn (K0–K4, S1–S43, A1–A7, màn con `Sx.n`) nằm ở **`design/danh-muc-man-hinh.md`**: nguồn mã màn duy nhất. Mục 6 dưới đây chỉ đặc tả nội dung các màn chính; màn không có đặc tả riêng ở đây (S36 Đăng nhập CMS, S37 Quên mật khẩu, S39 Tài khoản cá nhân, S40 Mẫu in, S41 Thông báo, S42 Trang chủ shop, S43 Dịch vụ & giá, A7 Admin nhận lời mời) vẽ theo mô tả ngắn trong danh mục, dùng lại component mục 3.
+Mã, tên, đường dẫn, giai đoạn, ưu tiên (**P0** vẽ trước, **P1** bố cục chuẩn) và thứ tự đưa Claude Design của **mọi** màn (K0–K4, S1–S43, A1–A7, màn con `Sx.n`) nằm ở **`docs/design/danh-muc-man-hinh.md`**: nguồn mã màn duy nhất. Mục 6 dưới đây chỉ đặc tả nội dung các màn chính; màn không có đặc tả riêng ở đây (S36 Đăng nhập CMS, S37 Quên mật khẩu, S39 Tài khoản cá nhân, S40 Mẫu in, S41 Thông báo, S42 Trang chủ shop, S43 Dịch vụ & giá, A7 Admin nhận lời mời) vẽ theo mô tả ngắn trong danh mục, dùng lại component mục 3.
 
 ---
 

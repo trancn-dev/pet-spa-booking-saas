@@ -1,8 +1,8 @@
 # Brief landing page: PawBook
 
-Brief để dán thẳng vào **Claude Design**, thiết kế trang giới thiệu sản phẩm PawBook tại `pawbook.vn/`. Mọi nội dung lấy từ tài liệu chốt: `project-brief.md`, `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md`, `design/design.md`, `design/danh-muc-man-hinh.md`, `plan/implementation-plan.md`. Tên "PawBook" là tên tạm.
+Brief để dán thẳng vào **Claude Design**, thiết kế trang giới thiệu sản phẩm PawBook tại `pawbook.vn/`. Mọi nội dung lấy từ tài liệu chốt: `project-brief.md`, `docs/analysis/nghiep-vu-da-chot.md`, `docs/design/design.md`, `docs/design/danh-muc-man-hinh.md`, `docs/plan/implementation-plan.md`. Tên "PawBook" là tên tạm.
 
-Đính kèm khi gửi Claude Design: file này + `design/design.md` + `design/skills/frontend-design/SKILL.md`. Prompt mẫu ở mục 9.
+Đính kèm khi gửi Claude Design: file này + `docs/design/design.md` + `design/skills/frontend-design/SKILL.md`. Prompt mẫu ở mục 9.
 
 ---
 
@@ -12,7 +12,7 @@ Brief để dán thẳng vào **Claude Design**, thiết kế trang giới thi�
 |---|---|
 | Trang | Landing page giới thiệu, một trang dài, có neo cho từng section |
 | URL | `pawbook.vn/` (route trung tâm, không thuộc shop nào) |
-| Mã màn đề xuất | **S44 Landing page giới thiệu** (số kế tiếp sau S43). Chưa có trong `danh-muc-man-hinh.md`, cần chủ dự án xác nhận rồi mới ghi vào. Route name đề xuất `home`, trang Vue `Pages/Home.vue` |
+| Mã màn đề xuất | **S45 Landing page giới thiệu** (S44 đã cấp cho Phác đồ tiêm ngày 27/10). Chưa có trong `danh-muc-man-hinh.md`, cần chủ dự án xác nhận rồi mới ghi vào. Route name đề xuất `home`, trang Vue `pages/Site/Home.vue` |
 | Mục tiêu chính | Chủ pet spa / phòng khám thú y hiểu sản phẩm trong 1 phút và **để lại thông tin để được tư vấn** hoặc **xem demo** |
 | Mục tiêu phụ | Người xem CV / nhà tuyển dụng thấy được độ sâu nghiệp vụ và có link tới mã nguồn |
 | Thiết bị | **Desktop 1440px** là khung chính, **mobile 390px** bắt buộc (thử 360px), tablet 1024px chỉ cần không vỡ |
@@ -48,7 +48,7 @@ Brief để dán thẳng vào **Claude Design**, thiết kế trang giới thi�
 
 ## 3. Phong cách hình ảnh
 
-Bám `design/design.md` mục 3. Token của design.md **ưu tiên hơn skill**; skill frontend-design chỉ dùng để nâng chất lượng bố cục, nhịp chữ và chi tiết.
+Bám `docs/design/design.md` mục 3. Token của design.md **ưu tiên hơn skill**; skill frontend-design chỉ dùng để nâng chất lượng bố cục, nhịp chữ và chi tiết.
 
 **Cảm giác:** ấm áp, sạch sẽ, đáng tin như phòng khám, thân thiện như tiệm spa. Không hoạt hình quá đà; icon dấu chân chỉ điểm xuyết (logo, một chỗ trang trí nhỏ).
 
@@ -297,7 +297,7 @@ Touch target ≥ 44px, body 16px trên mobile (tránh iOS zoom ô nhập).
 
 ## 9. Prompt gửi Claude Design
 
-Đính kèm: `design/landing-page-brief.md` (file này), `design/design.md`, `design/skills/frontend-design/SKILL.md`. Rồi gửi:
+Đính kèm: `docs/design/landing-page-brief.md` (file này), `docs/design/design.md`, `design/skills/frontend-design/SKILL.md`. Rồi gửi:
 
 ```
 Đây là brief landing page PawBook (landing-page-brief.md), tài liệu thiết kế hệ thống (design.md) và skill frontend-design.
@@ -306,9 +306,9 @@ Quy tắc:
 - Nội dung, section, copy theo landing-page-brief.md. Không thêm tính năng, số liệu hay testimonial ngoài brief.
 - Token màu, font, icon, component theo design.md mục 3 và landing-page-brief.md mục 3. Token ưu tiên hơn skill; skill dùng để nâng bố cục, nhịp chữ và chi tiết, và để tránh các mẫu "trông như AI làm".
 - Hình chính là mockup giao diện PawBook dựng từ component design.md mục 3.5 với dữ liệu mẫu mục 9.
-- Đặt tên frame: "S44 Landing page / {section hoặc toàn trang} / {trạng thái}".
+- Đặt tên frame: "S45 Landing page / {section hoặc toàn trang} / {trạng thái}".
 
-Vẽ S44 Landing page giới thiệu:
+Vẽ S45 Landing page giới thiệu:
 1. Toàn trang desktop 1440px, light.
 2. Toàn trang mobile 390px, light.
 3. Bản dark cho desktop.
@@ -318,4 +318,4 @@ Vẽ S44 Landing page giới thiệu:
 Trước khi vẽ, viết ngắn kế hoạch thiết kế (màu, chữ, bố cục ASCII của hero và phần tính năng), tự rà xem chỗ nào đang là mặc định chung chung thì sửa, rồi mới vẽ.
 ```
 
-Vòng sửa sau: đưa từng section, ví dụ `Sửa S44 Landing page / Bảng giá: Pro nổi bật hơn, mobile Pro lên đầu.`
+Vòng sửa sau: đưa từng section, ví dụ `Sửa S45 Landing page / Bảng giá: Pro nổi bật hơn, mobile Pro lên đầu.`

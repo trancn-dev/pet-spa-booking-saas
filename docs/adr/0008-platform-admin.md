@@ -32,4 +32,4 @@ Nhà cung cấp (admin nền tảng) tạo shop, gán gói + hạn dùng, tạm 
 - Test: token đăng nhập thay dùng 2 lần, hết hạn, dùng với slug shop khác → 404; route nhạy cảm bị chặn; hết 30 phút bị đăng xuất.
 
 ## Liên quan
-`design/db-schema.md` mục 2.1, 5.7 · plan task 4.1, 4.5, 4.6.
+`docs/database/db-schema.md` mục 2.1, 5.7 · plan task 4.1, 4.5, 4.6.

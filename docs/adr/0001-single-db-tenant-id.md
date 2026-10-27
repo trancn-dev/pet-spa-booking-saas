@@ -37,4 +37,4 @@ PawBook là SaaS cho pet spa / phòng khám thú y. Khách hàng là shop nhỏ 
 - PHPStan rule báo lỗi khi gọi `withoutGlobalScope(s)` ngoài whitelist.
 
 ## Liên quan
-`design/db-schema.md` mục 1, 5.2 · ADR-0004 · ADR-0008.
+`docs/database/db-schema.md` mục 1, 5.2 · ADR-0004 · ADR-0008.

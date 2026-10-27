@@ -9,8 +9,8 @@ Dự án cá nhân để làm đẹp CV ở mức senior Laravel. Chứng minh k
 - Ba khu: **CMS** cho nhân viên (`/app/{slug}`), **Site** cho khách (`/{slug}`, đặt lịch, OTP, lịch sử), **Admin** cho nhà cung cấp (`/admin`).
 
 ## Tài liệu chốt
-- Nghiệp vụ: `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` (+ sơ đồ cùng thư mục).
-- Dữ liệu: `design/db-schema.md`. Giao diện: `design/design.md`. Mã màn: `design/danh-muc-man-hinh.md`. Kế hoạch: `plan/implementation-plan.md`.
+- Nghiệp vụ: `docs/analysis/nghiep-vu-da-chot.md` (+ sơ đồ cùng thư mục).
+- Dữ liệu: `docs/database/db-schema.md`. Giao diện: `docs/design/design.md`. Mã màn: `docs/design/danh-muc-man-hinh.md`. Kế hoạch: `docs/plan/implementation-plan.md`.
 - Bản cũ ở `old/` (cùng cấu trúc thư mục).
 
 ## Kỹ thuật
@@ -39,4 +39,4 @@ Dự án cá nhân để làm đẹp CV ở mức senior Laravel. Chứng minh k
 - README có sơ đồ kiến trúc, ADR, số liệu (coverage, p95 đặt lịch) và demo link.
 
 ## Lộ trình
-Xem `plan/implementation-plan.md` (phase 1–10 MVP, 11 GĐ2, 12 GĐ3). Phase 1–2 đã xong trên nhánh `dev`.
+Xem `docs/plan/implementation-plan.md` (phase 1–10 MVP, 11 GĐ2, 12 GĐ3). Phase 1–2 đã xong trên nhánh `dev`.
