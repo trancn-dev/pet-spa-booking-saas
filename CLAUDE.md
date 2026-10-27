@@ -69,6 +69,8 @@ Rules when adding features:
 - Customers (pet owners, table `customers`, never "owners": `owner` is the shop-owner role) are identified by phone (`customers.phone`, unique per tenant, shared across branches) and log into the Site with phone + SMS OTP (separate `customer` guard, not `users`). Strays attach to a per-branch system customer (`is_system`, `system_branch_id`).
 - Time: all DATETIME stored in UTC; shift times are TIME in the shop's local timezone (`tenants.timezone`). Convert at the edges only.
 - Counter tables use the column `last_value` (db-schema 2.10), a reserved word in MySQL 8: backtick it in every raw SQL statement.
+- Platform admin area (`/admin`, task 4.1): `routes/admin.php` + middleware group `platform` (own session cookie `pawbook_admin_session`, no tenant middleware), guard `platform`, code in `App\Platform\*`, models in `App\Models\Platform\*`. Protected pages 404 for anyone but an active admin who passed TOTP. First admin: `php artisan platform:admin-create {email}`. Demo admins `admin@pawbook.test` / `support@pawbook.test` (password `password`) can skip 2FA only when `APP_ENV=local|demo` and `PLATFORM_SKIP_2FA=true`. `withoutTenancy()` is allowed only in `App\Platform` and `App\Tenancy` (arch test).
+- Inertia pages live in `resources/js/pages` (lower case); `config/inertia.php` points the testing page finder there.
 - Booking/concurrency tests must run on MySQL (SQLite ignores row locks): mark them with `->group('mysql')`.
 
 ## Conventions

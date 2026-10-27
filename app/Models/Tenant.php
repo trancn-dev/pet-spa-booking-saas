@@ -15,12 +15,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * A shop. The tenant itself is intentionally NOT tenant-scoped.
  * Routes bind it by slug (`/app/{tenant:slug}`); public_id is for links outside the CMS.
  *
  * @property TenantStatus $status
+ * @property Carbon|null $plan_expires_at
  */
 class Tenant extends Model
 {

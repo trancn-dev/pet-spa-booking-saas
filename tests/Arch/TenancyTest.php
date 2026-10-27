@@ -44,6 +44,24 @@ it('never calls withoutGlobalScope(s) outside the whitelist', function () {
     expect($offenders)->toBe([]);
 });
 
+/*
+| Cross-tenant work is only for the platform area and the tenancy core itself (ADR 0008).
+| Add a command here explicitly if it ever needs it.
+*/
+it('calls withoutTenancy() only from App\\Platform and the tenancy core', function () {
+    $allowed = ['app/Platform/', 'app/Tenancy/'];
+    $commands = [];
+
+    $offenders = collect(new RecursiveIteratorIterator(new RecursiveDirectoryIterator(app_path())))
+        ->filter(fn (SplFileInfo $f) => $f->isFile() && $f->getExtension() === 'php')
+        ->filter(fn (SplFileInfo $f) => preg_match('/->withoutTenancy\s*\(/', (string) file_get_contents($f->getPathname())) === 1)
+        ->map(fn (SplFileInfo $f) => str_replace(base_path().'/', '', $f->getPathname()))
+        ->reject(fn (string $path) => in_array($path, $commands, true) || collect($allowed)->contains(fn (string $dir) => str_starts_with($path, $dir)))
+        ->values()->all();
+
+    expect($offenders)->toBe([]);
+});
+
 arch('no debugging helpers')
     ->expect(['dd', 'dump', 'ray', 'var_dump'])
     ->not->toBeUsed();

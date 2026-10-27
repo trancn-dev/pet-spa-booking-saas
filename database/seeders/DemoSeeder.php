@@ -16,6 +16,7 @@ use App\Enums\PaymentKind;
 use App\Enums\PaymentMethod;
 use App\Enums\PetSex;
 use App\Enums\PetSize;
+use App\Enums\PlatformAdminRole;
 use App\Enums\ServiceGroup;
 use App\Enums\TenantStatus;
 use App\Enums\VaccinationStatus;
@@ -41,6 +42,7 @@ use App\Models\Payment;
 use App\Models\Pet;
 use App\Models\PetVaccination;
 use App\Models\Plan;
+use App\Models\Platform\PlatformAdmin;
 use App\Models\Platform\TenantSubscription;
 use App\Models\Service;
 use App\Models\ServicePriceRule;
@@ -86,6 +88,8 @@ class DemoSeeder extends Seeder
     /** @var array<array-key, int> */
     private array $breeds = [];
 
+    private ?int $adminId = null;
+
     /** @var array<string, Staff> */
     private array $staff = [];
 
@@ -104,6 +108,15 @@ class DemoSeeder extends Seeder
         $this->today = CarbonImmutable::now(self::TZ)->startOfDay();
         $this->species = Species::query()->pluck('id', 'code')->map(fn ($id): int => (int) $id)->all();
         $this->breeds = Breed::query()->pluck('id', 'name')->map(fn ($id): int => (int) $id)->all();
+
+        // Platform admins without 2FA: they can sign in only where TwoFactor::canSkip() holds
+        // (APP_ENV local / demo + PLATFORM_SKIP_2FA); anywhere else they must set up TOTP first.
+        $this->adminId = PlatformAdmin::query()->create([
+            'name' => 'Nguyễn Văn A', 'email' => 'admin@pawbook.test', 'password' => self::PASSWORD, 'role' => PlatformAdminRole::SuperAdmin,
+        ])->id;
+        PlatformAdmin::query()->create([
+            'name' => 'Lê Thị Hỗ Trợ', 'email' => 'support@pawbook.test', 'password' => self::PASSWORD, 'role' => PlatformAdminRole::Support,
+        ]);
 
         $this->pawHouse();
         $this->meowClinic();
@@ -504,6 +517,7 @@ class DemoSeeder extends Seeder
             'plan_id' => $plan->id,
             'status' => $status,
             'plan_expires_at' => $expiresAt,
+            'created_by_admin_id' => $this->adminId,
             ...$extra,
         ]);
 
@@ -516,6 +530,7 @@ class DemoSeeder extends Seeder
                 'amount' => $plan->code === 'pro' ? 6_000_000 : 2_400_000,
                 'paid_at' => $expiresAt->subYear(),
                 'payment_ref' => 'CK-'.Str::upper(Str::random(8)),
+                'created_by_admin_id' => $this->adminId,
             ]);
         }
 
