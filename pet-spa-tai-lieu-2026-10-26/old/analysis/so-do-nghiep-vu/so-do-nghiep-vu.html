@@ -1,0 +1,1322 @@
+<title>Nghiệp vụ PawBook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: một cột tài liệu, mục lục dính bên trái trên màn rộng; sơ đồ cuộn ngang trong khung riêng */
+:root{
+  --paper:#f5f5f5; --paper-2:#ffffff; --ink:#2d3142; --muted:#5d6275; --rule:#d9dae0;
+  --accent:#bf4520; --accent-tint:#f6e3da;
+  --open:#bf4520; --open-bg:#fbeee7;
+  --assume:#3f5f99; --assume-bg:#e8eef8;
+  --done:#2f7a4f; --done-bg:#e3f2e8;
+  --diff:#8a6400; --diff-bg:#fbf1d3;
+  --prop:#6b4aa0; --prop-bg:#efe8f8;
+  --f-display:"Instrument Serif", Georgia, serif;
+  --f-body:"Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1b1d24; --paper-2:#23262f; --ink:#e7e8ee; --muted:#a3a7b6; --rule:#383c48;
+  --accent:#e2754f; --accent-tint:#3a2620;
+  --open:#f08a64; --open-bg:#3a2620; --assume:#93b1e6; --assume-bg:#1f2a40;
+  --done:#7ccb9c; --done-bg:#1d3326; --diff:#e2be5c; --diff-bg:#352c14; --prop:#bba0e8; --prop-bg:#2c2440;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1b1d24; --paper-2:#23262f; --ink:#e7e8ee; --muted:#a3a7b6; --rule:#383c48;
+  --accent:#e2754f; --accent-tint:#3a2620;
+  --open:#f08a64; --open-bg:#3a2620; --assume:#93b1e6; --assume-bg:#1f2a40;
+  --done:#7ccb9c; --done-bg:#1d3326; --diff:#e2be5c; --diff-bg:#352c14; --prop:#bba0e8; --prop-bg:#2c2440;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.6 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:24px}}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;font-size:13px}
+@media (max-width:900px){nav.toc{position:static}}
+nav.toc .eyebrow{margin-bottom:8px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+nav.toc a{display:block;padding:4px 12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;margin-left:-1px}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);border-left-color:var(--accent);outline:none}
+main{min-width:0}
+.eyebrow{font:500 11px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:400 44px/1.1 var(--f-display);margin:8px 0 12px;text-wrap:balance}
+h2{font:400 30px/1.2 var(--f-display);margin:0 0 8px;text-wrap:balance}
+h3{font:600 15px/1.4 var(--f-body);margin:24px 0 8px}
+p{margin:0 0 12px;max-width:72ch}
+.lede{color:var(--muted);max-width:68ch}
+section{padding-top:48px;margin-top:48px;border-top:1px solid var(--rule);scroll-margin-top:16px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font:12px/1.5 var(--f-mono);color:var(--muted);margin-top:16px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+.tag{display:inline-block;font:500 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 6px;border-radius:2px;border:1px solid currentColor;white-space:nowrap;vertical-align:1px}
+.t-done{color:var(--done);background:var(--done-bg)}
+.t-assume{color:var(--assume);background:var(--assume-bg)}
+.t-open{color:var(--open);background:var(--open-bg)}
+.t-diff{color:var(--diff);background:var(--diff-bg)}
+.t-prop{color:var(--prop);background:var(--prop-bg)}
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:6px;background:var(--paper-2)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+th{font:500 11px/1.4 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td code,p code,li code{font:12.5px var(--f-mono);background:var(--paper);padding:1px 4px;border-radius:3px}
+.cards{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+@media (max-width:700px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;min-width:0}
+.card h3{margin-top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card ul{margin:0;padding-left:18px}
+.card li{margin:4px 0}
+.diagram{background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:20px;overflow-x:auto;margin:16px 0 8px}
+.diagram pre.mermaid{margin:0;min-width:760px;background:transparent}
+.dmeta{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 16px;font-size:14px;margin:12px 0}
+.dmeta dt{font:500 11px/1.9 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dmeta dd{margin:0}
+@media (max-width:560px){.dmeta{grid-template-columns:minmax(0,1fr)}}
+details{margin:8px 0 0}
+summary{cursor:pointer;font:500 12px var(--f-mono);color:var(--muted);padding:4px 0}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+pre.src{font:12px/1.5 var(--f-mono);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px;overflow-x:auto;margin:8px 0 0;white-space:pre}
+button.copy{font:500 11px var(--f-mono);border:1px solid var(--rule);background:var(--paper-2);color:var(--ink);border-radius:4px;padding:4px 8px;cursor:pointer;margin-top:8px}
+button.copy:focus-visible{outline:2px solid var(--accent)}
+.notes{display:flex;flex-direction:column;gap:8px;margin:12px 0 0;padding:0;list-style:none}
+.notes li{font-size:14px;padding-left:0}
+.q{background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:12px 0}
+.q h3{margin:0 0 6px}
+.q .src-line{font-size:13px;color:var(--muted);margin-bottom:8px}
+.opts{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:8px 0 0}
+.opt{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;font-size:14px}
+.opt b{font:600 13px var(--f-mono)}
+.opt.rec b{color:var(--accent)}
+.opt .pc{color:var(--muted);font-size:13px}
+.group{font:400 22px/1.3 var(--f-display);margin:32px 0 4px}
+.plan{counter-reset:d}
+.plan td:first-child{font:500 12px var(--f-mono);color:var(--muted);white-space:nowrap}
+.now td{background:var(--accent-tint)}
+</style><style>
+.done td{color:var(--muted)}
+.t-new{color:var(--done);background:var(--done-bg);border-style:double;border-width:3px}
+.mx{min-width:900px}
+.mx td{font-size:12.5px}
+.mx td:not(:first-child){text-align:center}
+.mx th:not(:first-child){text-align:center}
+.mx .full{color:var(--done);font-weight:600}
+.mx .lim{color:var(--diff)}
+.mx .no{color:var(--muted)}
+.mx .sec td{background:var(--paper);font:500 11px/1.4 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left}
+.mx sup{color:var(--assume);font-weight:600}
+details.hist{border:1px solid var(--rule);border-radius:6px;padding:8px 14px;background:var(--paper-2);margin-top:16px}
+details.hist[open] summary{margin-bottom:8px}
+</style>
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục">
+  <div class="eyebrow">Mục lục</div>
+  <ol>
+    <li><a href="#chot">Đã chốt 20/10</a></li>
+    <li><a href="#cau-hoi">Câu hỏi</a></li>
+    <li><a href="#danh-sach">Danh sách sơ đồ</a></li>
+    <li><a href="#d1">1 · System Overview</a></li>
+    <li><a href="#d2">2 · Customer Journey</a></li>
+    <li><a href="#d3">3 · Lịch hẹn</a></li>
+    <li><a href="#d4">4 · Khách mới</a></li>
+    <li><a href="#d5">5 · Khách đã có hồ sơ</a></li>
+    <li><a href="#d6">6 · Khám bệnh</a></li>
+    <li><a href="#d7">7 · Spa, tiêm phòng</a></li>
+    <li><a href="#d8">8 · Hóa đơn, thanh toán</a></li>
+    <li><a href="#d9">9 · Vai trò và quyền</a></li>
+    <li><a href="#d10">10 · Đa chi nhánh</a></li>
+    <li><a href="#d11">11 · Kho, đơn thuốc</a></li>
+    <li><a href="#d12">12 · Ngoại lệ</a></li>
+    <li><a href="#phan-tich">Phân tích vai trò, đối tượng</a></li>
+    <li><a href="#lo-hong">Còn thiếu</a></li>
+    <li><a href="#lien-quan">Liên quan 50 mâu thuẫn</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">Pet Shop &amp; Thú y · Phân tích nghiệp vụ · Vòng 4</div>
+  <h1>Nghiệp vụ và sơ đồ quy trình</h1>
+  <p class="lede">Đặc tả nghiệp vụ ngày 20/10/2026 so với tài liệu v5, cập nhật theo câu trả lời nhóm 1–4. Đã có sơ đồ 1–5 (tổng quan, hành trình, lịch hẹn, khách mới, khách đã có hồ sơ); 6–8 (khám bệnh, spa, tiêm phòng, hóa đơn); vòng 4 thêm sơ đồ 9 (vai trò và quyền), 10 (đa chi nhánh), 11 (kho, đơn thuốc), 12 (ngoại lệ). Đủ 12 sơ đồ, đã chốt nhóm 1–16 và mục 10, 11, 20, 49. Chưa đụng code, database, API, giao diện; chưa sửa db-schema, design, plan.</p>
+  <div class="legend" aria-label="Chú thích nhãn">
+    <span class="tag t-new">Chốt 20/10</span>
+    <span class="tag t-done">Đã xác định v5</span>
+    <span class="tag t-diff">Khác v5</span>
+    <span class="tag t-assume">Assumption</span>
+    <span class="tag t-open">Open question</span>
+    <span class="tag t-prop">Đề xuất</span>
+  </div>
+  <p class="lede" style="margin-top:12px;font-size:13.5px"><b>Chốt 20/10</b> = bạn trả lời trong thread này. <b>Đã xác định v5</b> = đã chốt trong tài liệu 17–19/10 và chưa bị thay. <b>Assumption</b> = Claude giả định để vẽ, chờ bạn xác nhận. <b>Open question</b> = chưa ai quyết. Trong sơ đồ: ô viền cam đứt là chỗ chưa chốt, ô viền xanh chấm là giả định, ô xám là sau V1.</p>
+  <div class="meta"><span>Cập nhật 20/10/2026, vòng 4</span><span>Nguồn: đặc tả 20/10 · trả lời nhóm 1–16 · db-schema/design/plan v5</span></div>
+</header>
+
+<section id="chot">
+  <div class="eyebrow">Cập nhật vòng 2</div>
+  <h2>Đã chốt ngày 20/10</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Câu</th><th>Bạn chốt</th><th>Hệ quả cho sơ đồ</th></tr></thead>
+    <tbody>
+      <tr><td>1.1</td><td>Không đặt cọc, không thu trước khi đặt lịch, không trả một phần, không công nợ. Hóa đơn trả đủ một lần. Có thể cân nhắc lại sau.</td><td>Bỏ nhánh "trả sau" và "đặt cọc". Không cần cổng thanh toán online ở V1.</td></tr>
+      <tr><td>1.2</td><td>Visit tách khỏi hóa đơn. Visit là một lượt dùng dịch vụ (khám, spa) tại shop; hóa đơn gom các Visit và hàng mua thêm.</td><td>Visit dừng ở "Hoàn tất", bỏ trạng thái <code>invoiced</code> của v5.</td></tr>
+      <tr><td>1.3</td><td>Hóa đơn có hai trạng thái: chưa hoàn thành, hoàn thành. Chưa hoàn thành thì thêm hàng được. Trả đủ tiền là hoàn thành. Lễ tân/thu ngân hủy được hóa đơn (trên CMS, khách không có quyền). Sau khi hoàn thành chỉ chủ shop sửa.</td><td>Trạng thái hóa đơn: chưa hoàn thành → hoàn thành, cộng "đã hủy". Hai câu phát sinh: 5.1, 5.2.</td></tr>
+      <tr><td>2.1</td><td>Có màn quản lý role; tạo sẵn một số role; một nhân viên nhiều role.</td><td>Thu ngân, quản lý chi nhánh, kho là role mẫu, không còn là giả định.</td></tr>
+      <tr><td>2.2</td><td>Phương án A: bác sĩ xem đầy đủ; lễ tân, groomer chỉ thấy cảnh báo và ngày khám; thu ngân, kho không thấy. Bác sĩ chi nhánh khác vẫn xem vì hồ sơ dùng chung.</td><td>Ma trận quyền ở vòng 4.</td></tr>
+      <tr><td>3.1</td><td>Cấp cứu: Pet vào khám ngay, khách ở lại quầy làm hồ sơ. Shop chỉ ưu tiên: ca cấp cứu chen lên, các số đang chờ lùi một bậc.</td><td>Nhánh cấp cứu ở sơ đồ 2, 4, 5. Không có "hồ sơ tạm".</td></tr>
+      <tr><td>3.2</td><td>Không thêm trạng thái. Lịch hẹn chỉ để tham khảo (biết giờ đó có thể có khách), để hệ thống nhắc hẹn và phân bác sĩ trực.</td><td>Sơ đồ 3. Ba câu phát sinh: 6.1–6.3.</td></tr>
+      <tr><td>3.3</td><td>Không ghi xác nhận chi phí. Báo giá và thỏa thuận miệng trước; hóa đơn thêm dòng: chọn từ danh mục thì tự điền giá, chưa có thì gõ tên và giá.</td><td>Bỏ ô "khách đồng ý chi phí". Hóa đơn có dòng gõ tay.</td></tr>
+      <tr><td>4.1</td><td>Hiện tại chỉ lưu hồ sơ chủ, thú cưng, bệnh án. Tích điểm, giảm giá, khuyến mãi để sau.</td><td>Bỏ bước membership khỏi mọi luồng. Sơ đồ 5 đổi tên thành "Khách đã có hồ sơ".</td></tr>
+      <tr><td>5.1</td><td>Chủ shop bấm "Sửa" hóa đơn đã hoàn thành: hệ thống giữ bản cũ ở trạng thái hủy, tạo bản sửa thay thế; tiền chênh ghi thu thêm hoặc trả lại.</td><td>Sơ đồ 8 (vòng 3).</td></tr>
+      <tr><td>5.2</td><td>Lễ tân hủy được hóa đơn chưa hoàn thành, bắt buộc lý do; chủ shop nhận thông báo, có mục "Hóa đơn đã hủy" trong báo cáo ngày.</td><td>Sơ đồ 2, 8.</td></tr>
+      <tr><td>6.1</td><td>Hạn mức đặt online theo tỉ lệ: chủ shop đặt số người trực của ca và tỉ lệ nhận online, riêng cho khám và spa. Số lịch online cùng lúc ≤ số người trực × tỉ lệ, làm tròn xuống. Ví dụ ca có 3 bác sĩ, tỉ lệ 1/3 → 1 lịch online cùng lúc. Lý do: khám thường là khách đến đột xuất, spa thì đặt trước nhiều.</td><td>Thay cơ chế "gán bác sĩ cụ thể khi đặt" của v5. Sơ đồ 3b, bảng 3c. Bốn câu phát sinh: 7.1–7.4.</td></tr>
+      <tr><td>6.2</td><td>Bỏ trạng thái "Hoàn thành" của lịch hẹn; lịch dừng ở "Đã đến".</td><td>Sơ đồ 3a.</td></tr>
+      <tr><td>6.3</td><td>Cuối ngày hệ thống tự đánh dấu lịch không đến, không phạt; lễ tân đánh dấu sớm được.</td><td>Sơ đồ 3a, 3b.</td></tr>
+      <tr><td>6.4</td><td>Đặt online: chưa đăng nhập thì xác minh OTP; đã đăng nhập thì lấy luôn thông tin khách. Lịch xác nhận ngay.</td><td>Bỏ trạng thái "Chờ xác nhận".</td></tr>
+      <tr><td>7.1</td><td>Số người trực tự đếm từ lịch làm việc theo role; người nghỉ thì hạn mức tự giảm. Chủ shop chỉ đặt tỉ lệ.</td><td>Sơ đồ 3c.</td></tr>
+      <tr><td>7.2</td><td>Lịch online không gán bác sĩ cụ thể; giữ một chỗ của nhóm, người làm được phân khi khách đến. Khách ghi chú được người mình muốn.</td><td>Sơ đồ 3b, 5.</td></tr>
+      <tr><td>7.3</td><td>Lịch lễ tân đặt không tính vào tỉ lệ online; tổng lịch vượt số người trực thì lễ tân thấy cảnh báo nhưng vẫn lưu được.</td><td>Sơ đồ 3b.</td></tr>
+      <tr><td>7.4</td><td>Mỗi chi nhánh một tỉ lệ cho khám, một cho spa; ca nào cần khác thì đặt riêng.</td><td>Sơ đồ 3c.</td></tr>
+      <tr><td>8.1</td><td>Bệnh án có số hồ sơ; mỗi lần khám thêm một dòng chi tiết. Sửa chỉ sửa dòng chi tiết đó; ai lập dòng thì người đó sửa, trong 24 giờ.</td><td>Sơ đồ 6b (cấu trúc bệnh án).</td></tr>
+      <tr><td>8.2</td><td>Xét nghiệm là dịch vụ thêm vào Visit; kết quả ghi chữ, đính kèm ảnh/PDF; không có phòng xét nghiệm riêng.</td><td>Sơ đồ 6a.</td></tr>
+      <tr><td>9.1</td><td>Groomer chụp ảnh tình trạng lúc nhận và lúc trả (tùy chọn), đính kèm Visit.</td><td>Sơ đồ 7a.</td></tr>
+      <tr><td>10.1</td><td>Giảm giá theo đợt khuyến mãi (danh sách sản phẩm được giảm) và giảm theo hạng thành viên tích điểm. Chỉ ghi lại, chưa làm lúc này.</td><td>Sơ đồ 8 không có bước giảm giá. Câu phát sinh 11.1.</td></tr>
+      <tr><td>10.2</td><td>Trả hàng: lễ tân mở hóa đơn đã mua, chọn sản phẩm và số lượng trả, hàng cộng lại kho, trả tiền mặt hoặc chuyển khoản; ghi nhận hoàn tiền và trừ vào doanh thu.</td><td>Sơ đồ 8d. Đây là đường riêng, khác "chủ shop sửa hóa đơn". Câu phát sinh 11.2, 11.3.</td></tr>
+      <tr><td>10.3</td><td>Có ca thu ngân: tiền đầu ca, cuối ca đếm két, ghi chênh lệch.</td><td>Sơ đồ 8e. Câu phát sinh 11.4.</td></tr>
+      <tr><td>10.4</td><td>Tính giá hiện tại lúc thêm vào Visit. Lịch hẹn ghi rõ "giá tham khảo, có thể thay đổi theo tình hình thực tế".</td><td>Sơ đồ 3b.</td></tr>
+      <tr><td>11.1</td><td>Không giảm giá tay. Khuyến mãi theo chiến dịch: mỗi đợt có danh sách sản phẩm, đặt giá khuyến mãi từng món hoặc một % cho cả danh sách. Chỉ ghi lại, chưa làm.</td><td>Sơ đồ 8b không có bước giảm giá.</td></tr>
+      <tr><td>11.2</td><td>Trả hàng trong số ngày chủ cài (mặc định 7 ngày); quá hạn chỉ chủ shop làm.</td><td>Sơ đồ 8d.</td></tr>
+      <tr><td>11.3</td><td>Hàng trả về phải kiểm tay trước khi nhận. Hàng nguyên: cộng tồn ngay. Hàng lỗi: ghi nhận, chưa cộng tồn, chủ shop xử lý (ví dụ bán giảm giá). Hàng hết hạn: báo hủy.</td><td>Sơ đồ 8d, 11b.</td></tr>
+      <tr><td>11.4</td><td>Ca thu ngân theo két: nhiều người thu chung một ca, mỗi khoản ghi tên người thu.</td><td>Sơ đồ 8e.</td></tr>
+      <tr><td>12.1</td><td>Danh mục sản phẩm, dịch vụ dùng chung toàn shop; tồn kho riêng từng cơ sở.</td><td>Sơ đồ 10a.</td></tr>
+      <tr><td>12.2</td><td>Nhân viên có cơ sở chính, chủ gán thêm cơ sở phụ. Phải có ca trực mới xếp lịch khám được.</td><td>Sơ đồ 10a, 10c.</td></tr>
+      <tr><td>12.3</td><td>Giá bán giống nhau ở mọi cơ sở.</td><td>Sơ đồ 10a.</td></tr>
+      <tr><td>12.4</td><td>Mỗi ca trực gắn một cơ sở; không xếp một người 2 ca chồng giờ ở 2 cơ sở. Chấm công tự lấy cơ sở của ca đang trực; ngoài lịch thì chọn cơ sở, chủ duyệt.</td><td>Sơ đồ 10c.</td></tr>
+      <tr><td>13.1</td><td>Thuốc, vật tư trừ kho khi hoàn tất Visit; hàng bán trừ khi hóa đơn hoàn thành. Lúc kê chỉ kiểm còn đủ, không giữ hàng.</td><td>Sơ đồ 11a.</td></tr>
+      <tr><td>13.2</td><td>Giá vốn nhập trên phiếu nhập hàng rồi phân cho từng cơ sở. Lần nhập sau giá vốn có thể khác; chủ shop tự quyết có chỉnh giá bán hay không (giá bán vẫn chung).</td><td>Sơ đồ 11a, 11b. Xem 15.1.</td></tr>
+      <tr><td>13.3</td><td>Hàng lỗi do chủ xử lý; có thể tạo mã sản phẩm riêng để bán giảm giá.</td><td>Sơ đồ 11b.</td></tr>
+      <tr><td>14.1</td><td>Đồng ý ma trận quyền như vẽ.</td><td>Sơ đồ 9.</td></tr>
+      <tr><td>14.2</td><td>Khách xem ngày khám, chẩn đoán, hướng dẫn chăm sóc, thuốc đã kê, sổ tiêm, lịch tái khám; không xem ghi chú nội bộ.</td><td>Sơ đồ 9.</td></tr>
+      <tr><td>15.1</td><td>Giá bán một giá hiện hành cho mọi hộp còn tồn, chủ tự chỉnh, không phụ thuộc giá vốn (ví dụ: lô 180k, lô 190k, chủ nâng giá lên 250k thì bán cả 15 hộp 250k). Giá vốn chỉ để chủ xem lợi nhuận, khách không thấy.</td><td>Sơ đồ 11a. Cách tính giá vốn trong báo cáo lợi nhuận: Assumption theo lô thực xuất.</td></tr>
+      <tr><td>15.2</td><td>Chủ làm việc với nhà cung cấp; hàng về cơ sở nào thì nhập ở cơ sở đó. Ai nhập gì: xem 16.1.</td><td>Sơ đồ 11b.</td></tr>
+      <tr><td>15.1 bổ sung</td><td>Cùng một giá bán, nhưng lô nhập trước bán hết mới lấy lô sau. Giá vốn trong báo cáo lợi nhuận vì vậy là giá của lô đang xuất.</td><td>Sơ đồ 11a. <span class="tag t-diff">Khác v5</span> v5 xuất lô hạn gần trước.</td></tr>
+      <tr><td>16.1</td><td>Nhân viên kho lập phiếu nhập chỉ có sản phẩm, số lượng (không thấy giá); chủ mở phiếu trên hệ thống của chủ, điền giá nhập để quản lý chi tiêu, lợi nhuận. Kho còn sắp xếp, lấy hàng, báo hao hụt (ví dụ chuột cắn bịch thức ăn).</td><td>Sơ đồ 9, 11b. Thay mô tả 15.2.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="cau-hoi">
+  <div class="eyebrow">Cần bạn quyết định</div>
+  <h2>Không còn câu hỏi</h2>
+  <p>Nhóm 1–16 đã trả lời. Hai điểm Claude tự đặt mặc định, bạn đổi được bất cứ lúc nào:</p>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Tồn kho cộng ngay khi nhân viên kho lưu phiếu nhập (hàng đã nằm trong kho); giá nhập để trống đến khi chủ điền. Báo cáo lợi nhuận đánh dấu các món còn thiếu giá nhập.</li>
+    <li><span class="tag t-assume">Assumption</span> Lô đã hết hạn thì bỏ qua khi xuất; nếu lô sau có hạn gần hơn lô trước, hệ thống chỉ cảnh báo cận hạn như bình thường, không đổi thứ tự.</li>
+  </ul>
+  <p>Bước tiếp theo là thread "Rà mâu thuẫn" sửa db-schema, design, plan theo bản tổng hợp.</p>
+</section>
+
+<section id="danh-sach">
+  <div class="eyebrow">Giai đoạn 2 · Sơ đồ</div>
+  <h2>Danh sách sơ đồ</h2>
+  <div class="scroll"><table class="plan">
+    <thead><tr><th>Vòng</th><th>Sơ đồ</th><th>Loại</th><th>Tình trạng</th></tr></thead>
+    <tbody>
+      <tr class="done"><td>1</td><td>1. System Overview</td><td>Context + phân hệ</td><td>Đã cập nhật theo chốt 20/10</td></tr>
+      <tr class="done"><td>1</td><td>2. Customer Journey</td><td>Flowchart theo giai đoạn</td><td>Đã cập nhật theo chốt 20/10</td></tr>
+      <tr class="done"><td>2</td><td>3. Lịch hẹn (đặt, đổi, hủy, no-show)</td><td>State + flowchart</td><td>Đã chốt theo nhóm 6, 7</td></tr>
+      <tr class="done"><td>2</td><td>4. Khách mới đến trực tiếp</td><td>Flowchart</td><td>Bản nháp</td></tr>
+      <tr class="done"><td>2</td><td>5. Khách đã có hồ sơ (có hẹn, vãng lai)</td><td>Flowchart</td><td>Bản nháp</td></tr>
+      <tr class="done"><td>3</td><td>6. Khám bệnh</td><td>Theo vai trò (sequence)</td><td>Đã chốt theo nhóm 8</td></tr>
+      <tr class="done"><td>3</td><td>7. Spa và tiêm phòng</td><td>Theo vai trò (sequence)</td><td>Đã chốt theo nhóm 9</td></tr>
+      <tr class="done"><td>3</td><td>8. Hóa đơn và thanh toán</td><td>State + flowchart</td><td>Đã chốt theo nhóm 10, 11</td></tr>
+      <tr class="done"><td>4</td><td>9. Vai trò và quyền</td><td>Ma trận quyền</td><td>Đã chốt theo nhóm 14</td></tr>
+      <tr class="now"><td>4 · nay</td><td>10. Đa chi nhánh</td><td>Flowchart + sequence</td><td>Đã chốt theo nhóm 12</td></tr>
+      <tr class="done"><td>4</td><td>11. Kho và đơn thuốc (giai đoạn 2)</td><td>Flowchart</td><td>Đã chốt nhóm 13, 15</td></tr>
+      <tr class="now"><td>4 · nay</td><td>12. Các tình huống ngoại lệ</td><td>Bảng + state chuyển kho</td><td>Bản nháp</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="d1">
+  <div class="eyebrow">Sơ đồ 1 · cập nhật vòng 2</div>
+  <h2>System Overview</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Ai dùng hệ thống, qua cửa nào, và hệ thống nói chuyện với dịch vụ ngoài nào.</dd>
+    <dt>Phạm vi</dt><dd>Mức tổng quan. Hình 1b chia phân hệ theo dữ liệu dùng chung toàn shop hay riêng chi nhánh.</dd>
+    <dt>Quyết định</dt><dd>Role mẫu do chủ shop quản lý, một người nhiều role <span class="tag t-new">Chốt 20/10</span>. Không thu tiền trước nên không cần cổng thanh toán online ở V1 <span class="tag t-new">Chốt 20/10</span>. Kênh thông báo cho khách: SMS và Zalo (mục 11) <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+
+  <h3>1a · Người dùng và hệ thống ngoài</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TB
+  subgraph STAFF["Nhân viên shop: role mẫu, một người nhiều role"]
+    direction LR
+    OW["Chủ shop"]
+    BM["Quản lý chi nhánh"]
+    RC["Lễ tân"]
+    CS["Thu ngân"]
+    VT["Bác sĩ thú y"]
+    GR["Nhân viên spa"]
+    IV["Nhân viên kho<br/><i>giai đoạn 2</i>"]
+  end
+  subgraph SYS["Hệ thống quản lý Pet Shop và Thú y"]
+    direction LR
+    CMS["CMS nhân viên<br/>vận hành chi nhánh"]
+    SITE["Site khách hàng<br/>đặt lịch, xem lịch sử"]
+    ADM["Trang admin nền tảng<br/>tạo shop, gói, tạm khóa"]
+  end
+  PA["Admin nền tảng"]
+  CU["Khách hàng / chủ nuôi"]
+  NOTI["Kênh thông báo khách<br/>SMS, Zalo"]
+  PAY["Cổng thanh toán online<br/><i>sau V1</i>"]
+  STAFF --> CMS
+  PA --> ADM
+  CU -->|"đặt lịch, OTP"| SITE
+  CMS -->|"nhắc lịch"| NOTI
+  SITE -->|"gửi OTP"| NOTI
+  NOTI -->|"tin nhắn"| CU
+  SITE -.->|"sau V1"| PAY
+  class IV,PAY later
+  classDef later fill:#eeeeee,stroke:#8a8d99,color:#4a4e5c
+</pre></div>
+
+  <h3>1b · Phân hệ: dùng chung toàn shop hay riêng chi nhánh</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  subgraph SHOP["Dùng chung toàn shop"]
+    direction TB
+    C1["Hồ sơ chủ nuôi và Pet<br/>dị ứng, bệnh nền, lưu ý"]
+    C2["Hồ sơ y tế của Pet<br/>bệnh án, tiêm phòng"]
+    C3["Danh mục dịch vụ, combo, sản phẩm, giá"]
+    C4["Tích điểm, khuyến mãi<br/><i>sau V1</i>"]
+    C5["Báo cáo doanh thu, lãi gộp"]
+  end
+  subgraph BRANCH["Riêng từng chi nhánh"]
+    direction TB
+    B1["Lịch hẹn<br/>tham khảo, nhắc hẹn"]
+    B2["Tiếp nhận, hàng đợi, Visit"]
+    B3["Hóa đơn: gom Visit + hàng mua"]
+    B4["Kho, lô, chuyển kho<br/><i>giai đoạn 2</i>"]
+    B5["Ca làm, chấm công, lương<br/><i>giai đoạn 3</i>"]
+  end
+  C1 --> B1
+  B1 -->|"check-in"| B2
+  C1 -->|"vãng lai"| B2
+  B2 -->|"chẩn đoán, tiêm"| C2
+  B2 -->|"dịch vụ"| B3
+  B2 -->|"vật tư, thuốc"| B4
+  C3 --> B3
+  C4 -.-> B3
+  B3 --> C5
+  B4 -->|"giá vốn"| C5
+  class B2 focal
+  class C4,B4,B5 later
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef later fill:#eeeeee,stroke:#8a8d99,color:#4a4e5c
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Hồ sơ y tế dùng chung: bác sĩ chi nhánh khác xem đầy đủ; lễ tân, groomer chỉ thấy cảnh báo và ngày khám.</li>
+    <li><span class="tag t-done">Đã xác định v5</span> Khách, Pet, dịch vụ, sản phẩm dùng chung; lịch, Visit, hóa đơn, kho, ca làm thuộc một chi nhánh.</li>
+    <li><span class="tag t-assume">Assumption</span> Một nhân viên làm được nhiều chi nhánh, thao tác theo chi nhánh đang chọn (đã có trong v5).</li>
+  </ul>
+</section>
+
+<section id="d2">
+  <div class="eyebrow">Sơ đồ 2 · cập nhật vòng 2</div>
+  <h2>Customer Journey</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Hành trình của khách từ lúc có nhu cầu đến khi ra về và được nhắc lần sau. Bản đồ dẫn vào sơ đồ 3–8.</dd>
+    <dt>Phạm vi</dt><dd>Một lần đến. Khách nhiều Pet thì mỗi Pet một Visit, chung một hóa đơn <span class="tag t-done">Đã xác định v5</span>.</dd>
+    <dt>Quyết định</dt><dd>Không bước membership, không đặt cọc, không trả sau <span class="tag t-new">Chốt 20/10</span>. Cấp cứu: Pet vào khám ngay, khách làm hồ sơ song song <span class="tag t-new">Chốt 20/10</span>. Phát sinh thêm: báo giá miệng rồi thêm dòng <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  subgraph S1["1 · Trước khi đến"]
+    A0(["Khách có nhu cầu"])
+    A1{"Đặt lịch trước?"}
+    A2["Đặt lịch, không thu tiền<br/>sơ đồ 3"]
+    A3["Nhắc hẹn"]
+    A4{"Khách đến?"}
+    X1(["Không đến: no-show"])
+    X2(["Đổi hoặc hủy lịch"])
+  end
+  subgraph S2["2 · Tiếp nhận tại quầy"]
+    B0["Khách đến chi nhánh"]
+    B1{"Pet cấp cứu?"}
+    E1["Pet vào khám ngay<br/>khách ở lại quầy"]
+    B2{"Tìm theo SĐT:<br/>đã có hồ sơ?"}
+    B3["Tạo hồ sơ chủ<br/>sơ đồ 4"]
+    B4["Chọn hoặc tạo Pet"]
+    B5{"Chỉ mua hàng?"}
+    B8["Tạo Visit, mở hóa đơn<br/>vào hàng đợi"]
+  end
+  subgraph S3["3 · Phục vụ"]
+    C0{"Loại dịch vụ"}
+    C1["Khám<br/>sơ đồ 6"]
+    C2["Spa<br/>sơ đồ 7"]
+    C3["Tiêm<br/>sơ đồ 7"]
+    C4{"Phát sinh thêm?"}
+    C6["Báo giá miệng<br/>khách đồng ý thì thêm dòng"]
+    C7["Hoàn tất Visit"]
+  end
+  subgraph S4["4 · Thanh toán và ra về"]
+    P0["Thêm hàng mua, chốt hóa đơn<br/>sơ đồ 8"]
+    P1{"Thanh toán đủ?"}
+    P2["Thử lại hoặc đổi phương thức"]
+    P4["Lễ tân hủy hóa đơn<br/>ghi lý do, báo chủ shop"]
+    H1["Hóa đơn hoàn thành<br/>bàn giao Pet, thuốc, hướng dẫn"]
+    H2(["Khách ra về"])
+  end
+  subgraph S5["5 · Sau khi về"]
+    F1["Nhắc tái khám, tiêm mũi sau"]
+  end
+  A0 --> A1
+  A1 -->|"Có"| A2 --> A3 --> A4
+  A1 -->|"Không"| B0
+  A4 -->|"Không"| X1
+  A4 -->|"Báo trước"| X2
+  A4 -->|"Đến"| B0
+  B0 --> B1
+  B1 -->|"Có"| E1
+  E1 --> C1
+  E1 -.->|"song song"| B2
+  B1 -->|"Không"| B2
+  B2 -->|"Chưa"| B3 --> B4
+  B2 -->|"Có"| B4
+  B4 --> B5
+  B5 -->|"Có"| P0
+  B5 -->|"Không"| B8
+  B8 --> C0
+  C0 -->|"Khám"| C1
+  C0 -->|"Spa"| C2
+  C0 -->|"Tiêm"| C3
+  C1 --> C4
+  C2 --> C4
+  C3 --> C4
+  C4 -->|"Có"| C6 --> C4
+  C4 -->|"Không"| C7
+  C7 --> P0 --> P1
+  P1 -->|"Thất bại"| P2 --> P1
+  P1 -->|"Khách bỏ về"| P4
+  P1 -->|"Đủ tiền"| H1
+  H1 --> H2 --> F1
+  F1 -.->|"lần sau"| A0
+  class C7 focal
+  class B5 assume
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+  classDef assume fill:#e8eef8,stroke:#3f5f99,stroke-dasharray:2 3,color:#2d3142
+</pre></div>
+
+  <h3>Mỗi mốc đổi trạng thái của đối tượng nào</h3>
+  <p>Mỗi đối tượng có trạng thái riêng (đặc tả 12.6).</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Mốc</th><th>Lịch hẹn</th><th>Visit</th><th>Hóa đơn</th><th>Thanh toán</th></tr></thead>
+    <tbody>
+      <tr><td>Đặt lịch</td><td>Đã xác nhận</td><td>chưa có</td><td>chưa có</td><td>không thu trước</td></tr>
+      <tr><td>Check-in hoặc vãng lai</td><td>Đã đến</td><td>Đang chờ</td><td>Chưa hoàn thành (mở ngay)</td><td>chưa có</td></tr>
+      <tr><td>Bắt đầu phục vụ</td><td>không đổi</td><td>Đang thực hiện</td><td>Chưa hoàn thành</td><td>chưa có</td></tr>
+      <tr><td>Khám/spa xong</td><td>không đổi</td><td>Hoàn tất</td><td>Chưa hoàn thành, thêm hàng được</td><td>chưa có</td></tr>
+      <tr><td>Thu đủ tiền</td><td>không đổi</td><td>không đổi</td><td>Hoàn thành</td><td>ghi từng khoản thu (tiền mặt, chuyển khoản)</td></tr>
+      <tr><td>Khách bỏ về</td><td>không đổi</td><td>không đổi (vẫn trong lịch sử Pet)</td><td>Đã hủy, có lý do</td><td>không có</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Khách chỉ mua hàng đi thẳng tới hóa đơn bán lẻ, không cần hồ sơ hay Visit (v5 cho phép).</li>
+    <li><span class="tag t-assume">Assumption</span> Thanh toán thất bại (chuyển khoản không về) không ghi gì; chỉ khoản thu thành công mới được ghi (giống v5).</li>
+  </ul>
+</section>
+
+<section id="d3">
+  <div class="eyebrow">Sơ đồ 3 · vòng 2 · bản nháp</div>
+  <h2>Lịch hẹn</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Vòng đời một lịch hẹn: đặt, nhắc, đổi, hủy, đến, không đến.</dd>
+    <dt>Phạm vi</dt><dd>Chỉ lịch hẹn. Việc gì xảy ra sau khi khách đến thuộc Visit (sơ đồ 4, 5).</dd>
+    <dt>Quyết định</dt><dd>Lịch chỉ để tham khảo, nhắc hẹn và phân bác sĩ trực; không thêm trạng thái, bỏ "Hoàn thành" <span class="tag t-new">Chốt 20/10</span>. Không thu cọc. Đặt online theo hạn mức tỉ lệ người trực, riêng khám và spa; chưa đăng nhập thì OTP <span class="tag t-new">Chốt 20/10</span>. Một lịch = một Pet + một dịch vụ, đặt nhiều dòng thì tạo nhiều lịch <span class="tag t-done">Đã xác định v5</span> (mâu thuẫn mục 18).</dd>
+  </dl>
+
+  <h3>3a · Trạng thái lịch hẹn</h3>
+  <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> DaXacNhan: đặt online (OTP hoặc đã đăng nhập) hoặc lễ tân đặt
+  DaXacNhan --> DaXacNhan: đổi giờ, lưu lịch sử
+  DaXacNhan --> DaHuy: khách hoặc lễ tân hủy
+  DaXacNhan --> DaDen: check-in, tạo Visit
+  DaXacNhan --> KhongDen: cuối ngày chưa check-in, hoặc lễ tân đánh dấu sớm
+  DaDen --> [*]
+  DaHuy --> [*]
+  KhongDen --> [*]
+  DaXacNhan: Đã xác nhận
+  DaDen: Đã đến
+  DaHuy: Đã hủy
+  KhongDen: Không đến
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Không có "Chờ xác nhận" (đặt online qua OTP), không có "Hoàn thành" (khám xong hay chưa xem ở Visit).</li>
+    <li><span class="tag t-assume">Assumption</span> Chỉ lịch "Đã xác nhận" chiếm hạn mức; hủy, không đến, đã đến trả chỗ.</li>
+  </ul>
+
+  <h3>3b · Đặt, đổi, hủy, đến</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  R0(["Yêu cầu đặt lịch"])
+  R00{"Kênh đặt"}
+  RA{"Đã đăng nhập Site?"}
+  RB["Xác minh OTP<br/>lần đầu thì tạo hồ sơ"]
+  RC["Lấy thông tin khách"]
+  RL["Lễ tân tìm hồ sơ khách"]
+  R1["Chọn chi nhánh, Pet, dịch vụ, ngày giờ"]
+  R2{"Pet thuộc khách,<br/>dịch vụ có ở chi nhánh,<br/>chi nhánh mở cửa?"}
+  R3{"Còn hạn mức?<br/>online: số lịch trùng giờ<br/>< người trực × tỉ lệ"}
+  R5["Gợi ý giờ còn chỗ gần nhất"]
+  R6["Tạo lịch Đã xác nhận<br/>gửi xác nhận kèm giá tham khảo"]
+  R7["Nhắc hẹn trước giờ hẹn"]
+  R8{"Trước giờ hẹn"}
+  R9["Đổi giờ: kiểm hạn mức như đặt mới<br/>nhả chỗ cũ, lưu lịch sử"]
+  R10(["Hủy: nhả chỗ, không phí"])
+  R11{"Ngày hẹn"}
+  R12(["Check-in, tạo Visit<br/>phân người trực, sơ đồ 5"])
+  R13(["Không đến: tự đánh dấu cuối ngày<br/>không phạt"])
+  RX(["Báo lý do, không tạo lịch"])
+  R0 --> R00
+  R00 -->|"Site"| RA
+  RA -->|"Chưa"| RB --> R1
+  RA -->|"Rồi"| RC --> R1
+  R00 -->|"Lễ tân"| RL --> R1
+  R1 --> R2
+  R2 -->|"Không"| RX
+  R2 -->|"Có"| R3
+  R3 -->|"Hết chỗ"| R5 --> R1
+  R3 -->|"Còn"| R6 --> R7 --> R8
+  R8 -->|"Đổi"| R9 --> R3
+  R8 -->|"Hủy"| R10
+  R8 -->|"Giữ"| R11
+  R11 -->|"Đến, kể cả muộn"| R12
+  R11 -->|"Không đến"| R13
+  class R3 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Lịch lễ tân đặt không tính vào tỉ lệ online; tổng lịch vượt số người trực thì cảnh báo, vẫn lưu được. Lịch không gán bác sĩ cụ thể.</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Giá trên lịch là giá tham khảo; Site và tin xác nhận ghi rõ "giá có thể thay đổi theo tình hình thực tế". Giá tính tiền lấy lúc thêm dịch vụ vào Visit.</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Khách tự đổi/hủy trên Site trước 24 giờ, chủ cài được (mục 10). Nhắc hẹn, OTP qua SMS và Zalo (mục 11).</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Khách đến muộn vẫn được check-in, xếp hàng như khách vãng lai; khách đến đúng giờ được ưu tiên ±15 phút (mục 20).</li>
+  </ul>
+
+  <h3>3c · Ví dụ tính hạn mức đặt online</h3>
+  <p>Hạn mức = số người trực của nhóm (đếm từ lịch làm việc) × tỉ lệ của chi nhánh, làm tròn xuống; ca nào có tỉ lệ riêng thì dùng tỉ lệ đó <span class="tag t-new">Chốt 20/10</span>. "Cùng lúc" là các lịch online có khoảng thời gian chồng nhau, tính cả thời lượng dịch vụ và thời gian dọn dẹp <span class="tag t-assume">Assumption</span>. Tiêm phòng tính vào nhóm khám <span class="tag t-assume">Assumption</span>.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Ca</th><th>Nhóm</th><th>Người trực</th><th>Tỉ lệ online</th><th>Lịch online cùng lúc tối đa</th></tr></thead>
+    <tbody>
+      <tr><td>Sáng</td><td>Khám</td><td>3 bác sĩ</td><td>1/3</td><td>1</td></tr>
+      <tr><td>Sáng</td><td>Spa</td><td>2 groomer</td><td>1</td><td>2</td></tr>
+      <tr><td>Chiều</td><td>Khám</td><td>2 bác sĩ</td><td>1/3</td><td>0 (khung này không nhận online)</td></tr>
+      <tr><td>Chiều</td><td>Spa</td><td>3 groomer</td><td>2/3</td><td>2</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Shop chỉ làm khám hoặc chỉ làm spa thì chỉ hiện tỉ lệ của nhóm đang kinh doanh.</li>
+    <li><span class="tag t-prop">Đề xuất</span> Kết quả bằng 0 (ca chiều khám ở ví dụ) thì Site ẩn khung đó, không báo "hết chỗ".</li>
+  </ul>
+</section>
+
+<section id="d4">
+  <div class="eyebrow">Sơ đồ 4 · vòng 2 · bản nháp</div>
+  <h2>Khách mới đến trực tiếp</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Khách chưa có hồ sơ, không đặt lịch, mang một hoặc nhiều Pet đến.</dd>
+    <dt>Phạm vi</dt><dd>Từ lúc đến quầy tới khi Pet vào hàng đợi. Phục vụ và thanh toán ở sơ đồ 6–8.</dd>
+    <dt>Quyết định</dt><dd>Khám/spa bắt buộc có hồ sơ chủ (SĐT là khóa) và hồ sơ Pet <span class="tag t-done">Đã xác định v5</span>. Không có bước membership <span class="tag t-new">Chốt 20/10</span>. Cấp cứu chen đầu hàng đợi, các số sau lùi một bậc <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  N0(["Khách mang Pet đến"])
+  N1{"Pet cấp cứu?"}
+  N2["Pet vào phòng khám ngay<br/>bác sĩ xử lý"]
+  N3["Lễ tân hỏi nhu cầu"]
+  N4{"Chỉ mua hàng?"}
+  N5(["Hóa đơn bán lẻ<br/>không cần hồ sơ"])
+  N6{"Tìm theo SĐT"}
+  N7(["Đã có hồ sơ<br/>sang sơ đồ 5"])
+  N8["Tạo hồ sơ chủ: tên, SĐT, địa chỉ"]
+  N9["Tạo hồ sơ Pet: loài, giống, cân nặng,<br/>dị ứng, bệnh nền, triệt sản"]
+  N10{"Còn Pet khác cần phục vụ?"}
+  N11["Tạo Visit cho từng Pet<br/>ghi lý do đến, tình trạng ban đầu"]
+  N12["Mở một hóa đơn chung, chưa hoàn thành"]
+  N13{"Visit cấp cứu?"}
+  N14["Xếp đầu hàng đợi<br/>các số đang chờ lùi một bậc"]
+  N15["Vào hàng đợi theo số thứ tự"]
+  N16(["Phục vụ: sơ đồ 6, 7"])
+  N0 --> N1
+  N1 -->|"Có"| N2
+  N2 -.->|"khách ở quầy, song song"| N6
+  N1 -->|"Không"| N3 --> N4
+  N4 -->|"Có"| N5
+  N4 -->|"Không"| N6
+  N6 -->|"Có"| N7
+  N6 -->|"Không"| N8 --> N9 --> N10
+  N10 -->|"Có"| N9
+  N10 -->|"Không"| N11 --> N12 --> N13
+  N13 -->|"Có"| N14 --> N16
+  N13 -->|"Không"| N15 --> N16
+  class N14 focal
+  class N2 assume
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef assume fill:#e8eef8,stroke:#3f5f99,stroke-dasharray:2 3,color:#2d3142
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Trong lúc lễ tân làm hồ sơ, bác sĩ ghi tạm trên giấy hoặc chờ; Visit cấp cứu tạo xong thì gán thẳng cho bác sĩ đang xử lý.</li>
+    <li><span class="tag t-assume">Assumption</span> "Lùi một bậc" là đổi thứ tự gọi, số trên phiếu của khách giữ nguyên (khách đang cầm số không phải đổi).</li>
+    <li><span class="tag t-assume">Assumption</span> Lễ tân xác nhận lại SĐT với khách trước khi lưu để tránh tạo trùng hồ sơ.</li>
+  </ul>
+</section>
+
+<section id="d5">
+  <div class="eyebrow">Sơ đồ 5 · vòng 2 · bản nháp</div>
+  <h2>Khách đã có hồ sơ</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Khách quay lại, có hoặc không có lịch hẹn. Thay cho "Existing Member Flow" vì V1 chưa có membership.</dd>
+    <dt>Phạm vi</dt><dd>Từ tìm hồ sơ tới khi hóa đơn hoàn thành và lưu nhắc lần sau. Chi tiết khám, spa, tiêm ở sơ đồ 6, 7.</dd>
+    <dt>Quyết định</dt><dd>Không bắt khách vãng lai tạo lịch hẹn cho hợp lệ (đặc tả 6) <span class="tag t-done">Đã xác định v5</span>. Hóa đơn gom các Visit và hàng mua thêm, trả đủ một lần <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  E0(["Khách đến"])
+  E1["Tìm theo SĐT hoặc mã lịch<br/>xác nhận đúng chủ nuôi"]
+  E2["Chọn Pet; Pet mới thì tạo hồ sơ"]
+  E3["Cập nhật cân nặng, dị ứng mới"]
+  E4{"Có lịch hẹn hôm nay?"}
+  E5["Check-in lịch<br/>phân người trực"]
+  E6{"Còn người trực rảnh?"}
+  E7(["Đề nghị chờ hoặc đặt lịch"])
+  E8["Tạo Visit, gắn hóa đơn chưa hoàn thành<br/>của khách hôm nay"]
+  E9["Hàng đợi<br/>cấp cứu chen đầu"]
+  E10{"Loại dịch vụ"}
+  E11["Khám: sơ đồ 6"]
+  E12["Spa: sơ đồ 7"]
+  E13["Tiêm: xem lịch sử tiêm, sơ đồ 7"]
+  E14["Visit hoàn tất"]
+  E15["Thu ngân thêm hàng mua,<br/>thu đủ tiền"]
+  E16(["Hóa đơn hoàn thành<br/>bàn giao Pet"])
+  E17["Hẹn tái khám, mũi tiêm sau<br/>hệ thống tự nhắc"]
+  E0 --> E1 --> E2 --> E3 --> E4
+  E4 -->|"Có"| E5 --> E8
+  E4 -->|"Không, vãng lai"| E6
+  E6 -->|"Có hoặc khách chịu chờ"| E8
+  E6 -->|"Quá tải"| E7
+  E8 --> E9 --> E10
+  E10 -->|"Khám"| E11
+  E10 -->|"Spa"| E12
+  E10 -->|"Tiêm"| E13
+  E11 --> E14
+  E12 --> E14
+  E13 --> E14
+  E14 --> E15 --> E16 --> E17
+  class E14 focal
+  class E6 assume
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef assume fill:#e8eef8,stroke:#3f5f99,stroke-dasharray:2 3,color:#2d3142
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-done">Đã xác định v5</span> Pet vừa khám vừa spa trong một lần đến: hai Visit, chung hóa đơn (mâu thuẫn mục 15 đề xuất).</li>
+    <li><span class="tag t-assume">Assumption</span> Groomer thấy dấu hiệu bệnh thì báo lễ tân tạo thêm một Visit khám cho Pet đó; groomer không ghi chẩn đoán.</li>
+    <li><span class="tag t-assume">Assumption</span> Kiểm "còn người trực rảnh" chỉ là gợi ý cho lễ tân, không chặn: khách chịu chờ thì vẫn tạo Visit.</li>
+  </ul>
+</section>
+
+<section id="d6">
+  <div class="eyebrow">Sơ đồ 6 · vòng 3 · bản nháp</div>
+  <h2>Khám bệnh</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Ai làm gì, lúc nào hệ thống tự đổi trạng thái, từ khi Visit khám vào hàng đợi đến khi bàn giao Pet.</dd>
+    <dt>Phạm vi</dt><dd>Một Visit khám của một Pet. Dùng chung cho khách mới, khách cũ, có hẹn hay vãng lai. Lưu viện, điều trị nội trú: ngoài V1.</dd>
+    <dt>Quyết định</dt><dd>Chỉ bác sĩ ghi chẩn đoán, kê thuốc <span class="tag t-done">Đã xác định v5</span>. Mỗi lần khám thêm một dòng chi tiết bệnh án; người lập sửa trong 24 giờ <span class="tag t-new">Chốt 20/10</span>. Xét nghiệm là dịch vụ thêm vào Visit <span class="tag t-new">Chốt 20/10</span>. Báo giá miệng, không ghi xác nhận chi phí <span class="tag t-new">Chốt 20/10</span>. Visit hoàn tất độc lập với hóa đơn <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+  <p style="font-size:13.5px;color:var(--muted)">Mermaid không có swimlane thật; sơ đồ dùng dạng sequence, mỗi cột là một vai trò, đọc từ trên xuống theo thời gian.</p>
+  <h3>6a · Khám bệnh theo vai trò</h3>
+  <div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant KH as Khách
+  participant LT as Lễ tân
+  participant BS as Bác sĩ
+  participant PT as Phụ tá / xét nghiệm
+  participant KHO as Kho (GĐ2)
+  participant TN as Thu ngân
+  participant HT as Hệ thống
+  LT->>HT: Tạo Visit khám, ghi lý do đến
+  HT-->>HT: Visit Đang chờ, cấp số, gắn hóa đơn chưa hoàn thành
+  HT-->>BS: Hiện trong hàng đợi kèm cảnh báo dị ứng
+  BS->>HT: Nhận ca
+  HT-->>HT: Visit Đang thực hiện (chỉ một bác sĩ nhận được)
+  BS->>HT: Xem bệnh án cũ, dị ứng, thuốc đã dùng
+  BS->>KH: Hỏi bệnh, cân, đo sinh hiệu, khám lâm sàng
+  opt Cần xét nghiệm hoặc chụp chiếu
+    BS->>KH: Báo giá miệng
+    alt Khách đồng ý
+      BS->>HT: Thêm dịch vụ xét nghiệm vào Visit
+      PT->>HT: Làm và ghi kết quả, đính kèm ảnh hoặc PDF
+      HT-->>BS: Có kết quả
+    else Khách từ chối
+      BS->>HT: Ghi chú khách từ chối, khám tiếp
+    end
+  end
+  BS->>HT: Thêm dòng chi tiết bệnh án: chẩn đoán, điều trị, hướng dẫn, hẹn tái khám
+  BS->>HT: Kê thuốc, thêm thủ thuật nếu có
+  opt Giai đoạn 2 có kho
+    HT->>KHO: Kiểm tồn khả dụng
+    alt Thiếu hoặc hết hạn
+      KHO-->>BS: Báo thiếu
+      BS->>HT: Đổi thuốc, hoặc tra chi nhánh khác
+    end
+  end
+  opt Ngoài khả năng của shop
+    BS->>KH: Tư vấn chuyển tuyến, ghi vào bệnh án
+  end
+  BS->>HT: Hoàn tất Visit
+  HT-->>HT: Visit Hoàn tất, dòng tính tiền đổ vào hóa đơn, tạo nhắc tái khám
+  HT-->>HT: Dòng chi tiết còn sửa được 24 giờ, chỉ người lập
+  LT->>KH: Giao thuốc, hướng dẫn chăm sóc
+  TN->>HT: Chốt hóa đơn, thu đủ (sơ đồ 8)
+  LT->>KH: Bàn giao Pet
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Ca cấp cứu: Pet vào khám trước bước 1, lễ tân tạo Visit song song rồi gán cho bác sĩ đang xử lý.</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Thuốc, vật tư trừ kho khi hoàn tất Visit (13.1, mâu thuẫn mục 37).</li>
+    <li><span class="tag t-assume">Assumption</span> Khách đổi ý bỏ một dịch vụ sau khi bác sĩ đã ghi: bác sĩ xóa dòng trên Visit trước khi hoàn tất; thu ngân không xóa dòng do bác sĩ ghi (mâu thuẫn mục 25).</li>
+    <li><span class="tag t-assume">Assumption</span> Đơn thuốc là các dòng thuốc trong Visit, in ra kèm hướng dẫn; không có chứng từ đơn thuốc riêng ở V1 (khác đặc tả 7.6).</li>
+  </ul>
+  <h3>6b · Cấu trúc bệnh án</h3>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  PET ||--|| HO_SO_BENH_AN : "có một"
+  HO_SO_BENH_AN ||--o{ DONG_CHI_TIET : "mỗi lần khám thêm"
+  VISIT ||--o| DONG_CHI_TIET : "sinh ra"
+  DONG_CHI_TIET ||--o{ FILE_DINH_KEM : "kết quả xét nghiệm, ảnh"
+  HO_SO_BENH_AN {
+    string so_ho_so "cấp lần khám đầu"
+    string di_ung_benh_nen "cảnh báo, ai cũng thấy"
+  }
+  DONG_CHI_TIET {
+    datetime lap_luc
+    string nguoi_lap "chỉ người này sửa, trong 24 giờ"
+    string trieu_chung_sinh_hieu
+    string chan_doan
+    string dieu_tri_huong_dan
+    date hen_tai_kham
+  }
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Sửa chỉ trong dòng chi tiết, người lập, 24 giờ. Bác sĩ khác không sửa dòng của người khác.</li>
+    <li><span class="tag t-assume">Assumption</span> Mỗi Pet một hồ sơ bệnh án, số hồ sơ cấp ở lần khám đầu. Visit spa không tạo dòng chi tiết; Visit tiêm có tạo dòng và ghi sổ tiêm.</li>
+    <li><span class="tag t-assume">Assumption</span> Quá 24 giờ thì dòng khóa hẳn; muốn đính chính thì thêm ghi chú bổ sung (có ngày, người ghi). Mọi lần sửa trong 24 giờ đều lưu bản trước/sau.</li>
+  </ul>
+</section>
+
+<section id="d7">
+  <div class="eyebrow">Sơ đồ 7 · vòng 3 · bản nháp</div>
+  <h2>Spa và tiêm phòng</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Hai quy trình ngắn hơn khám: spa do groomer làm, tiêm phòng do bác sĩ làm.</dd>
+    <dt>Phạm vi</dt><dd>Một Visit spa hoặc một Visit tiêm. Tiêm thuộc nhóm khám, tính hạn mức khám <span class="tag t-assume">Assumption</span>.</dd>
+    <dt>Quyết định</dt><dd>Groomer thấy dấu hiệu bệnh thì chuyển bác sĩ, không tự chẩn đoán (đặc tả 3.5). Groomer chỉ thấy cảnh báo y tế <span class="tag t-new">Chốt 20/10</span>. Vật tư điền sẵn theo định mức, sửa theo thực tế <span class="tag t-done">Đã xác định v5</span>.</dd>
+  </dl>
+
+  <h3>7a · Spa</h3>
+  <div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant KH as Khách
+  participant LT as Lễ tân
+  participant GR as Groomer
+  participant BS as Bác sĩ
+  participant HT as Hệ thống
+  LT->>HT: Tạo Visit spa (gói, combo)
+  HT-->>GR: Hiện trong hàng đợi spa kèm cảnh báo dị ứng, lưu ý an toàn
+  GR->>HT: Nhận ca
+  HT-->>HT: Visit Đang thực hiện
+  GR->>HT: Ghi tình trạng ban đầu, chụp ảnh lúc nhận
+  opt Thấy dấu hiệu bệnh
+    GR->>LT: Báo lễ tân
+    LT->>KH: Hỏi khách có muốn khám không
+    alt Khách đồng ý
+      LT->>HT: Tạo thêm Visit khám cho Pet này
+      HT-->>BS: Vào hàng đợi khám
+    else Khách không khám
+      GR->>HT: Ghi chú đã báo khách
+    end
+  end
+  GR->>GR: Tắm, cắt tỉa theo dịch vụ
+  GR->>HT: Sửa vật tư thực tế, đổi vật tư nếu Pet dị ứng
+  opt Khách muốn thêm dịch vụ
+    LT->>KH: Báo giá miệng
+    GR->>HT: Thêm dịch vụ vào Visit
+  end
+  GR->>HT: Chụp ảnh lúc trả, ghi sự cố nếu có, hoàn tất Visit
+  HT-->>KH: Báo khách đến đón
+  LT->>KH: Thu tiền (sơ đồ 8), bàn giao Pet
+</pre></div>
+
+  <h3>7b · Tiêm phòng</h3>
+  <div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant KH as Khách
+  participant LT as Lễ tân
+  participant BS as Bác sĩ
+  participant HT as Hệ thống
+  LT->>HT: Tạo Visit khám, lý do "tiêm phòng"
+  BS->>HT: Nhận ca, xem lịch sử tiêm và phác đồ
+  BS->>KH: Kiểm điều kiện: tuổi, cân nặng, thân nhiệt, sức khỏe
+  alt Không đủ điều kiện
+    BS->>HT: Ghi lý do hoãn, hẹn ngày tiêm lại
+    HT-->>HT: Tạo nhắc theo ngày hẹn mới
+  else Đủ điều kiện
+    BS->>KH: Tiêm
+    BS->>HT: Ghi vaccine, số lô, hạn dùng, người tiêm
+    HT-->>HT: Tính ngày mũi kế tiếp theo phác đồ, tạo nhắc
+  end
+  BS->>HT: Hoàn tất Visit
+  LT->>KH: Thu tiền (sơ đồ 8), đưa sổ tiêm
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-done">Đã xác định v5</span> Nhắc tiêm tự tính theo phác đồ (mũi 1, 2, 3, nhắc hằng năm) là điểm nhấn của dự án.</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Báo khách đến đón qua SMS hoặc Zalo (mục 11).</li>
+    <li><span class="tag t-assume">Assumption</span> Hoãn tiêm vẫn có thể tính phí khám nếu bác sĩ thêm dòng khám vào Visit.</li>
+    <li><span class="tag t-open">Open question</span> Số lô vaccine gõ tay ở MVP, tự trừ kho từ giai đoạn 2 (mâu thuẫn mục 31).</li>
+  </ul>
+</section>
+
+<section id="d8">
+  <div class="eyebrow">Sơ đồ 8 · vòng 3 · bản nháp</div>
+  <h2>Hóa đơn và thanh toán</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Vòng đời hóa đơn, cách thu tiền, và cách chủ shop sửa hóa đơn đã hoàn thành.</dd>
+    <dt>Phạm vi</dt><dd>Hóa đơn của lần đến (gom Visit + hàng mua) và hóa đơn bán lẻ. Thanh toán là các khoản thu/trả ghi riêng, không có trạng thái.</dd>
+    <dt>Quyết định</dt><dd>Không cọc, không nợ, không trả một phần; trả đủ là hoàn thành <span class="tag t-new">Chốt 20/10</span>. Trả hàng là đường riêng của lễ tân, không sửa hóa đơn gốc <span class="tag t-new">Chốt 20/10</span>. Có ca thu ngân <span class="tag t-new">Chốt 20/10</span>. Khuyến mãi, giảm theo hạng: sau V1. Lễ tân hủy hóa đơn chưa hoàn thành có lý do, báo chủ <span class="tag t-new">Chốt 20/10</span>. Chủ shop sửa = hủy bản cũ + lập bản thay thế <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+
+  <h3>8a · Trạng thái hóa đơn</h3>
+  <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> ChuaHT: tạo Visit đầu tiên của lần đến, hoặc bán lẻ
+  ChuaHT --> ChuaHT: thêm Visit, hàng mua, dòng gõ tay
+  ChuaHT --> HoanThanh: mọi Visit hoàn tất và đã thu đủ
+  ChuaHT --> DaHuy: lễ tân hủy, có lý do
+  HoanThanh --> HoanThanh: khách trả hàng, ghi phiếu trả và khoản hoàn
+  HoanThanh --> DaHuy: chủ shop sửa, sinh bản thay thế
+  HoanThanh --> [*]
+  DaHuy --> [*]
+  ChuaHT: Chưa hoàn thành
+  HoanThanh: Hoàn thành
+  DaHuy: Đã hủy
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-done">Đã xác định v5</span> Số hóa đơn chỉ cấp lúc hoàn thành; bản chưa hoàn thành in được dạng "Tạm tính".</li>
+    <li><span class="tag t-done">Đã xác định v5</span> Khoản thu chỉ ghi khi thu thành công; một lần thu có thể nhiều phương thức (tiền mặt + QR). Chuyển khoản chưa về thì không ghi.</li>
+  </ul>
+
+  <h3>8b · Chốt và thu tiền</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  T0(["Khách ra quầy"])
+  T1["Mở hóa đơn chưa hoàn thành của khách hôm nay"]
+  T2{"Mọi Visit đã hoàn tất?"}
+  T3(["Chờ, chưa thu được"])
+  T4["Thêm hàng mua, dòng gõ tay<br/>không giảm giá tay"]
+  T5["In tạm tính nếu khách cần"]
+  T6["Khách trả: tiền mặt vào két ca đang mở,<br/>chuyển khoản, QR, thẻ"]
+  T7{"Đã thu đủ?"}
+  T8["Thu tiếp hoặc đổi phương thức"]
+  T9{"Khách bỏ về?"}
+  T10(["Lễ tân hủy hóa đơn<br/>lý do, báo chủ shop"])
+  T11["Hoàn thành: cấp số, ghi các khoản thu,<br/>ghi nhật ký"]
+  T12(["In hoặc gửi hóa đơn, bàn giao Pet"])
+  T0 --> T1 --> T2
+  T2 -->|"Chưa"| T3
+  T2 -->|"Rồi"| T4 --> T5 --> T6 --> T7
+  T7 -->|"Chưa"| T9
+  T9 -->|"Không"| T8 --> T6
+  T9 -->|"Có"| T10
+  T7 -->|"Đủ"| T11 --> T12
+  class T11 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+</pre></div>
+
+  <h3>8c · Chủ shop sửa hóa đơn đã hoàn thành</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  O0(["Chủ shop bấm Sửa, nhập lý do"])
+  O1["Bản cũ chuyển Đã hủy, giữ nguyên số"]
+  O2["Tạo bản thay thế: chép các dòng,<br/>chuyển các khoản đã thu sang"]
+  O3["Chủ sửa dòng: bớt, thêm, đổi giá"]
+  O4{"Tổng mới so với đã thu"}
+  O5["Thu thêm phần thiếu"]
+  O6["Ghi khoản trả lại khách"]
+  O7["Bản thay thế Hoàn thành<br/>số mới, ghi tham chiếu bản cũ"]
+  O8(["Visit chuyển sang bản mới<br/>nhật ký trước và sau"])
+  O0 --> O1 --> O2 --> O3 --> O4
+  O4 -->|"Cao hơn"| O5 --> O7
+  O4 -->|"Thấp hơn"| O6 --> O7
+  O4 -->|"Bằng"| O7
+  O7 --> O8
+  class O2 assume
+  class O6 open
+  classDef assume fill:#e8eef8,stroke:#3f5f99,stroke-dasharray:2 3,color:#2d3142
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Khoản đã thu của bản cũ được chuyển sang bản thay thế, để doanh thu không bị tính hai lần và không phải trả lại rồi thu lại.</li>
+    <li><span class="tag t-assume">Assumption</span> Báo cáo doanh thu lấy theo ngày hoàn thành của từng bản; bản bị hủy không tính, bản thay thế tính vào ngày sửa.</li>
+    <li><span class="tag t-assume">Assumption</span> "Chủ shop sửa" dùng khi hóa đơn lập sai (sai giá, sai dịch vụ). Khách trả hàng dùng luồng 8d, không qua chủ.</li>
+  </ul>
+
+  <h3>8d · Khách trả hàng, hoàn tiền</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  H0(["Khách mang hàng trả lại"])
+  H1["Lễ tân tìm hóa đơn đã hoàn thành<br/>theo số hóa đơn hoặc SĐT"]
+  H2{"Trong hạn trả?<br/>mặc định 7 ngày"}
+  H3(["Chuyển chủ shop quyết"])
+  H4["Chọn dòng sản phẩm, số lượng trả<br/>không vượt số đã mua trừ số đã trả"]
+  H4b["Kiểm tay từng món"]
+  H5{"Tình trạng"}
+  H6["Hàng nguyên: cộng tồn ngay"]
+  H7["Hàng lỗi: ghi vào danh sách chờ xử lý<br/>chưa cộng tồn, chủ shop quyết"]
+  H7b["Hết hạn: báo hủy"]
+  H8{"Trả tiền bằng"}
+  H9["Tiền mặt, từ két ca đang mở"]
+  H10["Chuyển khoản, ghi mã giao dịch"]
+  H11["Ghi phiếu trả hàng + khoản hoàn<br/>hóa đơn gốc giữ nguyên"]
+  H12(["Doanh thu ngày trả giảm tương ứng<br/>chủ shop nhận thông báo"])
+  H0 --> H1 --> H2
+  H2 -->|"Quá hạn"| H3
+  H2 -->|"Còn hạn"| H4 --> H4b --> H5
+  H5 -->|"Nguyên"| H6 --> H8
+  H5 -->|"Lỗi"| H7 --> H8
+  H5 -->|"Hết hạn"| H7b --> H8
+  H8 -->|"Tiền mặt"| H9 --> H11
+  H8 -->|"Chuyển khoản"| H10 --> H11
+  H11 --> H12
+  class H11 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Lễ tân làm trả hàng trong hạn chủ cài (mặc định 7 ngày); kiểm tay từng món: nguyên thì cộng tồn, lỗi thì chờ chủ xử lý, hết hạn thì báo hủy. Tiền trả bằng tiền mặt hoặc chuyển khoản, trừ vào doanh thu.</li>
+    <li><span class="tag t-assume">Assumption</span> Khách hoàn tiền đủ cho cả hàng lỗi và hàng hết hạn (lỗi do shop bán ra).</li>
+    <li><span class="tag t-assume">Assumption</span> Chỉ trả sản phẩm, không trả dịch vụ đã làm; dịch vụ lỗi thì chủ shop sửa hóa đơn (8c).</li>
+    <li><span class="tag t-assume">Assumption</span> Doanh thu bị trừ vào ngày trả hàng, không sửa doanh thu ngày mua.</li>
+    <li><span class="tag t-assume">Assumption</span> Kho có từ giai đoạn 2. Ở MVP, trả hàng chỉ ghi khoản hoàn, chưa cộng tồn.</li>
+  </ul>
+
+  <h3>8e · Ca thu ngân</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  K0(["Thu ngân mở ca"])
+  K1["Đếm két, nhập tiền đầu ca"]
+  K2["Trong ca: mọi khoản thu và hoàn<br/>ghi vào ca đang mở, theo người và phương thức"]
+  K3["Đóng ca: hệ thống tính tiền mặt dự kiến<br/>= đầu ca + thu tiền mặt − hoàn tiền mặt"]
+  K4["Đếm két thực tế"]
+  K5{"Lệch?"}
+  K6["Ghi chênh lệch và lý do<br/>chủ shop nhận thông báo"]
+  K7(["Ca đóng, báo cáo theo phương thức<br/>tiền mặt, chuyển khoản, QR, thẻ"])
+  K0 --> K1 --> K2 --> K3 --> K4 --> K5
+  K5 -->|"Có"| K6 --> K7
+  K5 -->|"Không"| K7
+  class K3 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Có tiền đầu ca, đếm cuối ca, ghi chênh lệch.</li>
+    <li><span class="tag t-new">Chốt 20/10</span> Ca theo két: nhiều người thu chung ca, mỗi khoản ghi tên người thu.</li>
+    <li><span class="tag t-assume">Assumption</span> Chưa mở ca thì không thu, không hoàn tiền mặt được; chuyển khoản, QR, thẻ không vào két nhưng vẫn có trong báo cáo ca. Ca thu ngân độc lập với ca làm việc (giai đoạn 3).</li>
+  </ul>
+</section>
+
+<section id="d9">
+  <div class="eyebrow">Sơ đồ 9 · vòng 4 · đã chốt</div>
+  <h2>Vai trò và quyền</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Mỗi role mẫu làm được gì trên từng nhóm dữ liệu. Dùng ma trận thay sơ đồ vì dễ đọc hơn (đặc tả mục 13 cho phép).</dd>
+    <dt>Phạm vi</dt><dd>Role mẫu lúc tạo shop; chủ shop sửa được từng role và tạo role mới. Một người có nhiều role thì cộng quyền <span class="tag t-new">Chốt 20/10</span>. Mọi role trừ chủ shop chỉ thao tác ở cơ sở được gán <span class="tag t-new">Chốt 20/10</span>.</dd>
+    <dt>Quyết định</dt><dd>Bác sĩ mọi cơ sở xem đầy đủ bệnh án; lễ tân, spa chỉ cảnh báo; thu ngân, kho không <span class="tag t-new">Chốt 20/10</span>. Ma trận đã được duyệt ở câu 14.1 <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+  <div class="scroll"><table class="mx">
+    <thead><tr><th>Dữ liệu / việc</th><th>Chủ shop</th><th>QL chi nhánh</th><th>Lễ tân</th><th>Thu ngân</th><th>Bác sĩ</th><th>Spa</th><th>Kho</th><th>Khách (Site)</th></tr></thead>
+    <tbody>
+<tr class="sec"><td colspan="9">Khách và Pet</td></tr>
+<tr><td>Hồ sơ chủ nuôi</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="no">—</td><td class="lim">Của mình</td></tr>
+<tr><td>Hồ sơ Pet, cảnh báo dị ứng</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="lim">Xem</td><td class="full">Ghi</td><td class="lim">Xem</td><td class="no">—</td><td class="lim">Của mình</td></tr>
+<tr><td>Nội dung bệnh án</td><td class="lim">Xem</td><td class="lim">Cảnh báo</td><td class="lim">Cảnh báo, ngày khám</td><td class="no">—</td><td class="full">Ghi (dòng mình, 24h)</td><td class="lim">Cảnh báo</td><td class="no">—</td><td class="lim">Xem, trừ ghi chú nội bộ</td></tr>
+<tr><td>Sổ tiêm</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="no">—</td><td class="full">Ghi</td><td class="lim">Xem</td><td class="no">—</td><td class="lim">Xem</td></tr>
+<tr class="sec"><td colspan="9">Lịch hẹn và Visit</td></tr>
+<tr><td>Lịch hẹn</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="no">—</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="no">—</td><td class="lim">Đặt, đổi, hủy của mình</td></tr>
+<tr><td>Tạo Visit, hàng đợi</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="no">—</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Nhận, hoàn tất Visit khám/tiêm</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Nhận, hoàn tất Visit spa</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Kê thuốc, xét nghiệm</td><td class="lim">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="full">Ghi</td><td class="no">—</td><td class="lim">Xem (GĐ2)</td><td class="no">—</td></tr>
+<tr class="sec"><td colspan="9">Hóa đơn và tiền</td></tr>
+<tr><td>Hóa đơn chưa hoàn thành: thêm dòng, thu tiền</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Hủy hóa đơn chưa hoàn thành</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="full">Ghi, có lý do</td><td class="full">Ghi, có lý do</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Sửa hóa đơn đã hoàn thành</td><td class="full">Sửa (bản thay thế)</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Trả hàng, hoàn tiền</td><td class="full">Toàn quyền (cả quá hạn)</td><td class="full">Ghi</td><td class="full">Ghi, trong hạn</td><td class="full">Ghi, trong hạn</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Mở, đóng ca thu ngân</td><td class="full">Toàn quyền</td><td class="lim">Xem</td><td class="full">Ghi</td><td class="full">Ghi</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Xem hóa đơn đã hoàn thành</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem, in</td><td class="lim">Xem, in</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="lim">Của mình</td></tr>
+<tr class="sec"><td colspan="9">Kho (giai đoạn 2)</td></tr>
+<tr><td>Xem tồn cơ sở mình, tra tồn cơ sở khác</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="no">—</td></tr>
+<tr><td>Lập phiếu nhập: sản phẩm, số lượng, lô, hạn; kiểm kê</td><td class="full">Toàn quyền</td><td class="full">Duyệt</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="full">Ghi, không thấy giá</td><td class="no">—</td></tr>
+<tr><td>Điền giá nhập vào phiếu, xem giá vốn</td><td class="full">Toàn quyền</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Báo hao hụt (chuột cắn, vỡ), điều chỉnh tồn, hủy hàng hết hạn</td><td class="full">Toàn quyền</td><td class="full">Duyệt</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="full">Ghi, cần duyệt</td><td class="no">—</td></tr>
+<tr><td>Xử lý hàng lỗi</td><td class="full">Toàn quyền</td><td class="lim">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="lim">Xem</td><td class="no">—</td></tr>
+<tr><td>Chuyển kho</td><td class="full">Toàn quyền</td><td class="full">Duyệt</td><td class="lim">Tạo yêu cầu</td><td class="no">—</td><td class="lim">Tạo yêu cầu</td><td class="no">—</td><td class="full">Ghi (giao, nhận)</td><td class="no">—</td></tr>
+<tr><td>Giá vốn</td><td class="lim">Xem</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr class="sec"><td colspan="9">Quản trị</td></tr>
+<tr><td>Danh mục dịch vụ, sản phẩm, giá</td><td class="full">Toàn quyền</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem</td><td class="lim">Xem dịch vụ</td></tr>
+<tr><td>Khuyến mãi (sau V1)</td><td class="full">Toàn quyền</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Nhân viên, role, quyền</td><td class="full">Toàn quyền</td><td class="lim">Xem</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Lịch làm việc, ca trực</td><td class="full">Toàn quyền</td><td class="full">Ghi</td><td class="lim">Xem của mình</td><td class="lim">Xem của mình</td><td class="lim">Xem của mình</td><td class="lim">Xem của mình</td><td class="lim">Xem của mình</td><td class="no">—</td></tr>
+<tr><td>Duyệt chấm công ngoài lịch (GĐ3)</td><td class="full">Duyệt</td><td class="lim">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Lương (GĐ3)</td><td class="full">Toàn quyền</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Báo cáo doanh thu, lãi gộp</td><td class="lim">Mọi cơ sở</td><td class="lim">Cơ sở mình, không lãi gộp</td><td class="no">—</td><td class="lim">Báo cáo ca</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Nhật ký thao tác</td><td class="lim">Xem</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+<tr><td>Cài đặt cơ sở: giờ mở cửa, tỉ lệ online, hạn trả hàng</td><td class="full">Toàn quyền</td><td class="lim">Xem</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="notes">
+    <li><span class="tag t-assume">Assumption</span> Chủ shop có mọi quyền nhưng không tự ghi chẩn đoán, kê thuốc; chủ kiêm bác sĩ thì gán thêm role Bác sĩ.</li>
+    <li><span class="tag t-assume">Assumption</span> Quản lý chi nhánh điều hành cơ sở mình: lịch, ca trực, duyệt kho; không thấy giá vốn, lương, không sửa hóa đơn đã hoàn thành.</li>
+    <li><span class="tag t-assume">Assumption</span> Mọi thao tác nhạy cảm (hủy hóa đơn, sửa hóa đơn, trả hàng, điều chỉnh kho, đổi quyền, đổi giá, sửa bệnh án) ghi nhật ký người, giờ, trước/sau.</li>
+  </ul>
+</section>
+
+<section id="d10">
+  <div class="eyebrow">Sơ đồ 10 · vòng 4</div>
+  <h2>Đa chi nhánh</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Dữ liệu nào thuộc shop, dữ liệu nào thuộc từng cơ sở, và ba nghiệp vụ đi qua nhiều cơ sở: tra tồn, chuyển kho, nhân viên làm 2 nơi.</dd>
+    <dt>Phạm vi</dt><dd>Một shop, nhiều cơ sở cùng múi giờ (mục 49, chốt 20/10).</dd>
+    <dt>Quyết định</dt><dd>Danh mục và giá dùng chung, tồn kho riêng <span class="tag t-new">Chốt 20/10</span>. Khách, Pet, bệnh án dùng chung <span class="tag t-new">Chốt 20/10</span>. Ca trực gắn cơ sở, chấm công theo ca <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+
+  <h3>10a · Thuộc shop hay thuộc cơ sở</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TB
+  subgraph SHOP["Shop: dùng chung mọi cơ sở"]
+    direction LR
+    S1["Khách, Pet, bệnh án, sổ tiêm"]
+    S2["Danh mục dịch vụ, sản phẩm<br/>giá bán chung"]
+    S3["Role, quyền, cài đặt chung"]
+    S4["Nhân viên<br/>cơ sở chính + cơ sở phụ"]
+  end
+  subgraph CS1["Cơ sở 1"]
+    direction LR
+    A1["Ca trực"]
+    A2["Lịch hẹn, Visit, hàng đợi"]
+    A3["Hóa đơn, ca thu ngân"]
+    A4["Tồn kho, lô, hạn dùng"]
+  end
+  subgraph CS2["Cơ sở 2"]
+    direction LR
+    B1["Ca trực"]
+    B2["Lịch hẹn, Visit, hàng đợi"]
+    B3["Hóa đơn, ca thu ngân"]
+    B4["Tồn kho, lô, hạn dùng"]
+  end
+  S4 -->|"xếp ca"| A1
+  S4 -->|"xếp ca"| B1
+  S2 --> A4
+  S2 --> B4
+  A4 <-.->|"tra tồn, chuyển kho"| B4
+  class S1 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Chủ shop xem mọi cơ sở; nhân viên chỉ thao tác ở cơ sở được gán, mọi chứng từ mang mã cơ sở.</li>
+    <li><span class="tag t-assume">Assumption</span> Khách mở hóa đơn ở cơ sở nào thì trả hàng ở cơ sở đó.</li>
+  </ul>
+
+  <h3>10b · Hết hàng ở cơ sở 1, cơ sở 2 còn (giai đoạn 2)</h3>
+  <div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant KH as Khách
+  participant LT1 as Lễ tân CS1
+  participant HT as Hệ thống
+  participant K2 as Kho CS2
+  participant K1 as Kho CS1
+  LT1->>HT: Tìm sản phẩm
+  HT-->>LT1: CS1 còn 0, CS2 còn 12, hạn gần nhất 03/2027
+  alt Khách qua CS2 mua
+    LT1->>KH: Hướng dẫn qua CS2
+  else Chuyển hàng về CS1
+    LT1->>KH: Hẹn ngày lấy
+    LT1->>HT: Tạo yêu cầu chuyển CS2 sang CS1, ghi tên khách
+    HT-->>K2: Giữ số hàng đó, không bán cho người khác
+    K2->>HT: Duyệt, xuất kho theo lô, ghi người giao
+    HT-->>HT: Phiếu Đang vận chuyển
+    K1->>HT: Nhận hàng, đếm thực nhận
+    HT-->>HT: Phiếu Đã nhận, cộng tồn CS1, giữ hàng cho khách
+    HT-->>KH: Báo hàng đã về
+  end
+</pre></div>
+
+  <h3>10c · Nhân viên làm ở 2 cơ sở chấm công</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  C0(["Nhân viên bấm chấm công vào"])
+  C1{"Có ca trực<br/>vào giờ này?"}
+  C2["Lấy cơ sở của ca đó"]
+  C3{"Cơ sở có cài IP mạng?"}
+  C4{"Đúng IP?"}
+  C5["Ghi chấm công vào cơ sở của ca"]
+  C6(["Từ chối, báo sai nơi"])
+  C7["Nhân viên chọn cơ sở<br/>ghi Ngoài lịch"]
+  C8(["Chờ chủ shop duyệt mới tính"])
+  C0 --> C1
+  C1 -->|"Có"| C2 --> C3
+  C3 -->|"Có"| C4
+  C3 -->|"Không"| C5
+  C4 -->|"Đúng"| C5
+  C4 -->|"Sai"| C6
+  C1 -->|"Không"| C7 --> C8
+  class C2 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Không xếp một người 2 ca chồng giờ ở 2 cơ sở; hạn mức đặt online chỉ đếm người ở cơ sở có ca của họ.</li>
+    <li><span class="tag t-assume">Assumption</span> Chấm công, xếp ca theo mẫu là giai đoạn 3. Ở MVP, mỗi khung lịch làm việc ghi cơ sở để tính hạn mức đúng.</li>
+  </ul>
+</section>
+
+<section id="d11">
+  <div class="eyebrow">Sơ đồ 11 · vòng 4 · giai đoạn 2 · đã chốt</div>
+  <h2>Kho và đơn thuốc</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Thuốc đi từ đơn của bác sĩ tới tay khách, và vòng đời một lô hàng trong kho một cơ sở.</dd>
+    <dt>Phạm vi</dt><dd>Giai đoạn 2. Ở MVP thuốc là dòng gõ tay, không trừ kho <span class="tag t-new">Chốt 20/10</span>.</dd>
+    <dt>Quyết định</dt><dd>Lô, hạn dùng, cảnh báo cận hạn và sắp hết <span class="tag t-done">Đã xác định v5</span>. Nhân viên kho không tự đổi đơn thuốc (đặc tả 7.6). Không sửa số tồn trực tiếp; mọi thay đổi có phiếu và lý do. Lô nhập trước xuất trước <span class="tag t-diff">Khác v5</span> (15.1 bổ sung). Kho lập phiếu nhập số lượng, chủ điền giá <span class="tag t-new">Chốt 20/10</span>.</dd>
+  </dl>
+
+  <h3>11a · Từ đơn thuốc đến giao thuốc</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart TD
+  P0(["Bác sĩ kê thuốc trong Visit"])
+  P1{"Còn đủ ở cơ sở này?<br/>tồn trừ hàng đang giữ"}
+  P2{"Bác sĩ chọn"}
+  P3["Đổi thuốc khác"]
+  P4["Chuyển kho từ cơ sở khác<br/>sơ đồ 10b"]
+  P5["Khách mua ngoài<br/>ghi vào hướng dẫn"]
+  P6["Hoàn tất Visit"]
+  P7["Chọn lô: bỏ lô hết hạn,<br/>lô nhập trước xuất trước"]
+  P8["Trừ kho khi hoàn tất Visit<br/>ghi giá vốn của lô (chỉ chủ xem)"]
+  P9(["Giao thuốc, hướng dẫn dùng"])
+  P0 --> P1
+  P1 -->|"Đủ"| P6
+  P1 -->|"Thiếu"| P2
+  P2 -->|"Đổi"| P3 --> P1
+  P2 -->|"Chuyển"| P4
+  P2 -->|"Mua ngoài"| P5 --> P6
+  P6 --> P7 --> P8 --> P9
+  classDef assume fill:#e8eef8,stroke:#3f5f99,stroke-dasharray:2 3,color:#2d3142
+  class P7 focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+</pre></div>
+
+  <h3>11b · Vòng đời hàng trong kho một cơ sở</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  N0(["Kho lập phiếu nhập<br/>sản phẩm, số lượng, lô, hạn"])
+  N1["Chủ điền giá nhập<br/>trên hệ thống của chủ"]
+  H["Báo hao hụt<br/>chuột cắn, vỡ; cần duyệt"]
+  T["Tồn bán được"]
+  O1["Bán trên hóa đơn"]
+  O2["Dùng trong Visit<br/>thuốc, vật tư"]
+  O3["Chuyển sang cơ sở khác"]
+  R0["Khách trả lại<br/>kiểm tay"]
+  L["Chờ xử lý: hàng lỗi"]
+  X["Hủy hàng<br/>có lý do, cần duyệt"]
+  A["Cảnh báo cận hạn, sắp hết"]
+  K["Kiểm kê: chênh lệch<br/>có lý do, cần duyệt"]
+  N0 --> T
+  N0 -.->|"giá"| N1
+  T --> H
+  T --> O1
+  T --> O2
+  T --> O3
+  R0 -->|"nguyên"| T
+  R0 -->|"lỗi"| L
+  R0 -->|"hết hạn"| X
+  T -->|"hết hạn"| X
+  L -->|"chủ chọn: hủy"| X
+  L -->|"chủ chọn: bán giảm giá"| S["Mã sản phẩm riêng<br/>giá chủ đặt"]
+  T -.-> A
+  K -.->|"điều chỉnh"| T
+  class L open
+  class T focal
+  classDef focal fill:#bf4520,stroke:#bf4520,color:#ffffff
+  classDef open fill:#fbeee7,stroke:#bf4520,stroke-dasharray:5 4,color:#2d3142
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-new">Chốt 20/10</span> Hàng trả lại kiểm tay: nguyên cộng tồn ngay, lỗi chờ chủ xử lý, hết hạn báo hủy.</li>
+    <li><span class="tag t-done">Đã xác định v5</span> Sổ kho chỉ thêm, không sửa, không xóa; sai thì ghi phiếu điều chỉnh.</li>
+    <li><span class="tag t-assume">Assumption</span> Trả hàng cho nhà cung cấp ngoài V1 (mâu thuẫn mục 39), </li>
+    <li><span class="tag t-new">Chốt 20/10</span> Hàng lỗi do chủ xử lý: hủy, hoặc tạo mã sản phẩm riêng để bán giảm giá (13.3). Giá bán một giá hiện hành, chủ tự chỉnh, không theo lô; lô nhập trước bán trước (15.1). Kho lập phiếu số lượng, không thấy giá; chủ điền giá nhập (16.1).</li>
+    <li><span class="tag t-assume">Assumption</span> Tồn cộng ngay khi kho lưu phiếu; giá nhập điền sau.</li>
+  </ul>
+</section>
+
+<section id="d12">
+  <div class="eyebrow">Sơ đồ 12 · vòng 4 · bản nháp</div>
+  <h2>Các tình huống ngoại lệ</h2>
+  <dl class="dmeta">
+    <dt>Mục đích</dt><dd>Gom mọi ngoại lệ ở đặc tả mục 13 vào một chỗ: phát hiện ở đâu, ai xử lý, đối tượng nào đổi trạng thái.</dd>
+    <dt>Phạm vi</dt><dd>Phần lớn đã có trong sơ đồ 2–11, bảng chỉ dẫn tới đó. Chuyển kho thất bại chưa có nên vẽ riêng ở 12a.</dd>
+    <dt>Quyết định</dt><dd>Dùng bảng thay 12 sơ đồ nhỏ vì mỗi tình huống chỉ có 2–3 bước.</dd>
+  </dl>
+  <div class="scroll"><table>
+    <thead><tr><th>Tình huống</th><th>Xử lý</th><th>Ai</th><th>Đổi trạng thái</th><th>Sơ đồ</th></tr></thead>
+    <tbody>
+      <tr><td>Hết hạn mức đặt online</td><td>Không tạo lịch; gợi ý giờ còn chỗ gần nhất. Lễ tân đặt vượt thì cảnh báo, vẫn lưu</td><td>Hệ thống, lễ tân</td><td>Không</td><td>3b</td></tr>
+      <tr><td>Khách không đến</td><td>Cuối ngày tự đánh dấu; lễ tân đánh dấu sớm để nhả chỗ; không phạt</td><td>Hệ thống, lễ tân</td><td>Lịch: Không đến</td><td>3a</td></tr>
+      <tr><td>Khách đến muộn</td><td>Vẫn check-in, xếp như khách vãng lai, mất ưu tiên ±15 phút</td><td>Lễ tân</td><td>Lịch: Đã đến; Visit: Đang chờ</td><td>3b</td></tr>
+      <tr><td>Khách đổi lịch</td><td>Kiểm hạn mức như đặt mới, nhả chỗ cũ, lưu lịch sử; khách tự đổi phải trước N giờ</td><td>Khách, lễ tân</td><td>Lịch: giữ Đã xác nhận</td><td>3b</td></tr>
+      <tr><td>Khách hủy lịch</td><td>Nhả chỗ, không phí</td><td>Khách, lễ tân</td><td>Lịch: Đã hủy</td><td>3b</td></tr>
+      <tr><td>Bác sĩ nghỉ đột xuất</td><td>Hạn mức tự giảm; lịch online không gán người nên không phải dời; lịch vượt hạn mức thì lễ tân gọi khách</td><td>Hệ thống, lễ tân</td><td>Không</td><td>3c</td></tr>
+      <tr><td>Pet cấp cứu</td><td>Pet vào khám ngay, khách làm hồ sơ song song; Visit chen đầu hàng đợi</td><td>Lễ tân, bác sĩ</td><td>Visit: Đang thực hiện</td><td>4, 6</td></tr>
+      <tr><td>Groomer thấy dấu hiệu bệnh</td><td>Báo lễ tân, hỏi khách; đồng ý thì tạo Visit khám</td><td>Groomer, lễ tân</td><td>Thêm Visit</td><td>7a</td></tr>
+      <tr><td>Khách từ chối dịch vụ thêm</td><td>Không thêm dòng; bác sĩ ghi chú khách từ chối</td><td>Bác sĩ</td><td>Không</td><td>6a</td></tr>
+      <tr><td>Thiếu thuốc</td><td>Bác sĩ đổi thuốc, chuyển kho, hoặc khách mua ngoài; kho không tự đổi đơn</td><td>Bác sĩ, kho</td><td>Không</td><td>11a</td></tr>
+      <tr><td>Thanh toán thất bại</td><td>Không ghi khoản thu; thử lại hoặc đổi phương thức</td><td>Thu ngân</td><td>Hóa đơn: giữ Chưa hoàn thành</td><td>8b</td></tr>
+      <tr><td>Khách bỏ về không trả</td><td>Hủy hóa đơn có lý do, báo chủ; Visit vẫn trong lịch sử Pet</td><td>Lễ tân</td><td>Hóa đơn: Đã hủy</td><td>8b</td></tr>
+      <tr><td>Khách xin nợ</td><td>Không cho ở V1</td><td>—</td><td>—</td><td>8</td></tr>
+      <tr><td>Hóa đơn lập sai sau khi hoàn thành</td><td>Chủ shop sửa: hủy bản cũ, lập bản thay thế, thu thêm hoặc trả lại</td><td>Chủ shop</td><td>Cũ: Đã hủy; mới: Hoàn thành</td><td>8c</td></tr>
+      <tr><td>Khách trả hàng</td><td>Kiểm tay; nguyên cộng tồn, lỗi chờ xử lý, hết hạn hủy; hoàn tiền</td><td>Lễ tân</td><td>Hóa đơn gốc giữ nguyên</td><td>8d</td></tr>
+      <tr><td>Lệch két cuối ca</td><td>Ghi chênh lệch, lý do, báo chủ</td><td>Thu ngân</td><td>Ca: Đã đóng, có chênh</td><td>8e</td></tr>
+      <tr><td>Sửa bệnh án quá 24 giờ</td><td>Không sửa; thêm ghi chú bổ sung</td><td>Bác sĩ lập dòng</td><td>Không</td><td>6b</td></tr>
+      <tr><td>Hàng hết hạn trong kho</td><td>Cảnh báo trước; hết hạn thì lập phiếu hủy, cần duyệt</td><td>Kho, QL chi nhánh</td><td>Tồn giảm</td><td>11b</td></tr>
+      <tr><td>Chuyển kho thất bại</td><td>Xem 12a</td><td>Kho hai cơ sở</td><td>Phiếu chuyển</td><td>12a</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12a · Phiếu chuyển kho và các đường thất bại</h3>
+  <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> YeuCau: cơ sở cần hàng tạo
+  YeuCau --> DaDuyet: cơ sở gửi duyệt, giữ hàng
+  YeuCau --> DaHuy: từ chối hoặc hủy
+  DaDuyet --> DangChuyen: xuất kho theo lô
+  DaDuyet --> DaHuy: hủy trước khi xuất, nhả hàng giữ
+  DangChuyen --> DaNhan: nhận đủ
+  DangChuyen --> NhanThieu: nhận thiếu hoặc hỏng
+  DangChuyen --> TraVe: hủy giữa đường, hàng quay về
+  NhanThieu --> DaNhan: ghi số thực nhận, phần thiếu chờ chủ xử lý
+  TraVe --> DaHuy: cơ sở gửi nhập lại
+  DaNhan --> [*]
+  DaHuy --> [*]
+  YeuCau: Yêu cầu
+  DaDuyet: Đã duyệt
+  DangChuyen: Đang vận chuyển
+  DaNhan: Đã nhận
+  NhanThieu: Nhận thiếu
+  TraVe: Trả về
+  DaHuy: Đã hủy
+</pre></div>
+  <ul class="notes">
+    <li><span class="tag t-done">Đã xác định v5</span> Yêu cầu, Đã duyệt, Đang vận chuyển, Đã nhận, Đã hủy; cơ sở gửi giữ hàng ngay khi có yêu cầu.</li>
+    <li><span class="tag t-prop">Đề xuất</span> Thêm "Nhận thiếu" và "Trả về" cho hai đường thất bại đặc tả 10.3 yêu cầu; phần thiếu ghi riêng để chủ xử lý, không tự trừ vào cơ sở nào.</li>
+  </ul>
+</section>
+
+<section id="phan-tich">
+  <div class="eyebrow">Giai đoạn 1 · Phân tích</div>
+  <h2>Vai trò và đối tượng nghiệp vụ</h2>
+  <h3>Vai trò</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Vai trò</th><th>Tình trạng</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td>Chủ shop</td><td><span class="tag t-done">Đã xác định v5</span></td><td>Xem mọi chi nhánh; duy nhất được sửa hóa đơn đã hoàn thành.</td></tr>
+      <tr><td>Quản lý chi nhánh</td><td><span class="tag t-new">Chốt 20/10</span></td><td>Role mẫu. v5 định dùng permission lẻ (mâu thuẫn mục 3).</td></tr>
+      <tr><td>Lễ tân</td><td><span class="tag t-new">Chốt 20/10</span></td><td>Hủy hóa đơn chưa hoàn thành; chỉ thấy cảnh báo y tế và ngày khám.</td></tr>
+      <tr><td>Thu ngân</td><td><span class="tag t-new">Chốt 20/10</span></td><td>Role mẫu; có thể cùng người với lễ tân.</td></tr>
+      <tr><td>Bác sĩ thú y</td><td><span class="tag t-done">Đã xác định v5</span></td><td>Xem bệnh án mọi chi nhánh. Quy tắc sửa bệnh án vẫn mở (mâu thuẫn mục 5).</td></tr>
+      <tr><td>Nhân viên spa</td><td><span class="tag t-done">Đã xác định v5</span></td><td>Chỉ thấy cảnh báo y tế.</td></tr>
+      <tr><td>Nhân viên kho</td><td><span class="tag t-new">Chốt 20/10</span></td><td>Role mẫu, dùng từ giai đoạn 2.</td></tr>
+      <tr><td>Nhân viên xét nghiệm</td><td><span class="tag t-open">Open question</span></td><td>Chưa có trong tài liệu. Tạm coi bác sĩ hoặc phụ tá làm.</td></tr>
+      <tr><td>Khách hàng</td><td><span class="tag t-done">Đã xác định v5</span></td><td>Site đặt lịch, xem lịch sử; không thao tác hóa đơn.</td></tr>
+      <tr><td>Admin nền tảng</td><td><span class="tag t-done">Đã xác định v5</span></td><td>Không có trong đặc tả 20/10.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Đối tượng nghiệp vụ</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Đối tượng</th><th>Theo chốt hiện tại</th><th>Tình trạng</th></tr></thead>
+    <tbody>
+      <tr><td>Chủ nuôi (Customer)</td><td>Hồ sơ theo SĐT, dùng chung chi nhánh. Liên hệ khẩn cấp, trạng thái khách: chưa có</td><td><span class="tag t-done">Đã xác định v5</span></td></tr>
+      <tr><td>Membership</td><td>V1 không có; chỉ lưu hồ sơ. Tích điểm, khuyến mãi sau</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+      <tr><td>Pet</td><td>Hồ sơ riêng, bệnh án gắn Pet; ảnh nhận diện chưa có</td><td><span class="tag t-done">Đã xác định v5</span></td></tr>
+      <tr><td>Lịch hẹn</td><td>Tham khảo, nhắc hẹn, phân bác sĩ trực</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+      <tr><td>Visit</td><td>Một lượt dùng dịch vụ của một Pet: Đang chờ → Đang thực hiện → Hoàn tất (+ Đã hủy); độc lập với hóa đơn</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+      <tr><td>Bệnh án</td><td>Một hồ sơ (có số) mỗi Pet, mỗi lần khám một dòng chi tiết; người lập sửa trong 24 giờ; kết quả xét nghiệm đính kèm. Dùng chung chi nhánh</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+      <tr><td>Đơn thuốc</td><td>v5: dòng thuốc trong Visit, không phải chứng từ riêng</td><td><span class="tag t-diff">Khác v5</span> xét ở vòng 3</td></tr>
+      <tr><td>Hóa đơn</td><td>Gom Visit + hàng mua + dòng gõ tay. Chưa hoàn thành → Hoàn thành (trả đủ), hoặc Đã hủy</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+      <tr><td>Thanh toán</td><td>Chỉ ghi khoản thu thành công; nhiều phương thức một lần thu; không cọc, không nợ. Khoản hoàn khi trả hàng. Tiền mặt gắn ca thu ngân</td><td><span class="tag t-new">Chốt 20/10</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="lo-hong">
+  <div class="eyebrow">Giai đoạn 1 · Phân tích</div>
+  <h2>Còn thiếu</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Chưa có trong tài liệu nào <span class="tag t-open">Open question</span></h3>
+      <ul>
+                <li>Chuyển tuyến ra ngoài shop (vòng 3).</li>
+        <li>Người đón Pet không phải chủ: có cần xác nhận gì không.</li>
+              </ul>
+    </div>
+    <div class="card">
+      <h3>Đặc tả tự mâu thuẫn, đã gỡ bằng chốt 20/10</h3>
+      <ul>
+        <li>Mục 5.7 đóng Visit, lịch sau thanh toán: nay Visit hoàn tất trước, độc lập hóa đơn (1.2).</li>
+        <li><code>Rescheduled</code>, <code>In-service</code>: không thêm (3.2).</li>
+        <li>"Hồ sơ tiếp nhận hoặc Visit": chỉ có Visit.</li>
+        <li>Lễ tân và thu ngân trùng việc: hai role, một người giữ được cả hai (2.1).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="lien-quan">
+  <div class="eyebrow">Đối chiếu</div>
+  <h2>Liên quan danh sách 50 mâu thuẫn</h2>
+  <p>Các chốt 20/10 trả lời luôn một số mục trong <code>old/analysis/mau-thuan-tai-lieu.md</code> (thread "Rà mâu thuẫn"). Thread đó sửa db-schema, design, plan; ở đây không sửa.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Mục</th><th>Nội dung</th><th>Theo chốt 20/10</th></tr></thead>
+    <tbody>
+      <tr><td>2</td><td>Một người nhiều role</td><td>Có (2.1)</td></tr>
+      <tr><td>3</td><td>Quản lý chi nhánh</td><td>Thêm role mẫu, tức phương án B (2.1)</td></tr>
+      <tr><td>4</td><td>Lễ tân xem bệnh án</td><td>Chỉ cảnh báo + ngày khám, tức phương án B (2.2)</td></tr>
+      <tr><td>19</td><td>Giá áp dụng khi khách đến</td><td>Giá hiện tại lúc thêm vào Visit; lịch chỉ hiện giá tham khảo (10.4), khác phương án A</td></tr>
+      <tr><td>28</td><td>Giới hạn giảm giá theo role</td><td>Không giảm tay; khuyến mãi theo chiến dịch, theo hạng: sau V1 (10.1, 11.1)</td></tr>
+      <tr><td>36</td><td>Phương pháp giá vốn</td><td>Theo lô, lô nhập trước xuất trước; chủ điền giá nhập, chỉ chủ xem (13.2, 15.1, 16.1)</td></tr>
+      <tr><td>37</td><td>Thời điểm trừ kho</td><td>Khi hoàn tất Visit, tức phương án A (13.1)</td></tr>
+      <tr><td>7</td><td>Khách tự đăng ký, đặt online qua OTP</td><td>Phương án A; đã đăng nhập thì lấy luôn thông tin (6.4)</td></tr>
+      <tr><td>13</td><td>Thành viên, tích điểm</td><td>Để sau V1 (4.1)</td></tr>
+      <tr><td>26</td><td>Công nợ, đặt cọc</td><td>Không có, phương án A (1.1)</td></tr>
+      <tr><td>27</td><td>Hủy, hoàn tiền</td><td>Lễ tân hủy hóa đơn chưa hoàn thành, có lý do, báo chủ (5.2); chủ shop "sửa" = hủy bản cũ + lập bản thay thế (5.1). Gần phương án A</td></tr>
+      <tr><td>30</td><td>Dòng thuốc nhập tay ở MVP</td><td>Hóa đơn có dòng gõ tay (3.3), gần phương án A</td></tr>
+      <tr><td>5</td><td>Quy tắc sửa bệnh án</td><td>Người lập sửa dòng chi tiết của mình trong 24 giờ (8.1), gần phương án A</td></tr>
+      <tr><td>14</td><td>Ai đánh dấu lịch hoàn thành</td><td>Lịch không còn trạng thái "Hoàn thành" (6.2)</td></tr>
+      <tr><td>—</td><td>Chống đặt trùng theo nhân viên (db-schema 5.1)</td><td>Thay bằng hạn mức theo tỉ lệ người trực (6.1, 7.1–7.4); khóa chống vượt hạn mức theo chi nhánh + nhóm dịch vụ</td></tr>
+      <tr><td>—</td><td>Visit trạng thái <code>invoiced</code></td><td>Bỏ (1.2); chưa có trong danh sách 50 mục</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+</div>

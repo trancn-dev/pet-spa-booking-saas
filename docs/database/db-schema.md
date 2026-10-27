@@ -1,550 +1,419 @@
-# Lược đồ DB: Pet Spa & Vet Booking
+# Lược đồ cơ sở dữ liệu: Pet Spa & Thú y (PawBook)
 
-MySQL 8 (InnoDB, utf8mb4), một DB dùng chung, phân tách bằng `tenant_id`.
+Tài liệu chốt chính thức. Nguồn nghiệp vụ: `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` và sơ đồ ở `analysis/so-do-nghiep-vu/`. Bản cũ ở `old/design/`.
 
-> **v2 (17/10/2026), theo nghiệp vụ chủ tiệm mô tả.** Thêm: đa chi nhánh, tiếp nhận + hàng đợi + lượt khám, hóa đơn & thanh toán (**MVP**); kho, thuốc theo lô, bán hàng, điều chuyển giữa chi nhánh (**Giai đoạn 2**); xếp ca, chấm công, lương (**Giai đoạn 3**). Bảng mới ở mục 1.3-1.5, nghiệp vụ ở 4.4-4.8, rủi ro mới ở 5.4-5.5. Những chỗ đánh dấu **[Mặc định, cần xác nhận]** là lựa chọn tạm, sửa được. ERD vẽ lại thành 3 ảnh ở mục 2.
-
-**Quy ước chung**
-- PK `BIGINT UNSIGNED AUTO_INCREMENT`. Bảng lộ ra URL công khai (`appointments`, `owners`) thêm `public_id CHAR(26)` (ULID) để tránh dò ID tuần tự.
-- Mọi thời điểm lưu `DATETIME` theo **UTC** (không dùng `TIMESTAMP`: bị convert theo session tz và giới hạn 2038). Giờ "đồng hồ treo tường" (ca làm việc) lưu `TIME` + timezone của tenant.
-- Bảng tenant: mọi index ghép **bắt đầu bằng `tenant_id`**; mọi unique nghiệp vụ đều kèm `tenant_id`.
-- FK giữa hai bảng tenant dùng **FK ghép `(tenant_id, x_id)` → `(tenant_id, id)`** (mỗi bảng tenant có `UNIQUE(tenant_id, id)`). Lý do: FK đơn chỉ đảm bảo bản ghi tồn tại, không đảm bảo cùng tenant; FK ghép chặn rò rỉ ngay ở tầng DB.
-- `deleted_at` (soft delete) cho `owners`, `pets`, `services`, `staff`, `branches`, `products`: lịch sử hẹn/y tế/hóa đơn không được mất tham chiếu.
-- **Chi nhánh không phải ranh giới cô lập như tenant.** `branch_id` có FK ghép `(tenant_id, branch_id)` → `branches(tenant_id, id)`, nhưng **không** có global scope fail-closed: nhân viên chi nhánh 1 được tra tồn kho chi nhánh 2. Lọc theo chi nhánh làm ở query + Policy (chi nhánh đang chọn trong session), không làm ở global scope.
-- Tiền: `DECIMAL(12,2)`, không float. Số lượng tồn kho: `DECIMAL(12,3)` (thuốc tính theo ml/viên lẻ).
+- Nhãn giai đoạn: **MVP**, **GĐ2** (kho), **GĐ3** (ca, chấm công, lương), **Sau V1** (chỉ ghi lại, chưa tạo bảng).
+- Mọi quyết định trong file đã chốt; không còn câu hỏi mở.
 
 ---
 
-## 1. Danh sách bảng
+## 1. Quy ước chung
 
-### 1.1 Bảng dùng chung toàn hệ thống (không có `tenant_id`)
+**Nền tảng:** MySQL 8.0.16+ (InnoDB, utf8mb4_0900_ai_ci), Laravel 12. Một DB dùng chung, phân tách bằng `tenant_id`.
 
-| Bảng | Cột chính | Index / ghi chú |
-|---|---|---|
-| `tenants` | id, public_id, name, `slug VARCHAR(63)`, `timezone VARCHAR(64)` (IANA, vd `Asia/Ho_Chi_Minh`), `locale`, `currency CHAR(3)`, plan_id FK, stripe_id, trial_ends_at, status ENUM(active,suspended), `reschedule_cutoff_hours SMALLINT` (khách tự dời lịch phải trước giờ hẹn ít nhất N giờ, mặc định 24), `cancel_cutoff_hours SMALLINT`, `default_tax_rate DECIMAL(5,2)`, created_at | UNIQUE(slug), UNIQUE(stripe_id). Chính là "gốc" tenant = **một chủ** (có thể nhiều chi nhánh). Timezone đặt ở tenant: **[Mặc định, cần xác nhận]** mọi chi nhánh cùng múi giờ. |
-| `users` | id, name, `email VARCHAR(191)`, password, email_verified_at, last_tenant_id | UNIQUE(email). User là danh tính toàn cục: 1 người có thể làm ở nhiều tiệm. |
-| `plans` | id, code, name, `max_staff SMALLINT`, `max_appointments_per_month INT`, stripe_price_id, features JSON | UNIQUE(code) |
-| `species` | id, code (dog, cat…), name | UNIQUE(code). Seed sẵn. |
-| `breeds` | id, species_id FK, name, `default_size ENUM(xs,s,m,l,xl)` | UNIQUE(species_id, name). Catalog chung, tenant không sửa. |
-| `stripe_webhook_events` | id, `event_id VARCHAR(255)`, type, payload JSON, processed_at | UNIQUE(event_id) → webhook idempotent. |
-| `subscriptions`, `subscription_items` | Bảng của Cashier, billable = `tenants` (cột `tenant_id` ở đây là owner của subscription, không phải scope dữ liệu) | Theo Cashier. |
-| `roles`, `permissions`, `model_has_roles`… | spatie/laravel-permission bật **teams mode**, `team_id = tenant_id` | `permissions` chung; `roles` có thể chung (owner, vet, groomer, receptionist) với `team_id NULL`; gán role theo `team_id`. |
-| `jobs`, `failed_jobs`, `cache`, `sessions` | Hạ tầng Laravel | Payload job tự mang `tenant_id`. |
+| Chủ đề | Quy ước |
+|---|---|
+| Khóa chính | `id BIGINT UNSIGNED AUTO_INCREMENT`. Bảng có URL lộ ra ngoài (`tenants`, `branches`, `customers`, `pets`, `appointments`, `visits`, `invoices`, `stock_transfers`) thêm `public_id CHAR(26)` (ULID) để không dò được ID tuần tự. |
+| Tenant | Mọi bảng nghiệp vụ có `tenant_id NOT NULL` + `UNIQUE(tenant_id, id)`. Mọi index ghép, kể cả PK của bảng nối (`staff_branches`, `branch_services`, `service_combo_items`), bắt đầu bằng `tenant_id`; mọi unique nghiệp vụ kèm `tenant_id`. Bảng con vẫn lặp `tenant_id` để global scope và FK ghép áp dụng đồng nhất. Bảng có cột đa hình (`attachments`, `reminders`, `activity_logs`) không có FK: Action kiểm đối tượng cùng tenant trước khi ghi. |
+| Thứ tự khóa | Mọi transaction khóa theo thứ tự cố định để không deadlock: `customers` → `booking_capacity_locks` (ngày, nhóm tăng dần; medical trước grooming) → `tenant_usage`; `invoices` → `visits` → `stock_items` (product_id tăng dần). |
+| FK | Giữa hai bảng tenant dùng **FK ghép** `(tenant_id, x_id) → x(tenant_id, id)`: code sai cũng không gắn được dữ liệu tenant A vào tenant B. |
+| Cơ sở | `branch_id` có FK ghép nhưng **không** là ranh giới cô lập (không global scope): nhân viên tra được tồn kho cơ sở khác. Lọc theo cơ sở làm ở query + Policy. |
+| Thời gian | Thời điểm lưu `DATETIME` **UTC** (không dùng `TIMESTAMP`). Giờ "đồng hồ treo tường" (ca làm, giờ mở cửa) lưu `TIME` local. Ngày nghiệp vụ (ngày hàng đợi, ngày hóa đơn) lưu `DATE` local. Mọi cơ sở cùng múi giờ, đặt ở `tenants.timezone`. |
+| Tiền, số lượng | Tiền `DECIMAL(12,2)`; số lượng kho `DECIMAL(12,3)`. Không float. |
+| Xóa | Soft delete (`deleted_at`) cho danh mục và hồ sơ: `customers`, `pets`, `services`, `products`, `staff`, `branches`, `suppliers`. Chứng từ (hóa đơn, phiếu, sổ kho, nhật ký) **không bao giờ xóa**, chỉ hủy bằng trạng thái. |
+| Bất biến | Sổ kho, nhật ký, khoản thu là **append-only**: sai thì ghi bút toán mới. Model ném exception ở `updating`/`deleting`. |
+| Mã chứng từ | Mọi chứng từ mang mã cơ sở: `{branch.code}-{yyyymmdd}-{seq}`. Số cấp nguyên tử từ bảng đếm (mục 2.10), không dùng `MAX()+1`. |
 
-### 1.2 Bảng có `tenant_id`
+Tên bảng tiếng Anh, nghĩa tiếng Việt:
 
-Tất cả có `tenant_id BIGINT UNSIGNED NOT NULL` FK → `tenants.id`, `created_at/updated_at`, và `UNIQUE(tenant_id, id)`.
-
-**Nhân sự & lịch làm việc**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `branches` | id, public_id, tenant_id, `code VARCHAR(20)`, name, address, phone, `allowed_ips JSON NULL` (IP/WiFi tiệm, cho chấm công GĐ3), is_active, deleted_at | UNIQUE(tenant_id, code). MVP UI chỉ cần 1 chi nhánh, nhưng mọi bảng vận hành có `branch_id` ngay từ đầu (thêm sau rất đắt: backfill + đổi index). |
-| `staff` (hồ sơ nhân viên) | id, tenant_id, `user_id FK NULL`, `home_branch_id`, `display_name`, phone, `position ENUM(vet,groomer,receptionist,assistant,security,cleaner,other)`, `is_bookable BOOL`, `color`, `pin_hash VARCHAR(255) NULL` (PIN chấm công), status ENUM(active,disabled), deleted_at | UNIQUE(tenant_id, user_id); IDX(tenant_id, is_bookable, status). **Nhân viên ≠ tài khoản**: bảo vệ, lao công có `user_id NULL`, chỉ chấm công bằng PIN. Vẫn là **hàng bị khóa** khi đặt lịch (mục 5). |
-| `staff_branches` | tenant_id, staff_id, branch_id | PK(staff_id, branch_id); IDX(tenant_id, branch_id). Nhân viên làm được ở chi nhánh nào. |
-| `invitations` | id, tenant_id, email, role, `token_hash CHAR(64)`, invited_by FK staff, expires_at, accepted_at | UNIQUE(token_hash); IDX(tenant_id, email) |
-| `staff_working_hours` | id, tenant_id, staff_id, branch_id, `weekday TINYINT` (0-6), `start_time TIME`, `end_time TIME`, effective_from DATE NULL, effective_to DATE NULL | IDX(tenant_id, staff_id, weekday). Cho phép nhiều dòng/ngày (ca gãy). Từ GĐ3, ngày nào có `shift_assignments` thì availability lấy theo ca được xếp, bảng này là ca mặc định. |
-| `staff_time_off` | id, tenant_id, staff_id, `starts_at DATETIME`, `ends_at DATETIME` (UTC), reason, created_by | IDX(tenant_id, staff_id, starts_at) |
-| `tenant_closures` | id, tenant_id, `branch_id NULL` (NULL = cả chuỗi), `date DATE` (ngày local), reason | UNIQUE(tenant_id, branch_id, date) |
-
-**Khách hàng & thú cưng**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `owners` | id, public_id, tenant_id, name, `phone VARCHAR(20) NULL` (E.164), email NULL, telegram_chat_id NULL, zalo_user_id NULL, `is_system BOOL`, `system_branch_id NULL`, notes, deleted_at | UNIQUE(tenant_id, phone); UNIQUE(tenant_id, system_branch_id); IDX(tenant_id, name); UNIQUE(public_id). **SĐT là khóa khách, dùng chung mọi chi nhánh.** `phone` chỉ NULL với hồ sơ hệ thống "Thú hoang/vô chủ" (mỗi chi nhánh một, `is_system=1`); CHECK `phone IS NOT NULL OR is_system = 1`. MySQL cho nhiều NULL trong UNIQUE nên không đụng unique SĐT. |
-| `pets` | id, tenant_id, owner_id, species_id FK (global), breed_id FK NULL (global), name, `is_stray BOOL`, sex, `birth_date DATE NULL`, `weight_kg DECIMAL(5,2)`, `size ENUM(xs,s,m,l,xl)`, is_neutered, allergies TEXT, deleted_at | IDX(tenant_id, owner_id); FK ghép (tenant_id, owner_id). Thú hoang: gắn owner hệ thống, tên mặc định "Thú hoang #n" (sửa được), vẫn đủ loài + cân nặng ước lượng để lên lượt khám. |
-| `customer_otps` | id, tenant_id, phone, `code_hash CHAR(64)`, expires_at, attempts TINYINT, consumed_at, ip | IDX(tenant_id, phone, expires_at). Đăng nhập portal bằng SĐT + OTP SMS: OTP 5 phút, tối đa 5 lần nhập sai, rate limit gửi theo SĐT + IP. |
-| `medical_records` | id, tenant_id, pet_id, `visit_id NULL`, appointment_id NULL, vet_staff_id, diagnosis, treatment, notes, recorded_at | IDX(tenant_id, pet_id, recorded_at). Quyền sửa: chỉ vet (Policy). Từ MVP v2, ghi khám đi qua lượt khám (`visit_id`). |
-
-**Dịch vụ**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `services` | id, tenant_id, name, category ENUM(grooming,medical,boarding), `default_duration_min SMALLINT`, `buffer_min SMALLINT` (dọn dẹp sau ca), `default_price DECIMAL(12,2)`, is_public, is_active, deleted_at | IDX(tenant_id, is_active) |
-| `service_duration_rules` | id, tenant_id, service_id, species_id NULL, breed_id NULL, size ENUM NULL, `duration_min`, `price DECIMAL(12,2) NULL`, `priority TINYINT` | UNIQUE(tenant_id, service_id, species_id, breed_id, size) |
-| `staff_services` | tenant_id, staff_id, service_id | PK(staff_id, service_id); IDX(tenant_id, service_id). Ai làm được dịch vụ gì (phục vụ "bất kỳ nhân viên"). |
-
-**Lịch hẹn**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `appointments` | id, public_id, tenant_id, branch_id, owner_id, pet_id, service_id, staff_id, `starts_at DATETIME`, `ends_at DATETIME` (đã cộng buffer), `duration_min` + `price` (**snapshot** tại lúc đặt), status ENUM(pending,confirmed,checked_in,completed,cancelled,no_show), source ENUM(staff,portal), `idempotency_key CHAR(36) NULL`, cancelled_at, notes | **IDX(staff_id, starts_at, ends_at, status)**: kiểm tra chồng lịch. IDX(tenant_id, branch_id, starts_at): lịch theo ngày của chi nhánh. IDX(tenant_id, pet_id, starts_at): lịch sử pet + check trùng pet. UNIQUE(tenant_id, idempotency_key): chống double-submit. UNIQUE(public_id). |
-
-Snapshot `duration_min`/`price`: đổi quy tắc dịch vụ sau này không được làm "dịch chuyển" lịch hẹn đã đặt.
-`checked_in` = khách đã đến và **đã có lượt khám** (`visits.appointment_id`). Lịch hẹn là kế hoạch, lượt khám là việc thực tế (mục 4.5).
-
-**Tiêm phòng / tẩy giun**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `vaccines` | id, tenant_id, name, `kind ENUM(vaccine,dewormer)`, species_id, manufacturer | IDX(tenant_id, species_id). Theo tenant vì mỗi phòng khám dùng hãng/loại khác nhau (có thể seed từ mẫu chung). |
-| `care_protocols` | id, tenant_id, name, species_id, vaccine_id, is_active | IDX(tenant_id, species_id) |
-| `care_protocol_steps` | id, tenant_id, protocol_id, `step_no TINYINT`, `min_age_days SMALLINT NULL`, `offset_days SMALLINT` (cách mũi trước), `is_recurring BOOL`, `repeat_every_days SMALLINT NULL` | UNIQUE(protocol_id, step_no) |
-| `pet_care_records` | id, tenant_id, pet_id, protocol_id NULL, vaccine_id, step_no, `administered_on DATE`, administered_by staff_id, batch_no, `next_due_on DATE NULL`, `superseded_at DATETIME NULL` | IDX(tenant_id, pet_id, vaccine_id); **IDX(next_due_on, superseded_at)** cho scheduler quét toàn hệ thống. |
-
-**Nhắc hẹn / thông báo**
-
-| Bảng | Cột chính | Index |
-|---|---|---|
-| `reminders` | id, tenant_id, `remindable_type/id` (appointment hoặc pet_care_record), `audience ENUM(owner,branch_staff)`, channel ENUM(email,telegram,zalo,sms,in_app), `send_at DATETIME`, status ENUM(pending,sent,failed,skipped), attempts, sent_at, last_error, **`dedupe_key VARCHAR(191)`** | UNIQUE(dedupe_key) (vd `appt:123:24h:email`); IDX(status, send_at) cho worker. `branch_staff` + `in_app` = thông báo cho lễ tân chi nhánh "gọi xác nhận khách có lịch ngày mai" (gửi trước 1 ngày, vào bảng `notifications` của Laravel, có thêm cột tenant_id). |
-| `tenant_usage` | tenant_id, `period CHAR(7)` (`2026-10`), appointments_count | PK(tenant_id, period). Đếm quota gói, tăng atomic. |
-
-### 1.3 MVP v2: tiếp nhận, lượt khám, hóa đơn (có `tenant_id`)
-
-| Bảng | Cột chính | Index / ghi chú |
-|---|---|---|
-| `branch_daily_counters` | tenant_id, branch_id, `date DATE` (local), `last_queue_no SMALLINT`, `last_invoice_no INT` | PK(tenant_id, branch_id, date). Cấp số thứ tự hàng đợi + số hóa đơn trong ngày bằng `INSERT ... ON DUPLICATE KEY UPDATE last_queue_no = LAST_INSERT_ID(last_queue_no + 1)` (nguyên tử, không `MAX()+1`). |
-| `visits` (lượt khám / lượt spa) | id, public_id, tenant_id, branch_id, owner_id, pet_id, `appointment_id NULL`, `kind ENUM(medical,grooming)`, `visit_date DATE` (local), `queue_no SMALLINT`, status ENUM(waiting,in_progress,done,invoiced,cancelled), `assigned_staff_id NULL`, reason, checked_in_at, started_at, finished_at, created_by | UNIQUE(tenant_id, branch_id, visit_date, queue_no); UNIQUE(tenant_id, appointment_id); IDX(tenant_id, branch_id, visit_date, status) cho màn hàng đợi. **owner_id + pet_id NOT NULL**: khám/spa bắt buộc có hồ sơ. |
-| `visit_items` | id, tenant_id, visit_id, `item_type ENUM(service,medication,consumable,product)`, service_id NULL, product_id NULL (GĐ2), `quantity DECIMAL(12,3)`, `unit_price DECIMAL(12,2)` (snapshot), performed_by staff_id, notes | IDX(tenant_id, visit_id). Bác sĩ/groomer ghi dịch vụ, thuốc, vật tư đã dùng. CHECK: đúng một trong service_id/product_id theo item_type. MVP chỉ có `service`; thuốc/vật tư trừ kho từ GĐ2. |
-| `invoices` | id, public_id, tenant_id, branch_id, `code VARCHAR(30)` (vd `Q3-20261017-0042`), `visit_id NULL`, `owner_id NULL`, `kind ENUM(visit,retail)`, status ENUM(draft,issued,partially_paid,paid,void), subtotal, discount_amount, tax_amount, total, paid_amount, `issued_at`, `paid_at`, `voided_at`, void_reason, `replaces_invoice_id NULL`, created_by, `active_visit_id BIGINT GENERATED ALWAYS AS (IF(status <> 'void', visit_id, NULL)) STORED` | UNIQUE(tenant_id, code); **UNIQUE(tenant_id, active_visit_id)**: một lượt khám chỉ có một hóa đơn còn hiệu lực (MySQL không có partial unique nên dùng cột sinh). IDX(tenant_id, branch_id, issued_at) cho doanh thu. CHECK: `kind='visit'` thì `visit_id` và `owner_id` NOT NULL; `kind='retail'` thì `visit_id` NULL. |
-| `invoice_lines` | id, tenant_id, invoice_id, `line_type ENUM(service,medication,consumable,product)`, visit_item_id NULL, service_id NULL, product_id NULL, `name` (snapshot), quantity, unit_price, discount_amount, tax_rate, line_total, `unit_cost DECIMAL(12,2) NULL` (giá vốn snapshot, GĐ2, **chỉ Owner thấy**) | IDX(tenant_id, invoice_id). |
-| `payments` | id, tenant_id, invoice_id, `kind ENUM(payment,refund)`, `method ENUM(cash,bank_transfer,qr,card)`, amount (> 0), reference (mã giao dịch), received_by staff_id, paid_at, `idempotency_key CHAR(36)` | UNIQUE(tenant_id, idempotency_key); IDX(tenant_id, invoice_id). Thanh toán một phần = nhiều dòng. Hoàn tiền = dòng `refund`, không sửa dòng cũ. |
-
-**Quy tắc hồ sơ khách theo loại hóa đơn** (theo đính chính của chủ tiệm):
-- **Khám bệnh / spa** (`kind='visit'`): bắt buộc đi qua `visits` → bắt buộc có `owner_id` + `pet_id`. Khách vãng lai vẫn phải tạo hồ sơ (SĐT là khóa); thú hoang dùng hồ sơ hệ thống (mục 1.2 `owners`).
-- **Chỉ mua hàng** (thức ăn, đồ chơi; `kind='retail'`): không cần hồ sơ, `owner_id` NULL. Lễ tân có thể tùy chọn gắn SĐT nếu khách muốn lưu lịch sử mua.
-- Ràng buộc 2 lớp: CHECK constraint ở DB (MySQL 8.0.16+ có hiệu lực) + kiểm tra trong Action `CreateRetailInvoice` / `CreateVisitInvoice`. Hóa đơn retail **không được** có dòng `service` hoặc `medication` (thuốc phải kê qua lượt khám); kiểm tra ở Action vì CHECK không nhìn được bảng con.
-
-### 1.4 Giai đoạn 2: kho, thuốc, bán hàng, điều chuyển (có `tenant_id`)
-
-| Bảng | Cột chính | Index / ghi chú |
-|---|---|---|
-| `suppliers` | id, tenant_id, name, phone, tax_code, address, deleted_at | IDX(tenant_id, name) |
-| `product_categories` | id, tenant_id, parent_id NULL, name | |
-| `products` | id, tenant_id, category_id, `sku VARCHAR(50)`, barcode NULL, name, `kind ENUM(medication,consumable,retail)` (thuốc / vật tư dùng trong dịch vụ như dầu gội / hàng bán lẻ như thức ăn, đồ chơi), `unit VARCHAR(20)`, `sale_price DECIMAL(12,2)`, `is_batch_tracked BOOL`, `requires_prescription BOOL`, `is_public BOOL` (trưng bày trên portal, **không bán online**), image_path, is_active, deleted_at | UNIQUE(tenant_id, sku); IDX(tenant_id, kind, is_active). Danh mục chung cả chuỗi. |
-| `service_consumables` | tenant_id, service_id, product_id, `quantity DECIMAL(12,3)` | PK(service_id, product_id). Định mức vật tư mỗi dịch vụ (vd "Tắm cỡ L" dùng 60ml dầu gội X) → tự trừ kho khi hoàn thành lượt. |
-| `stock_items` | id, tenant_id, branch_id, product_id, `on_hand DECIMAL(12,3)`, `reserved DECIMAL(12,3)`, `avg_cost DECIMAL(12,2)` (bình quân gia quyền), `reorder_level DECIMAL(12,3)` | UNIQUE(tenant_id, branch_id, product_id); IDX(tenant_id, product_id) cho tra tồn liên chi nhánh. **Hàng bị khóa** (`lockForUpdate`) khi trừ/giữ/chuyển kho. Khả dụng = on_hand − reserved. |
-| `stock_batches` | id, tenant_id, branch_id, product_id, `batch_no`, `expires_on DATE NULL`, `quantity DECIMAL(12,3)`, unit_cost, received_at | IDX(tenant_id, branch_id, product_id, expires_on): xuất **FEFO** (hết hạn trước xuất trước). Tổng quantity các lô = stock_items.on_hand (kiểm trong test). |
-| `stock_movements` (sổ kho, chỉ thêm) | id, tenant_id, branch_id, product_id, batch_id NULL, `type ENUM(purchase,sale,visit_usage,transfer_out,transfer_in,adjustment,stocktake,return)`, `quantity DECIMAL(12,3)` (âm = xuất), unit_cost, `source_type/source_id` (phiếu nhập, hóa đơn, visit_item, phiếu chuyển…), created_by, created_at | IDX(tenant_id, branch_id, product_id, created_at). Không UPDATE/DELETE; sai thì ghi bút toán điều chỉnh. Nguồn để đối soát on_hand. |
-| `purchase_receipts` (phiếu nhập) | id, tenant_id, branch_id, supplier_id, code, status ENUM(draft,posted,cancelled), invoice_ref, total_cost, received_at, posted_by | UNIQUE(tenant_id, code). Post = tạo lô + movement + cập nhật avg_cost trong 1 transaction. |
-| `purchase_receipt_lines` | id, tenant_id, receipt_id, product_id, batch_no, expires_on, quantity, unit_cost | |
-| `stock_transfers` (điều chuyển) | id, public_id, tenant_id, `from_branch_id`, `to_branch_id`, code, status ENUM(requested,approved,in_transit,received,cancelled), requested_by, approved_by, shipped_at, received_at, `shipper_name`, `shipper_phone`, tracking_ref, note | IDX(tenant_id, to_branch_id, status); IDX(tenant_id, from_branch_id, status). CHECK from ≠ to. |
-| `stock_transfer_lines` | id, tenant_id, transfer_id, product_id, `quantity_requested`, `quantity_shipped`, `quantity_received`, batch_id NULL (chọn lô lúc xuất) | Lệch shipped/received → movement `adjustment` + ghi chú (hư hỏng khi vận chuyển). |
-| `stock_reservations` (giữ hàng) | id, tenant_id, branch_id, product_id, quantity, `reason ENUM(transfer,customer_hold)`, transfer_line_id NULL, owner_id NULL, visit_id NULL, `expires_at DATETIME`, status ENUM(active,consumed,released,expired), created_by | IDX(tenant_id, branch_id, product_id, status); IDX(status, expires_at) cho job hết hạn. Giữ hàng tăng `stock_items.reserved`. |
-| `stocktakes` + `stocktake_lines` (kiểm kê) | stocktake: id, tenant_id, branch_id, status ENUM(counting,posted), counted_at, posted_by. line: product_id, batch_id, `system_qty` (snapshot), `counted_qty` | Post = movement `stocktake` cho phần chênh. |
-
-Hóa đơn retail và dòng thuốc/vật tư trong `visit_items` dùng `product_id` + trừ kho chi nhánh của hóa đơn/lượt khám.
-
-### 1.5 Giai đoạn 3: ca làm, chấm công, lương (có `tenant_id`)
-
-| Bảng | Cột chính | Index / ghi chú |
-|---|---|---|
-| `shift_templates` | id, tenant_id, branch_id, name ("Ca sáng", "Ca tối"), `start_time TIME`, `end_time TIME` (local), `crosses_midnight BOOL`, `pay_multiplier DECIMAL(4,2)` (vd ca tối 1.30), `is_night BOOL` | UNIQUE(tenant_id, branch_id, name) |
-| `coverage_requirements` (phủ ca) | id, tenant_id, branch_id, `weekday TINYINT NULL` (NULL = mọi ngày), shift_template_id, `position` (vet, groomer, receptionist, security…), `min_count TINYINT` | UNIQUE(tenant_id, branch_id, weekday, shift_template_id, position). Xếp ca thiếu người → cảnh báo. |
-| `shift_assignments` (xếp ca) | id, tenant_id, branch_id, staff_id, `work_date DATE` (local), shift_template_id, `start_time`, `end_time`, `pay_multiplier` (snapshot từ template) | UNIQUE(tenant_id, staff_id, work_date, shift_template_id); IDX(tenant_id, branch_id, work_date). Không cho 1 người 2 ca chồng giờ (kiểm ở Action, lock hàng staff). |
-| `public_holidays` (dùng chung) | id, country CHAR(2), `date DATE`, name | UNIQUE(country, date). Seed ngày lễ VN; tenant thêm ngày nghỉ riêng qua `tenant_closures`. |
-| `attendance_devices` | id, tenant_id, branch_id, name, `token_hash CHAR(64)`, last_seen_at, revoked_at | UNIQUE(token_hash). Máy kiosk ở quầy (tablet), đăng ký bởi Owner. |
-| `attendance_records` (chấm công) | id, tenant_id, branch_id, staff_id, `work_date DATE` (local), shift_assignment_id NULL, `clock_in_at DATETIME`, `clock_out_at DATETIME NULL` (UTC), `method ENUM(pin_kiosk,qr)`, device_id NULL, ip, status ENUM(open,closed,auto_closed,adjusted), `worked_minutes INT NULL`, adjusted_by NULL, adjust_reason | IDX(tenant_id, staff_id, work_date); IDX(status, clock_in_at). Chỉ chấm ngày làm (không có nghỉ phép). Chỉ nhận chấm từ kiosk đã đăng ký hoặc IP chi nhánh. Quên chấm ra → job đóng tự động lúc hết ca, `auto_closed`, Owner duyệt. |
-| `salary_profiles` | id, tenant_id, staff_id, `pay_type ENUM(monthly,daily,hourly)`, `base_amount DECIMAL(12,2)` (vd 8.000.000/tháng), `standard_workdays TINYINT` (vd 26), `overtime_multiplier DECIMAL(4,2)` (≥1.50), `holiday_multiplier DECIMAL(4,2)` (≥3.00), `night_extra_rate DECIMAL(4,2)` (≥0.30), effective_from DATE, effective_to NULL | IDX(tenant_id, staff_id, effective_from). Mức sàn theo Bộ luật Lao động 2019 (Điều 98), validate khi lưu. |
-| `payroll_periods` | id, tenant_id, `period CHAR(7)`, status ENUM(draft,locked), locked_at, locked_by | UNIQUE(tenant_id, period). Đã khóa thì không tính lại/sửa công của kỳ đó. |
-| `payroll_entries` | id, tenant_id, period_id, staff_id, workdays DECIMAL(5,2), regular_minutes, overtime_minutes, night_minutes, holiday_minutes, base_pay, overtime_pay, night_pay, holiday_pay, bonus_total, deduction_total, advance_total, net_pay, `breakdown JSON` (snapshot công thức + từng ca) | UNIQUE(period_id, staff_id). |
-| `payroll_adjustments` | id, tenant_id, period_id, staff_id, `type ENUM(bonus,penalty,advance)`, amount, reason, created_by | IDX(tenant_id, period_id, staff_id) |
-| `sensitive_access_logs` | id, tenant_id, user_id, `resource VARCHAR(50)` (`payroll`), action ENUM(unlock,view,export,update), ip, user_agent, created_at | IDX(tenant_id, resource, created_at). Ai đã mở trang lương, lúc nào. |
+| Bảng | Nghĩa |
+|---|---|
+| `tenants` | shop (một chủ, nhiều cơ sở) |
+| `branches` | cơ sở |
+| `customers` | khách (chủ nuôi) |
+| `pets` | thú cưng |
+| `visits` | lượt dịch vụ (Visit): một lần khám/spa/tiêm của một pet |
+| `invoices` | hóa đơn |
 
 ---
 
-## 2. ERD
+## 2. Danh sách bảng
 
-Chia 3 sơ đồ cho dễ đọc (bảng chung như `tenants`, `branches`, `staff` lặp lại ở sơ đồ sau). Ảnh render sẵn:
-- [erd.png](erd.png): lõi MVP (tenant, chi nhánh, nhân viên, khách, lịch hẹn, lượt khám, hóa đơn, tiêm phòng, nhắc hẹn)
-- [erd-inventory.png](erd-inventory.png): Giai đoạn 2, kho và điều chuyển
-- [erd-hr.png](erd-hr.png): Giai đoạn 3, ca làm, chấm công, lương
+### 2.1 Nền tảng (dùng chung, không có `tenant_id` nghiệp vụ) — MVP
 
-### 2.1 Lõi MVP
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `plans` | id, code, name, `max_branches SMALLINT`, `max_staff SMALLINT`, `max_appointments_per_month INT`, features JSON | UNIQUE(code). NULL = không giới hạn. `max_staff` đếm nhân viên có tài khoản đang `active` (kể cả chủ shop) **cộng lời mời còn hạn**; kiểm khi mời, khi nhận lời mời và khi kích hoạt lại nhân viên, khóa hàng `tenants` (`FOR UPDATE`) để 2 thao tác song song không vượt. Loại hình shop (spa / thú y / cả hai) chỉ dùng để gợi ý dịch vụ mẫu lúc tạo shop, không lưu. |
+| `tenants` | id, public_id, name, `slug VARCHAR(63)`, `timezone VARCHAR(64)` (IANA), locale, `currency CHAR(3)`, plan_id, `status ENUM(trial,active,past_due,suspended,cancelled)`, `plan_expires_at DATETIME NULL`, suspended_at, suspended_reason, contact_name, contact_phone, admin_note, created_by_admin_id | UNIQUE(slug), UNIQUE(public_id); IDX(status, plan_expires_at). Slug không trùng segment route trung tâm (admin, app, login…). Cài đặt shop ở `tenant_settings`. Vòng đời: `trial`/`active` → quá `plan_expires_at` thành `past_due` (ân hạn 7 ngày, vẫn dùng bình thường, banner đỏ) → hết ân hạn thành `suspended` (xem được, không ghi, Site ngừng nhận lịch, không gửi nhắc khách) → gia hạn thì `active` ngay. `cancelled` = shop biến mất (404). Đổi trạng thái bằng `UPDATE … WHERE status = :expected`. |
+| `tenant_settings` | tenant_id PK, `booking_cancel_cutoff_hours SMALLINT` (mặc định 24), `booking_reschedule_cutoff_hours SMALLINT` (24), `return_window_days SMALLINT` (7), `default_tax_rate DECIMAL(5,2)`, `customer_session_days SMALLINT` (30), `walk_in_priority_minutes SMALLINT` (15), `payroll_period_kind ENUM(week,month)` (GĐ3), `expiry_alert_days SMALLINT` (30, GĐ2), `logo_path NULL`, `site_cover_path NULL`, `site_intro TEXT NULL`, `site_show_products BOOL` (GĐ2), `zalo_config JSON NULL`, `sms_config JSON NULL` (cast `encrypted:array`, không bao giờ trả ra frontend), `terms_content MEDIUMTEXT NULL`, terms_updated_at | Một dòng mỗi shop, tạo cùng shop. Tách khỏi `tenants` để bảng `tenants` chỉ chứa dữ liệu nền tảng, chủ shop không ghi vào. Cấu hình Zalo OA / SMS brandname của shop (S12.4) và nội dung Site (S12.5) nằm ở đây. |
+| `users` | id, name, `email VARCHAR(191)`, password, email_verified_at, last_tenant_id | UNIQUE(email). Danh tính toàn cục: một người làm được ở nhiều shop. |
+| `species`, `breeds` | species: id, code, name. breeds: id, species_id, name, `default_size ENUM(xs,s,m,l,xl)` | Danh mục chung, seed sẵn. |
+| `public_holidays` | id, `country CHAR(2)`, date, name | UNIQUE(country, date). GĐ3. |
+| `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions` | spatie/laravel-permission, **teams mode** `team_id = tenant_id` | `permissions` chung (danh mục do hệ thống định nghĩa, shop không tạo); `roles` theo shop, thêm cột `display_name VARCHAR(50)` (mục 3.1). |
+| `platform_admins` | id, name, email, password, two_factor_secret (mã hóa), two_factor_confirmed_at, `role ENUM(super_admin,support)`, is_active, last_login_at, last_login_ip | UNIQUE(email). Admin đầu tiên tạo bằng lệnh artisan; admin sau do super-admin mời (A6 → A7). Không có trang đăng ký. Bảng + guard + cookie phiên riêng. |
+| `platform_admin_invitations` | id, email, `role ENUM(super_admin,support)`, `token_hash CHAR(64)`, invited_by_admin_id, expires_at, accepted_at, revoked_at | UNIQUE(token_hash); IDX(email). Lời mời admin (A6), nhận ở A7 `/admin/invite/{token}`: đặt mật khẩu rồi bắt buộc bật 2FA. Token 32 byte, lưu sha256, 1 lần, hạn 72 giờ. |
+| `tenant_subscriptions` | id, tenant_id, plan_id, starts_at, ends_at, amount, paid_at NULL, payment_ref, note, created_by_admin_id | IDX(tenant_id, ends_at). Mỗi lần bán/gia hạn một dòng; `tenants.plan_id` + `plan_expires_at` là bản tóm tắt, cập nhật cùng transaction. |
+| `impersonation_sessions` | id, platform_admin_id, tenant_id, target_user_id, reason, `token_hash CHAR(64)`, started_at, ended_at, expires_at, ip, user_agent | UNIQUE(token_hash). Token 1 lần, 60 giây; phiên tối đa 30 phút. |
+| `platform_audit_logs` | id, platform_admin_id, impersonation_session_id, tenant_id, `action VARCHAR(64)`, subject_type, subject_id, `changes JSON`, ip, created_at | Append-only. IDX(tenant_id, created_at). |
+| `jobs`, `failed_jobs`, `cache`, `sessions` | Hạ tầng Laravel | Payload job mang `tenant_id`. |
+
+Bảng nền tảng có `tenant_id` (`tenant_subscriptions`, `impersonation_sessions`, `platform_audit_logs`) là dữ liệu **về** shop, không phải **của** shop: không dùng global scope tenant, chỉ truy cập từ khu `/admin`.
+
+### 2.2 Cơ sở, nhân viên, lịch trực — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `branches` | id, public_id, tenant_id, `code VARCHAR(20)`, name, address, phone, `opening_hours JSON` (giờ mở cửa theo thứ), `allowed_ips JSON NULL` (chấm công GĐ3), is_active, deleted_at | UNIQUE(tenant_id, code). Shop luôn có ít nhất một cơ sở. |
+| `staff` | id, tenant_id, `user_id NULL`, `primary_branch_id`, display_name, phone, `title VARCHAR(50) NULL` (chức danh hiển thị), license_no NULL, qualifications NULL (bác sĩ), `pin_hash NULL` (chấm công kiosk, GĐ3), color, `status ENUM(active,disabled)`, deleted_at | UNIQUE(tenant_id, user_id). **Quyền lấy từ role**, không từ chức danh. `user_id NULL` = người không có tài khoản (bảo vệ, lao công). |
+| `staff_branches` | tenant_id, staff_id, branch_id, `is_primary BOOL` | PK(tenant_id, staff_id, branch_id). Cơ sở chính + cơ sở phụ do chủ gán. Nhân viên chỉ thao tác ở cơ sở có trong bảng này (trừ quyền `branches.all`). |
+| `invitations` | id, tenant_id, email, `role_names JSON` (mã role, một hoặc nhiều), `primary_branch_id NULL`, `branch_ids JSON` (cơ sở phụ), `token_hash CHAR(64)`, `invited_by_staff_id NULL`, `invited_by_admin_id NULL`, expires_at, accepted_at, revoked_at | UNIQUE(token_hash); IDX(tenant_id, email). CHECK đúng một trong hai người mời. Dùng cho cả chủ shop (admin mời, role `owner`, gán mọi cơ sở) và nhân viên (chủ mời). Nhận lời mời: tạo `staff` + gán role + `staff_branches` trong một transaction; role hoặc cơ sở đã bị xóa từ lúc mời thì bỏ qua và báo người mời. Role `owner` chỉ admin mời được. |
+| `staff_working_hours` | id, tenant_id, staff_id, branch_id, `weekday TINYINT`, `start_time TIME`, `end_time TIME`, `service_group ENUM(medical,grooming) NULL`, effective_from, effective_to | IDX(tenant_id, branch_id, weekday). Lịch trực mặc định theo tuần. `service_group` = khung này trực nhóm nào, dùng để **đếm người trực** cho hạn mức đặt online; NULL = không tính (lễ tân, thu ngân, kho). Một người đi làm = **một** người trực: người có cả role bác sĩ và spa chỉ được tính vào nhóm ghi ở khung đó, không đếm vào cả hai nhóm. Không cho một người có 2 khung chồng giờ (kể cả khác cơ sở): kiểm ở Action, khóa hàng `staff`. |
+| `staff_time_off` | id, tenant_id, staff_id, starts_at, ends_at (UTC), reason, created_by | IDX(tenant_id, staff_id, starts_at). Nghỉ thì giảm số người trực. |
+| `branch_closures` | id, tenant_id, `branch_id NULL` (NULL = cả shop), `date DATE`, reason | UNIQUE(tenant_id, branch_id, date). Ngày nghỉ của cơ sở. |
+
+### 2.3 Khách, thú cưng — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `customers` | id, public_id, tenant_id, name, `phone VARCHAR(20) NULL` (E.164), `phone_suffix CHAR(4) GENERATED STORED` (= 4 số cuối), email NULL, address NULL, `is_system BOOL`, `system_branch_id NULL`, notes, deleted_at | UNIQUE(tenant_id, phone); UNIQUE(tenant_id, system_branch_id); IDX(tenant_id, name); IDX(tenant_id, phone_suffix) cho tìm "4 số cuối" (tránh `LIKE '%3456'` quét cả bảng). **SĐT là khóa khách, dùng chung mọi cơ sở.** Hồ sơ hệ thống "Thú hoang / vô chủ" mỗi cơ sở một (`is_system = 1`, phone NULL). CHECK `phone IS NOT NULL OR is_system = 1`. Khách đăng nhập Site bằng SĐT + OTP (guard `customer`). |
+| `pets` | id, public_id, tenant_id, customer_id, species_id, breed_id NULL, name, sex, birth_date NULL, `weight_kg DECIMAL(5,2) NULL`, `size ENUM(xs,s,m,l,xl)`, is_neutered, `allergies TEXT NULL`, `chronic_conditions TEXT NULL`, `behavior_notes VARCHAR(255) NULL` (lưu ý an toàn: "cắn người", "sợ máy sấy"), `is_stray BOOL`, deleted_at | IDX(tenant_id, customer_id); IDX(tenant_id, name) cho tìm toàn cục theo tên pet; **UNIQUE(tenant_id, customer_id, id)** để bảng khác dùng FK ghép `(tenant_id, customer_id, pet_id)`, bảo đảm pet đúng của khách đó. `allergies`, `chronic_conditions`, `behavior_notes` là **cảnh báo** (badge an toàn): mọi vai trò có quyền xem pet đều thấy. |
+| `customer_otps` | id, tenant_id, phone, `code_hash CHAR(64)`, `purpose ENUM(login,booking)`, expires_at, attempts, consumed_at, ip | IDX(tenant_id, phone, expires_at). OTP 6 số, hết hạn 5 phút, sai 5 lần khóa 15 phút, gửi qua SMS. Chống lạm dụng SMS: gửi lại sau 60 giây, tối đa 5 lần/giờ mỗi SĐT và 20 lần/giờ mỗi IP (rate limiter key có tiền tố tenant). SĐT chưa có hồ sơ: xác minh xong nhập tên để tạo `customers` (khách tự đăng ký; 2 request cùng SĐT: UNIQUE + bắt lỗi duplicate rồi đọc lại). |
+
+### 2.4 Dịch vụ — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `services` | id, tenant_id, `code VARCHAR(30)`, name, `service_group ENUM(medical,grooming)`, `is_combo BOOL`, `duration_min SMALLINT`, `buffer_min SMALLINT`, `price DECIMAL(12,2)`, is_public (hiện trên Site), is_active, deleted_at | UNIQUE(tenant_id, code). Khám, tiêm, xét nghiệm, chẩn đoán hình ảnh = `medical`; tắm, cắt tỉa = `grooming`. Giá chung mọi cơ sở, áp tại thời điểm thêm vào Visit. |
+| `service_combo_items` | tenant_id, combo_service_id, item_service_id, sort_order | PK(tenant_id, combo_service_id, item_service_id). Combo có mã, giá riêng. **Chỉ có combo spa** (vd cắt tỉa + tắm gội): combo và mọi dịch vụ con phải là `grooming` (kiểm ở Action); không lồng combo. Khám + spa cùng lần đến là các dịch vụ riêng (Visit riêng), gom chung một hóa đơn. |
+| `service_price_rules` | id, tenant_id, service_id, species_id NULL, breed_id NULL, size NULL, `duration_min SMALLINT NULL`, `price DECIMAL(12,2) NULL` | UNIQUE(tenant_id, service_id, species_id, breed_id, size). Thời lượng/giá theo loài, giống, cỡ; cụ thể nhất thắng: giống → loài + cỡ → loài → mặc định của dịch vụ. |
+| `branch_services` | tenant_id, branch_id, service_id | PK(tenant_id, branch_id, service_id). Dịch vụ nào có ở cơ sở nào (đặt lịch kiểm). Không có dòng nào cho một dịch vụ = có ở mọi cơ sở. |
+
+### 2.5 Lịch hẹn — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `appointments` | id, public_id, tenant_id, branch_id, customer_id, `starts_at`, `ends_at` (UTC, = giờ kết thúc muộn nhất của các dòng), `source ENUM(online,staff)`, `status ENUM(confirmed,checked_in,cancelled,no_show)`, `preferred_staff_id NULL`, customer_note, `send_reminders BOOL` (mặc định 1; lễ tân tick "Không gửi nhắc" ở S2 thì 0), `idempotency_key CHAR(36) NULL`, created_by_staff_id NULL, cancelled_at, cancelled_by_type ENUM(customer,staff,system) NULL, cancel_reason, no_show_at | UNIQUE(public_id); UNIQUE(tenant_id, idempotency_key); **UNIQUE(tenant_id, id, customer_id, branch_id)** làm đích FK ghép cho dòng; IDX(tenant_id, branch_id, starts_at) cho lịch ngày; IDX(tenant_id, customer_id, starts_at). **Một lịch của một khách, có thể nhiều pet** (vd khách gọi "lát mang 2 bé đến khám"). Nhắc hẹn gửi một tin cho cả lịch. |
+| `appointment_items` | id, tenant_id, appointment_id, branch_id (chép), customer_id (chép), pet_id, service_id, `service_group ENUM(medical,grooming)` (chép từ dịch vụ), `starts_at`, `ends_at` (đã cộng buffer), `duration_min`, `reference_price DECIMAL(12,2)`, `status ENUM(booked,checked_in,cancelled,no_show)`, `assigned_staff_id NULL`, `visit_id NULL` (Visit tạo lúc check-in) | IDX(appointment_id); **IDX(tenant_id, branch_id, service_group, starts_at, ends_at, status)** cho đếm hạn mức; IDX(tenant_id, pet_id, starts_at); IDX(tenant_id, visit_id). FK ghép `(tenant_id, appointment_id, customer_id, branch_id) → appointments`: `customer_id`, `branch_id` chép không lệch khỏi lịch. FK ghép `(tenant_id, customer_id, pet_id) → pets`: mọi pet trong lịch phải của đúng khách đó. UNIQUE(appointment_id, pet_id, service_id). Check-in: các dòng cùng pet + cùng nhóm gom vào **một** Visit (pet khám + tiêm = 1 Visit khám; khám + spa = 2 Visit); dòng đã có `visit_id` thì bỏ qua (check-in 2 lần idempotent). **Mỗi dòng = một pet + một dịch vụ (hoặc combo spa)**; một pet vừa khám vừa spa = 2 dòng. `branch_id`, `customer_id`, `starts_at` chép từ lịch để index và FK chạy trên chính bảng này; đổi giờ lịch thì cập nhật các dòng trong cùng transaction. |
+| `appointment_changes` | id, tenant_id, appointment_id, `appointment_item_id NULL` (NULL = cả lịch), `action ENUM(rescheduled,cancelled,restored,checked_in,no_show,reassigned,item_added,item_removed)`, `old_starts_at NULL`, `new_starts_at NULL`, `actor_type ENUM(customer,staff,system)`, actor_staff_id NULL, reason, created_at | IDX(tenant_id, appointment_id). Lịch sử đổi giờ, hủy (sơ đồ 3a "đổi giờ, lưu lịch sử"). Append-only. |
+| `online_booking_rates` | id, tenant_id, branch_id, service_group, `ratio DECIMAL(4,3)`, `weekday TINYINT NULL`, `start_time TIME NULL`, `end_time TIME NULL` | IDX(tenant_id, branch_id, service_group). Tỉ lệ đặt online theo cơ sở × nhóm; dòng có thứ/giờ = ghi đè cho ca đó, cụ thể nhất thắng. Không có dòng = không nhận đặt online nhóm đó. |
+| `booking_capacity_locks` | tenant_id, branch_id, service_group, `date DATE` | PK(tenant_id, branch_id, service_group, date). Hàng để khóa khi đặt/dời lịch (mục 5.1). Không chứa dữ liệu nghiệp vụ. Hàng được tạo **ngoài** transaction đặt lịch (`INSERT IGNORE` autocommit) rồi mới khóa `FOR UPDATE` trong transaction. |
+
+Quy tắc:
+- **Một lịch, nhiều pet**: lịch gắn một khách; mỗi pet + dịch vụ là một dòng `appointment_items`. Đặt online hay lễ tân đặt đều chọn được nhiều pet trong một lần.
+- **Hạn mức tính theo dòng**: mỗi dòng còn hiệu lực chiếm **một chỗ** của nhóm của nó. Khách đặt online 2 bé khám cùng giờ cần còn 2 chỗ khám; thiếu thì báo hết chỗ cả lịch (không lưu một nửa). Lịch có dòng khám + dòng spa thì kiểm cả hai nhóm.
+- Một pet không đến hoặc khách bỏ một pet: hủy dòng đó (`cancelled`), các dòng khác giữ. Trạng thái lịch: `checked_in` khi có ít nhất một dòng đã đến; `cancelled` / `no_show` khi mọi dòng như vậy.
+- Lịch chỉ để tham khảo, nhắc hẹn, phân người trực: không cọc, không thu trước. Tạo ra là `confirmed`.
+- `reference_price` chỉ để hiển thị "giá tham khảo, có thể thay đổi". Tính tiền theo giá lúc thêm vào Visit.
+- Chiếm chỗ: dòng `booked` và `checked_in` của lịch chưa hủy. Hủy, không đến thì nhả chỗ.
+- Khách tự hủy/dời trên Site khi còn ≥ `booking_cancel_cutoff_hours` / `booking_reschedule_cutoff_hours` (mặc định 24 giờ). Kiểm ở server.
+- Lịch online không gán người (`appointment_items.assigned_staff_id` NULL); phân người khi khách đến. Lễ tân đặt thì gán được từng dòng.
+- Cuối ngày (giờ shop) job đánh dấu `no_show` cho dòng còn `booked`; lễ tân đánh dấu sớm được; không phạt.
+
+### 2.6 Visit, hàng đợi, bệnh án, tiêm — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `visits` | id, public_id, tenant_id, branch_id, `customer_id NULL`, `pet_id NULL`, `invoice_id NULL`, `service_group ENUM(medical,grooming)`, `visit_date DATE` (local), `queue_no SMALLINT`, `status ENUM(waiting,in_progress,done,cancelled)`, `is_emergency BOOL`, `emergency_label VARCHAR(100) NULL` (vd "Chó cấp cứu 14:05" khi chưa có hồ sơ), `priority_at DATETIME` (thời điểm dùng để sắp hàng đợi), assigned_staff_id NULL, reason (lý do đến, tình trạng ban đầu), `weight_kg DECIMAL(5,2) NULL` (cân lúc đến), checked_in_at, started_at, finished_at, cancelled_reason, created_by | UNIQUE(tenant_id, branch_id, visit_date, queue_no); IDX(tenant_id, branch_id, visit_date, status, service_group); IDX(tenant_id, invoice_id); IDX(tenant_id, pet_id, visit_date). FK ghép `(tenant_id, customer_id, pet_id)`. CHECK `is_emergency = 1 OR (customer_id IS NOT NULL AND pet_id IS NOT NULL)`. Liên kết lịch hẹn nằm ở `appointment_items.visit_id` (một Visit gom nhiều dòng cùng pet, cùng nhóm). Visit có hẹn: `priority_at` = giờ bắt đầu sớm nhất của các dòng. |
+| `visit_items` | id, tenant_id, visit_id, `item_type ENUM(service,medication,consumable)`, service_id NULL, product_id NULL (GĐ2), `name` (chép lúc thêm), `quantity DECIMAL(12,3)`, `unit_price DECIMAL(12,2)`, `is_billable BOOL`, `suggested_quantity NULL` (định mức gợi ý, GĐ2), product_unit_id NULL, unit_factor, batch_id NULL (chọn lô tay, GĐ2), performed_by, notes, created_at | IDX(tenant_id, visit_id). CHECK `service` thì có service_id; `medication`/`consumable` thì có product_id. Thuốc kê, dịch vụ phát sinh (xét nghiệm…) thêm ở đây khi khách đồng ý (báo giá miệng, không lưu xác nhận). Vật tư trong dịch vụ: `is_billable = 0`. |
+| `medical_records` | id, tenant_id, pet_id, `record_no VARCHAR(20)`, opened_at, opened_by | UNIQUE(tenant_id, pet_id); UNIQUE(tenant_id, record_no). **Hồ sơ bệnh án**: mỗi pet một hồ sơ, số hồ sơ cấp ở lần khám đầu, dùng chung mọi cơ sở. |
+| `medical_entries` | id, tenant_id, medical_record_id, `visit_id NULL` (NULL = bệnh sử khám nơi khác), author_staff_id, symptoms, vitals JSON NULL (thân nhiệt, nhịp tim…), diagnosis, treatment, `care_instructions TEXT` (khách thấy), `internal_notes TEXT NULL` (**không bao giờ hiện trên Site**), `follow_up_on DATE NULL`, `referral_note NULL` (chuyển tuyến), recorded_at, `editable_until DATETIME` (= recorded_at + 24 giờ) | IDX(tenant_id, medical_record_id, recorded_at); UNIQUE(tenant_id, visit_id). **Dòng chi tiết**: mỗi lần khám một dòng. Chỉ người lập sửa, trong 24 giờ; sau đó chỉ thêm bổ sung. |
+| `medical_entry_addenda` | id, tenant_id, medical_entry_id, author_staff_id, body, created_at | Ghi chú bổ sung sau 24 giờ. Append-only. |
+| `attachments` | id, tenant_id, `attachable_type ENUM(medical_entry,visit)`, attachable_id, `kind ENUM(lab_result,imaging,intake_photo,return_photo,other)`, `is_shared_with_customer BOOL` (mặc định 0), disk, path, mime, size_bytes, original_name, uploaded_by, created_at | IDX(tenant_id, attachable_type, attachable_id). Kết quả xét nghiệm, ảnh chụp chiếu (ảnh, PDF) gắn dòng bệnh án; ảnh lúc nhận/trả của spa gắn Visit. Site chỉ thấy file bác sĩ tick "Chia sẻ cho khách" và ảnh spa. File private, tải qua URL ký có hạn, đường dẫn chứa `tenant_id`. |
+| `vaccines` | id, tenant_id, name, `kind ENUM(vaccine,dewormer)`, species_id, manufacturer, `product_id NULL` (GĐ2, nối kho) | IDX(tenant_id, species_id). |
+| `care_protocols`, `care_protocol_steps` | protocol: id, tenant_id, name, species_id, vaccine_id, is_active. step: id, tenant_id, protocol_id, step_no, min_age_days, offset_days, is_recurring, repeat_every_days | UNIQUE(protocol_id, step_no). Phác đồ mẫu. |
+| `pet_vaccinations` | id, tenant_id, pet_id, `visit_id NULL`, vaccine_id, protocol_id NULL, step_no NULL, administered_on DATE, administered_by, batch_no, `batch_expires_on DATE NULL`, `next_due_on DATE NULL`, superseded_at NULL, `status ENUM(given,postponed)`, postpone_reason NULL | IDX(tenant_id, pet_id, vaccine_id); IDX(tenant_id, superseded_at, next_due_on) cho job nhắc chạy theo từng shop và màn S7. Sổ tiêm. Hoãn tiêm = dòng `postponed` với ngày hẹn mới ở `next_due_on`. GĐ2: có `vaccines.product_id` thì trừ kho khi hoàn tất Visit, tự điền số lô. |
+
+Quy tắc Visit:
+- Visit **độc lập hóa đơn**: trạng thái cuối là `done`; đã thu tiền hay chưa xem ở hóa đơn.
+- Một pet vừa khám vừa spa = 2 Visit (2 số thứ tự).
+- Nhận ca: `UPDATE visits SET status='in_progress', assigned_staff_id=? WHERE id=? AND status='waiting'`; affected = 0 → người khác đã nhận.
+- Hàng đợi sắp theo: `is_emergency DESC`, rồi `priority_at`. Khách có hẹn đến trong ±`walk_in_priority_minutes` (15) quanh giờ hẹn: `priority_at` = giờ hẹn; đến muộn hơn: `priority_at` = giờ check-in như khách vãng lai. Cấp cứu chen đầu, các số đang chờ lùi một bậc, `queue_no` trên phiếu giữ nguyên.
+- Cấp cứu: tạo Visit ngay với `emergency_label`, hồ sơ khách và pet bổ sung song song. Không hoàn tất được Visit hay hóa đơn khi chưa gắn `customer_id`, `pet_id` (kiểm ở Action).
+- Hoàn tất Visit (`done`): GĐ2 trừ kho thuốc + vật tư theo số thực tế; tạo nhắc tái khám từ `follow_up_on`; mở khóa dòng bệnh án 24 giờ.
+- Groomer thấy pet có bệnh → lễ tân tạo thêm Visit khám, gắn cùng hóa đơn chưa hoàn thành.
+- Quyền xem bệnh án: bác sĩ mọi cơ sở và chủ shop xem đầy đủ; lễ tân, spa, quản lý chi nhánh chỉ thấy cảnh báo + ngày khám; thu ngân, kho không thấy. Khách trên Site thấy ngày khám, chẩn đoán, hướng dẫn, thuốc đã kê, sổ tiêm, tái khám, file được chia sẻ; không thấy `internal_notes`.
+- Nhận, hoàn tất Visit khám chỉ người có role Bác sĩ (chủ shop không tự làm nếu không gán thêm role này); Visit spa: Nhân viên spa hoặc chủ shop.
+
+### 2.7 Hóa đơn, thanh toán, ca thu ngân — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `invoices` | id, public_id, tenant_id, branch_id, `code VARCHAR(30) NULL` (cấp khi hoàn thành), `kind ENUM(service,retail)`, `customer_id NULL`, `payer_name NULL`, `payer_phone NULL`, `status ENUM(draft,completed,void)`, `business_date DATE` (ngày mở, local), subtotal, tax_amount, total, `discount_amount` (luôn 0 ở V1, giữ cho khuyến mãi sau V1), `open_draft_key VARCHAR(64) GENERATED` (= `customer_id:branch_id:business_date` khi `status='draft' AND kind='service' AND payer_name IS NULL`, NULL khi khác), completed_at, completed_by, voided_at, voided_by, void_reason, `replaces_invoice_id NULL`, created_by | UNIQUE(tenant_id, code); **UNIQUE(tenant_id, open_draft_key)**: mỗi khách mỗi cơ sở mỗi ngày chỉ một hóa đơn dịch vụ chưa hoàn thành. Hóa đơn bán lẻ và hóa đơn thú hoang có người trả (gắn hồ sơ hệ thống) không tính vào khóa này, nên không đụng nhau. IDX(tenant_id, branch_id, status, business_date); IDX(tenant_id, branch_id, completed_at). CHECK `kind='service'` thì `customer_id NOT NULL`. |
+| `invoice_lines` | id, tenant_id, invoice_id, `line_type ENUM(visit_item,product,custom)`, `visit_item_id NULL`, `pet_id NULL`, product_id NULL, product_unit_id NULL, unit_factor, `name` (chép), quantity, unit_price, tax_rate, line_total, `unit_cost DECIMAL(12,2) NULL` (giá vốn, GĐ2, chỉ chủ thấy), created_by | IDX(tenant_id, invoice_id); IDX(tenant_id, visit_item_id). `custom` = dòng gõ tay (tên + giá, không trừ kho). |
+| `payments` | id, tenant_id, invoice_id NULL, sales_return_id NULL, `kind ENUM(payment,refund,transfer_out,transfer_in)`, `method ENUM(cash,bank_transfer,qr,card)`, `amount DECIMAL(12,2)` (> 0), reference (mã giao dịch), `cash_session_id NULL`, `transfer_payment_id NULL` (khoản gốc được chuyển), received_by_staff_id, paid_at, `idempotency_key CHAR(36)` | UNIQUE(tenant_id, idempotency_key); IDX(tenant_id, invoice_id); IDX(tenant_id, cash_session_id). CHECK `kind NOT IN ('payment','refund') OR method <> 'cash' OR cash_session_id IS NOT NULL`. **Append-only, không bao giờ đổi `invoice_id`.** `transfer_out`/`transfer_in` là bút toán chuyển tiền đã thu từ bản bị sửa sang bản thay thế (chép `method`, không gắn ca): không tính vào Thực thu, không vào tiền mặt dự kiến của ca. Đã thu của một hóa đơn = Σ payment + Σ transfer_in − Σ refund − Σ transfer_out. |
+| `cash_drawers` | id, tenant_id, branch_id, name, is_active | UNIQUE(tenant_id, branch_id, name). Két tiền; mỗi cơ sở ít nhất một. |
+| `cash_sessions` | id, tenant_id, branch_id, drawer_id, `status ENUM(open,closed)`, opened_by, opened_at, opening_amount, closed_by, closed_at, expected_cash, counted_cash, difference, difference_reason, `open_key BIGINT GENERATED` (= drawer_id khi `open`, NULL khi đóng) | UNIQUE(open_key): mỗi két chỉ một ca mở. IDX(tenant_id, branch_id, opened_at). Nhiều người thu chung ca; mỗi khoản ghi `received_by_staff_id`. Chênh lệch ≠ 0 bắt buộc lý do, báo chủ. |
+
+Quy tắc:
+- Không cọc, không trả một phần, không công nợ: hoàn thành = thu đủ một lần (có thể nhiều phương thức).
+- **Mở hóa đơn khi tiếp nhận**: tạo Visit thì gắn vào hóa đơn `draft` của khách tại cơ sở hôm nay (chưa có thì tạo). Nhiều pet → nhiều Visit, một hóa đơn. Lễ tân thêm hàng mua, dòng gõ tay. Tìm nháp bằng `open_draft_key … FOR UPDATE`; chưa có thì INSERT, trùng unique (2 lễ tân cùng lúc) thì đọc lại và khóa bản vừa tạo.
+- **Thứ tự khóa**: mọi thao tác đổi tiền của hóa đơn nháp (thêm/sửa/xóa `visit_items` tính tiền, thêm dòng, gắn/gỡ Visit, hoàn thành, hủy) khóa `invoices` trước rồi mới tới `visits`. Nhờ vậy không có dòng nào lọt vào sau khi hóa đơn đã chốt.
+- Visit bị hủy khi hóa đơn còn nháp: gỡ các dòng `visit_item` của Visit đó khỏi hóa đơn.
+- **Thú hoang**: Visit không tự mở hóa đơn; có người trả thì lễ tân tạo hóa đơn riêng (`kind=service`, gắn hồ sơ hệ thống của cơ sở) ghi `payer_name`, `payer_phone`.
+- **Bán lẻ có SĐT**: SĐT khớp khách có sẵn thì gắn `customer_id`; không khớp thì chỉ lưu `payer_phone`, không tạo hồ sơ.
+- Hóa đơn chưa hoàn thành từ ngày trước **không tự hủy**. Hôm sau khách đến thì mở hóa đơn mới. **Cảnh báo dọn nháp**: đầu mỗi ngày (giờ shop) job gửi `notifications` cho lễ tân, thu ngân của cơ sở và chủ shop: "Còn N hóa đơn chưa hoàn thành từ ngày trước"; màn thu ngân và dashboard có thẻ cảnh báo kèm danh sách để hoàn thành hoặc hủy (có lý do). Truy vấn: `status='draft' AND business_date < hôm nay` (IDX(tenant_id, branch_id, status)).
+- Dòng `visit_item` đồng bộ một chiều từ `visit_items` (`is_billable = 1`) khi hóa đơn còn `draft`. Ở quầy thu, dòng này **chỉ đọc**; bỏ dịch vụ thì sửa ở Visit. Dòng `product`, `custom` lễ tân sửa tự do.
+- **Không giảm giá tay.** Khuyến mãi theo chiến dịch và giảm theo hạng thành viên: sau V1.
+- Hoàn thành (một transaction): khóa hóa đơn (phải `draft`) → mọi Visit gắn hóa đơn phải `done` hoặc `cancelled` → có tiền mặt thì cần ca thu ngân đang mở → ghi `payments` (tổng = `total`) → cấp `code` → `completed` → GĐ2 trừ kho dòng `product` → nhật ký. Bấm 2 lần không ghi 2 lần (idempotency).
+- Hủy hóa đơn chưa hoàn thành: lễ tân/thu ngân, bắt buộc lý do, báo chủ, có trong báo cáo ngày. Visit gắn hóa đơn được gỡ `invoice_id`.
+- **Chủ sửa hóa đơn đã hoàn thành** (một transaction, khóa bản cũ): bản cũ `void` (giữ số, lý do) → bản thay thế (số mới, `replaces_invoice_id`) chép dòng → chuyển `visits.invoice_id` sang bản mới → ghi cặp bút toán `transfer_out` (bản cũ) / `transfer_in` (bản mới) bằng đúng số đã thu, theo từng phương thức (không sửa dòng `payments` cũ) → chủ sửa dòng → chênh lệch thu thêm (`payment`) hoặc trả lại (`refund`, tiền mặt cần ca đang mở) → hoàn thành. Báo cáo không sửa ngược ngày cũ: bản cũ vẫn tính ở ngày hoàn thành gốc; ngày sửa ghi −tổng bản cũ (bản `void` có `completed_at`, tính theo `voided_at`) + tổng bản thay thế. Không sửa dòng của bản đã `completed`. Hóa đơn đã có phiếu trả hàng (GĐ2) thì không sửa được.
+- **Doanh thu** = tổng hóa đơn `completed` trước thuế theo ngày hoàn thành (bản thay thế tính ngày sửa; trả hàng trừ vào ngày trả). "Thực thu" (Σ `payment` − Σ `refund` theo ngày, bỏ qua bút toán chuyển) là chỉ số dòng tiền riêng, ghi nhãn rõ.
+- Hóa đơn chỉ mua hàng (`retail`): không cần hồ sơ khách. Không được có dòng dịch vụ hay thuốc kê đơn (kiểm ở Action).
+
+### 2.8 Nhắc hẹn, tin nhắn, thông báo — MVP
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `reminders` | id, tenant_id, `remindable_type ENUM(appointment,pet_vaccination,medical_entry,visit)`, remindable_id, customer_id, `purpose ENUM(appointment_confirm,appointment_24h,appointment_2h,vaccine_due,follow_up,pickup_ready)`, `send_at DATETIME`, `status ENUM(pending,processing,sent,failed,skipped)`, sent_at, `dedupe_key VARCHAR(191)` | UNIQUE(tenant_id, dedupe_key); IDX(status, send_at) (job quét chung mọi shop, nằm trong danh sách được phép bỏ scope). **Cái gì cần nhắc, khi nào.** `pickup_ready` gắn Visit spa. Lịch bị hủy/dời: nhắc cũ `skipped`, tạo nhắc mới. Lịch `send_reminders = 0` chỉ không tạo nhắc 24h/2h (vẫn gửi xác nhận nếu đặt online). Nhắc có `send_at` đã qua lúc tạo (đặt sát giờ) thì không tạo. |
+| `message_deliveries` | id, tenant_id, reminder_id NULL, customer_otp_id NULL, `channel ENUM(zalo,sms)`, to_phone, template_code, `status ENUM(queued,sent,failed)`, provider_message_id, error, `cost DECIMAL(10,2) NULL`, attempted_at | IDX(tenant_id, reminder_id). **Mỗi lần gửi thật một dòng.** Thứ tự: gửi Zalo ZNS trước; lỗi hoặc SĐT không dùng Zalo thì gửi SMS; không gửi cả hai. OTP gửi SMS. Không có email/Telegram cho khách. |
+| `notifications` | Bảng Laravel + cột `tenant_id`; **notifiable là `staff`** (không phải `users`) | IDX(tenant_id, notifiable_id, read_at). Thông báo trong CMS cho nhân viên: hủy hóa đơn, chênh lệch ca, cảnh báo kho, phiếu chờ duyệt, Visit chờ thanh toán, cần gọi khách. Gắn `staff` để người làm ở 2 shop không thấy thông báo shop này khi đang mở shop kia. |
+| `activity_logs` | id, tenant_id, branch_id NULL, actor_staff_id NULL, `impersonation_session_id NULL`, `action VARCHAR(64)`, subject_type, subject_id, `changes JSON`, reason NULL, ip, created_at | IDX(tenant_id, subject_type, subject_id); IDX(tenant_id, created_at). Append-only. Bắt buộc ghi: hủy/sửa hóa đơn, hoàn tiền, trả hàng, điều chỉnh kho, duyệt phiếu, đổi giá, đổi quyền, sửa bệnh án, đóng ca có chênh lệch. Thao tác trong phiên đăng nhập thay mang `impersonation_session_id`: S32 hiện "Admin … thực hiện thay". |
+| `tenant_usage` | tenant_id, `period CHAR(7)`, appointments_count | PK(tenant_id, period). Quota gói `max_appointments_per_month`: đếm **mọi lịch** (online + lễ tân) theo tháng tạo lịch (giờ shop), tính theo lịch không theo dòng; hủy không trả lại suất (chặn đặt-hủy lặp). Tăng nguyên tử có điều kiện, là bước khóa cuối của đặt lịch. |
+
+### 2.9 Kho — GĐ2
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `suppliers` | id, tenant_id, name, phone, tax_code, address, deleted_at | IDX(tenant_id, name). |
+| `product_categories` | id, tenant_id, parent_id NULL, name, `expiry_alert_days NULL` | |
+| `products` | id, tenant_id, category_id, `sku VARCHAR(50)`, barcode NULL, name, `kind ENUM(medication,consumable,retail)` (chỉ để phân nhóm, báo cáo), `is_sellable BOOL` (bán lẻ được), `requires_prescription BOOL`, `base_unit VARCHAR(20)` (đơn vị nhỏ nhất), `sale_price DECIMAL(12,2)`, `is_batch_tracked BOOL`, `expiry_alert_days NULL`, `default_reorder_level NULL`, `replaces_product_id NULL` (mã hàng lỗi bán giảm, trỏ mã gốc), is_public, is_active, deleted_at | UNIQUE(tenant_id, sku). Danh mục chung mọi cơ sở. **Giá bán một giá hiện hành**, chủ tự chỉnh, không theo lô, không theo giá vốn. |
+| `product_units` | id, tenant_id, product_id, name (thùng, lốc), `factor DECIMAL(12,3)`, barcode NULL, `sale_price NULL` | UNIQUE(tenant_id, product_id, name). Kho chỉ lưu đơn vị nhỏ nhất; quy đổi ở biên. |
+| `service_consumables` | id, tenant_id, service_id, product_id, size NULL, quantity | UNIQUE(tenant_id, service_id, product_id, size). Định mức chỉ để điền sẵn; trừ theo số thực tế. |
+| `stock_items` | id, tenant_id, branch_id, product_id, `on_hand DECIMAL(12,3)`, `reserved DECIMAL(12,3)`, `reorder_level NULL` | UNIQUE(tenant_id, branch_id, product_id); IDX(tenant_id, product_id). **Hàng bị khóa** khi trừ/giữ/chuyển. Khả dụng = on_hand − reserved. |
+| `stock_batches` | id, tenant_id, branch_id, product_id, batch_no, `expires_on DATE NULL`, `quantity DECIMAL(12,3)`, `unit_cost DECIMAL(12,2) NULL`, `received_at DATETIME`, purchase_receipt_line_id NULL, source_batch_id NULL (lô gốc khi chuyển kho) | IDX(tenant_id, branch_id, product_id, received_at, id). **Xuất FIFO theo lô nhập**: `ORDER BY received_at, id`, bỏ lô quá hạn. Tổng `quantity` các lô = `on_hand`. Hàng không theo lô có một lô ngầm. HSD chỉ có tháng/năm lưu ngày cuối tháng. `unit_cost` NULL tới khi chủ điền giá. |
+| `stock_movements` | id, tenant_id, branch_id, product_id, batch_id, `type ENUM(purchase,sale,visit_usage,transfer_out,transfer_in,adjustment,stocktake,customer_return,write_off,relabel_out,relabel_in)`, `quantity DECIMAL(12,3)` (âm = xuất), `unit_cost NULL`, source_type, source_id, reason NULL, created_by, created_at | IDX(tenant_id, branch_id, product_id, created_at); IDX(tenant_id, source_type, source_id). **Sổ kho append-only**, mỗi lô một dòng. Nguồn duy nhất cho giá vốn và đối soát tồn. |
+| `purchase_receipts` | id, tenant_id, branch_id (cơ sở nhận), supplier_id NULL, code, `status ENUM(posted,costed,cancelled)`, supplier_invoice_ref, `total_cost NULL`, received_at, posted_by, costed_by NULL, costed_at NULL | UNIQUE(tenant_id, code); IDX(tenant_id, status). **Phiếu nhập 2 bước**: (1) nhân viên kho cơ sở nhận lập phiếu: sản phẩm, số lượng, lô, hạn, không thấy giá; lưu là `posted`, tạo lô + movement + **cộng tồn ngay**; (2) chủ mở phiếu điền giá → `costed`, cập nhật giá lô. Đã `posted` thì không sửa số lượng; sai thì lập phiếu điều chỉnh. |
+| `purchase_receipt_lines` | id, tenant_id, receipt_id, product_id, product_unit_id NULL, unit_factor, batch_no, expires_on, quantity, `base_quantity`, `unit_cost NULL` | API của nhân viên kho không bao giờ có khóa `unit_cost`. |
+| `stock_adjustments`, `stock_adjustment_lines` | adj: id, tenant_id, branch_id, code, `type ENUM(shrinkage,write_off,correction)`, `status ENUM(pending_approval,approved,rejected)`, reason, created_by, decided_by, decided_at, reject_reason. line: product_id, batch_id, quantity, `reason_code ENUM(damaged,rodent,expired,lost,other)`, note | IDX(tenant_id, branch_id, status). **Phiếu hao hụt**: kho lập, có lý do → **chờ duyệt** (chủ hoặc quản lý chi nhánh) → duyệt mới ghi sổ kho. |
+| `stocktakes`, `stocktake_lines` | stocktake: id, tenant_id, branch_id, `status ENUM(counting,pending_approval,approved,rejected)`, counted_by, decided_by. line: product_id, batch_id, system_qty, counted_qty, reason | Kiểm kê theo lô; chênh lệch có lý do, duyệt mới ghi sổ. |
+| `stock_transfers`, `stock_transfer_lines` | transfer: id, public_id, tenant_id, from_branch_id, to_branch_id, code, `status ENUM(requested,approved,in_transit,received,received_short,returned,cancelled)`, requested_by, approved_by, shipped_at, received_at, shipper_name, shipper_phone, `for_customer_id NULL`, note. line: product_id, batch_id NULL, qty_requested, qty_shipped, qty_received | CHECK from ≠ to. Lô chuyển giữ số lô, hạn, giá vốn, `received_at` gốc. Nhận thiếu → `received_short` + điều chỉnh có lý do. |
+| `stock_reservations` | id, tenant_id, branch_id, product_id, quantity, `reason ENUM(transfer,customer_hold)`, transfer_line_id NULL, customer_id NULL, expires_at, `status ENUM(active,consumed,released,expired)`, created_by | IDX(tenant_id, branch_id, product_id, status); IDX(status, expires_at). Chỉ giữ hàng khi chuyển kho cho khách (sơ đồ 10b). Kê thuốc, thêm dòng hóa đơn **không** giữ hàng. |
+| `stock_alerts` | id, tenant_id, branch_id, product_id, batch_id NULL, `type ENUM(low_stock,out_of_stock,near_expiry,expired)`, `status ENUM(open,acknowledged,resolved)`, snapshot_qty, threshold, opened_at, last_notified_at, resolved_at, `open_key GENERATED` | UNIQUE(open_key): mỗi sự việc một cảnh báo mở. Báo qua `notifications` cho chủ + người có quyền `inventory.alerts` của cơ sở; không dùng Zalo/SMS. |
+| `sales_returns`, `sales_return_lines` | return: id, tenant_id, branch_id, code, invoice_id (gốc, completed), `is_overdue BOOL`, reason, created_by. line: invoice_line_id, quantity, `condition ENUM(intact,defective,expired)`, `disposition ENUM(restocked,pending_owner,written_off,relabeled,returned_to_supplier)`, decided_by NULL, decided_at NULL | IDX(tenant_id, invoice_id); IDX(tenant_id, branch_id, disposition). Chỉ trả **sản phẩm**. Hạn `return_window_days`; quá hạn chỉ chủ. `intact` → cộng tồn đúng lô gốc; `defective` → chờ chủ xử lý (chưa cộng tồn); `expired` → hủy. Hoàn tiền = `payments` kind `refund` gắn `sales_return_id`, trừ doanh thu ngày trả. Không vượt số đã mua trừ số đã trả (khóa hóa đơn gốc). |
+
+Quy tắc kho:
+- **Trừ kho**: thuốc + vật tư trong Visit trừ khi **hoàn tất Visit**; hàng bán trừ khi **hóa đơn hoàn thành**. Lúc kê/thêm dòng chỉ kiểm còn đủ, không giữ; lúc trừ mà thiếu thì từ chối.
+- **Giá vốn = giá lô thực xuất** (FIFO). Lô chưa có giá: movement để `unit_cost` NULL, báo cáo lợi nhuận đánh dấu "thiếu giá nhập".
+- **Giá vốn chỉ người có `inventory.view_cost`** (mặc định chủ, giao được): cột giá vốn không nằm trong API Resource mặc định.
+- Tra tồn cơ sở khác: chỉ số khả dụng + hạn gần nhất, không giá vốn.
+- Hàng lỗi: chủ chọn hủy (`write_off`), trả nhà cung cấp, hoặc chuyển sang mã riêng bán giảm (`relabel_out` mã gốc + `relabel_in` mã mới, giữ giá vốn lô).
+- Chọn lô tay khác FIFO: cần quyền `inventory.override_batch` + lý do.
+
+### 2.10 Bảng đếm số — MVP
+
+| Bảng | Cột chính | Ghi chú |
+|---|---|---|
+| `branch_daily_counters` | tenant_id, branch_id, `date DATE`, `name ENUM(queue,invoice,return,receipt,adjustment,transfer)`, `last_value INT` | PK(tenant_id, branch_id, date, name). `INSERT … ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)`. Mã hóa đơn cấp lúc hoàn thành trong cùng transaction nên không thủng số. |
+| `tenant_counters` | tenant_id, `name VARCHAR(30)` (`medical_record`), last_value | PK(tenant_id, name). Số hồ sơ bệnh án `HS-000123`. |
+
+### 2.11 Ca làm, chấm công, lương — GĐ3
+
+| Bảng | Cột chính | Ràng buộc / ghi chú |
+|---|---|---|
+| `shift_templates` | id, tenant_id, branch_id, name, start_time, end_time, crosses_midnight, active_weekdays | UNIQUE(tenant_id, branch_id, name). |
+| `shift_availabilities` | id, tenant_id, branch_id, staff_id, work_date, shift_template_id, `status ENUM(submitted,accepted,declined,withdrawn)`, reviewed_by | UNIQUE(tenant_id, staff_id, work_date, shift_template_id). Nhân viên đăng ký ca. |
+| `shift_assignments` | id, tenant_id, branch_id, staff_id, work_date, shift_template_id, start_time, end_time, `service_group NULL`, `rate DECIMAL(12,2) NULL` (chép) | UNIQUE(tenant_id, staff_id, work_date, shift_template_id). Ca trực gắn một cơ sở. Ngày có xếp ca thì thay `staff_working_hours` khi đếm người trực. Không 2 ca chồng giờ dù khác cơ sở (Action, khóa hàng `staff`). Đổi ca: chủ sửa tay, ghi nhật ký. |
+| `coverage_requirements` | id, tenant_id, branch_id, weekday NULL, shift_template_id, role_name, min_count | Thiếu người thì cảnh báo. |
+| `staff_shift_rates` | id, tenant_id, staff_id, shift_template_id, rate, effective_from, effective_to | Lương V1 = đơn giá ca × số ca chấm công hợp lệ. |
+| `attendance_devices` | id, tenant_id, branch_id, name, token_hash, last_seen_at, revoked_at | Kiosk cho người không có tài khoản. |
+| `attendance_records` | id, tenant_id, branch_id, staff_id, work_date, shift_assignment_id NULL, clock_in_at, clock_out_at NULL, `method ENUM(cms,pin_kiosk)`, device_id NULL, ip, user_agent, `is_off_schedule BOOL`, `status ENUM(open,closed,auto_closed,pending_approval,approved,rejected)`, worked_minutes, decided_by, decision_reason | IDX(tenant_id, staff_id, work_date). Cơ sở lấy từ ca đang trực (kiểm IP nếu cơ sở có cài); không có ca thì nhân viên chọn cơ sở, ghi ngoài lịch, chủ duyệt mới tính. |
+| `payroll_periods` | id, tenant_id, starts_on, ends_on, `status ENUM(draft,locked)`, locked_by, locked_at | UNIQUE(tenant_id, starts_on); kỳ không chồng ngày (kiểm ở Action); kiểu kỳ theo `tenant_settings.payroll_period_kind`. |
+| `payroll_entries` | id, tenant_id, period_id, staff_id, shift_count, shift_pay, `breakdown JSON` | UNIQUE(period_id, staff_id). |
+| `sensitive_access_logs` | id, tenant_id, user_id, resource, `action ENUM(unlock,view,export,update)`, ip, user_agent, created_at | Ai mở trang lương, lúc nào. |
+
+### 2.12 Sau V1 (chưa tạo bảng)
+
+Thành viên, tích điểm, hạng (`customer_memberships`, `loyalty_transactions`); khuyến mãi theo chiến dịch (`promotions`, `promotion_items`); lương tháng, phụ cấp, thưởng/phạt (`salary_profiles`, `payroll_adjustments`); chứng từ trả nhà cung cấp; lưu chuồng; tài nguyên phòng/bàn grooming; domain riêng cho shop; thu phí gói tự động.
+
+---
+
+## 3. Phân quyền
+
+### 3.1 Role mẫu
+
+Khi tạo shop sinh sẵn 7 role (spatie, `team_id = tenant_id`): `owner` (Chủ shop), `branch_manager` (Quản lý chi nhánh), `receptionist` (Lễ tân), `cashier` (Thu ngân), `vet` (Bác sĩ), `groomer` (Nhân viên spa), `inventory` (Nhân viên kho). Cột `name` là mã ổn định cho code (role shop tạo sinh `custom_{id}`), tên shop thấy và đổi được là `display_name`. Chủ sửa quyền từng role, tạo role mới; role `owner` không sửa/xóa được. Danh mục quyền nằm trong code, shop không tạo hay đổi tên quyền; quyền mới thêm sau mặc định tắt ở mọi role trừ `owner`. **Quyền nhạy cảm** (`inventory.view_cost`, `purchase.cost`, `invoices.amend`, `branches.all`, `payroll.view`) mặc định chỉ `owner`, chủ giao được cho role khác: UI hiện badge "Nhạy cảm" + modal xác nhận, ghi `activity_logs`. Quyền `roles.manage` không giao được (chỉ `owner`), chặn nhân viên tự nâng quyền. Một người nhiều role thì cộng quyền. Ma trận quyền chi tiết: `design/design.md`.
+
+### 3.2 Quyền có ảnh hưởng tới dữ liệu trả về
+
+| Quyền | Mặc định | Tác dụng ở tầng dữ liệu |
+|---|---|---|
+| `medical.view_full` | vet, owner | Trả `MedicalEntryResource` đầy đủ; role khác chỉ nhận cảnh báo + ngày khám. |
+| `medical.view_alerts` | receptionist, groomer, branch_manager | Cảnh báo dị ứng, bệnh nền, ngày khám. |
+| `inventory.view_cost` | owner | Có cột giá vốn, giá trị tồn, lợi nhuận. |
+| `purchase.cost` | owner | Điền giá phiếu nhập. |
+| `inventory.approve` | owner, branch_manager | Duyệt hao hụt, kiểm kê. |
+| `invoices.void_draft` | receptionist, cashier, branch_manager | Hủy hóa đơn chưa hoàn thành. |
+| `invoices.amend` | owner | Sửa hóa đơn đã hoàn thành. |
+| `returns.create` / `returns.overdue` | receptionist, cashier, branch_manager / owner | Trả hàng trong hạn / quá hạn. |
+| `reports.view_today` / `reports.view_branch` / `reports.view_all` | receptionist / branch_manager / owner | Doanh thu hôm nay cơ sở mình / cơ sở mình mọi khoảng ngày / mọi cơ sở. Server tự ép khoảng ngày theo quyền. |
+| `branches.all` | owner | Xem, thao tác mọi cơ sở. |
+| `payroll.view` | owner (gán thêm được) | Trang lương, có mở khóa 10 phút. |
+
+Mọi kiểm tra quyền làm ở backend; ẩn trên UI không đủ. Test dataset "role × endpoint → không có khóa nhạy cảm trong response".
+
+---
+
+## 4. ERD
+
+### 4.1 Lõi MVP
 
 ```mermaid
 erDiagram
-    plans ||--o{ tenants : subscribes
-    tenants ||--o{ branches : has
-    tenants ||--o{ staff : has
-    users |o--o| staff : "account (optional)"
-    staff ||--o{ staff_branches : ""
-    branches ||--o{ staff_branches : ""
-    tenants ||--o{ invitations : has
-    staff ||--o{ staff_working_hours : has
-    staff ||--o{ staff_time_off : has
-    branches ||--o{ tenant_closures : "NULL = all"
-
-    tenants ||--o{ owners : has
-    owners ||--o{ pets : owns
-    species ||--o{ breeds : has
-    species ||--o{ pets : ""
-    breeds |o--o{ pets : ""
-
-    tenants ||--o{ services : offers
-    services ||--o{ service_duration_rules : "duration by"
-    staff ||--o{ staff_services : can_do
-    services ||--o{ staff_services : ""
-
-    branches ||--o{ appointments : ""
-    pets ||--o{ appointments : ""
-    owners ||--o{ appointments : ""
-    services ||--o{ appointments : ""
-    staff ||--o{ appointments : assigned
-
-    branches ||--o{ branch_daily_counters : "queue/invoice no"
-    branches ||--o{ visits : ""
-    appointments |o--o| visits : "check-in"
-    pets ||--o{ visits : ""
-    owners ||--o{ visits : ""
-    visits ||--o{ visit_items : ""
-    services |o--o{ visit_items : ""
-    visits |o--o{ medical_records : ""
-    pets ||--o{ medical_records : ""
-
-    branches ||--o{ invoices : ""
-    visits |o--o{ invoices : "1 active"
-    owners |o--o{ invoices : "retail: optional"
-    invoices ||--o{ invoice_lines : ""
-    invoices ||--o{ payments : ""
-
-    pets ||--o{ pet_care_records : ""
-    vaccines ||--o{ pet_care_records : ""
-    vaccines ||--o{ care_protocols : ""
-    care_protocols ||--o{ care_protocol_steps : ""
-    appointments ||--o{ reminders : ""
-    pet_care_records ||--o{ reminders : ""
-    tenants ||--o{ tenant_usage : ""
-
-    tenants {
-        bigint id PK
-        varchar slug UK
-        varchar timezone
-        smallint reschedule_cutoff_hours
-    }
-    branches {
-        bigint id PK
-        bigint tenant_id FK
-        varchar code
-    }
-    staff {
-        bigint id PK
-        bigint tenant_id FK
-        bigint user_id FK "NULL"
-        enum position
-        varchar pin_hash
-    }
-    owners {
-        bigint id PK
-        bigint tenant_id FK
-        varchar phone UK "NULL if system"
-        bool is_system
-    }
-    pets {
-        bigint id PK
-        bigint owner_id FK
-        bool is_stray
-        enum size
-    }
-    appointments {
-        bigint id PK
-        bigint branch_id FK
-        bigint staff_id FK
-        datetime starts_at
-        datetime ends_at
-        enum status
-    }
-    visits {
-        bigint id PK
-        bigint branch_id FK
-        bigint appointment_id FK "NULL"
-        bigint owner_id FK
-        bigint pet_id FK
-        date visit_date
-        smallint queue_no
-        enum status
-    }
-    invoices {
-        bigint id PK
-        bigint branch_id FK
-        bigint visit_id FK "NULL if retail"
-        bigint owner_id FK "NULL if retail"
-        enum kind
-        enum status
-        bigint active_visit_id UK "generated"
-    }
-    payments {
-        bigint id PK
-        bigint invoice_id FK
-        enum kind
-        enum method
-        char idempotency_key UK
-    }
-    reminders {
-        bigint id PK
-        enum audience
-        enum channel
-        varchar dedupe_key UK
-    }
+  tenants ||--|| tenant_settings : ""
+  tenants ||--o{ branches : ""
+  users ||--o{ staff : "làm ở nhiều shop"
+  staff ||--o{ staff_branches : ""
+  branches ||--o{ staff_branches : ""
+  staff ||--o{ staff_working_hours : ""
+  staff ||--o{ staff_time_off : ""
+  customers ||--o{ pets : ""
+  pets ||--o| medical_records : "một hồ sơ"
+  medical_records ||--o{ medical_entries : "mỗi lần khám"
+  medical_entries ||--o{ medical_entry_addenda : ""
+  medical_entries ||--o{ attachments : "xét nghiệm"
+  pets ||--o{ pet_vaccinations : "sổ tiêm"
+  services ||--o{ service_combo_items : "combo"
+  services ||--o{ service_price_rules : ""
+  branches ||--o{ appointments : ""
+  customers ||--o{ appointments : ""
+  appointments ||--|{ appointment_items : "mỗi pet + dịch vụ"
+  pets ||--o{ appointment_items : ""
+  services ||--o{ appointment_items : ""
+  appointments ||--o{ appointment_changes : "lịch sử"
+  visits ||--o{ appointment_items : "check-in, gom theo pet + nhóm"
+  branches ||--o{ online_booking_rates : ""
+  pets ||--o{ visits : ""
+  visits ||--o{ visit_items : ""
+  visits ||--o| medical_entries : ""
+  visits ||--o{ attachments : "ảnh spa"
+  invoices ||--o{ visits : "gom"
+  invoices ||--o{ invoice_lines : ""
+  visit_items ||--o| invoice_lines : "đồng bộ"
+  invoices ||--o{ payments : ""
+  invoices |o--o| invoices : "thay thế"
+  branches ||--o{ cash_drawers : ""
+  cash_drawers ||--o{ cash_sessions : ""
+  cash_sessions ||--o{ payments : "tiền mặt"
+  reminders ||--o{ message_deliveries : "Zalo rồi SMS"
 ```
 
-### 2.2 Giai đoạn 2: kho
+### 4.2 Kho (GĐ2)
 
 ```mermaid
 erDiagram
-    tenants ||--o{ products : catalog
-    product_categories ||--o{ products : ""
-    services ||--o{ service_consumables : "uses"
-    products ||--o{ service_consumables : ""
-    branches ||--o{ stock_items : ""
-    products ||--o{ stock_items : "per branch"
-    stock_items ||--o{ stock_batches : "lots (FEFO)"
-    stock_items ||--o{ stock_movements : "ledger"
-    stock_batches |o--o{ stock_movements : ""
-    suppliers ||--o{ purchase_receipts : ""
-    branches ||--o{ purchase_receipts : ""
-    purchase_receipts ||--o{ purchase_receipt_lines : ""
-    branches ||--o{ stock_transfers : "from / to"
-    stock_transfers ||--o{ stock_transfer_lines : ""
-    stock_transfer_lines |o--o{ stock_reservations : ""
-    stock_items ||--o{ stock_reservations : "reserved"
-    owners |o--o{ stock_reservations : "customer hold"
-    branches ||--o{ stocktakes : ""
-    stocktakes ||--o{ stocktake_lines : ""
-    visit_items }o--o| products : "medication / consumable"
-    invoice_lines }o--o| products : "retail"
-
-    products {
-        bigint id PK
-        varchar sku UK
-        enum kind "medication|consumable|retail"
-        decimal sale_price
-        bool is_public
-    }
-    stock_items {
-        bigint id PK
-        bigint branch_id FK
-        bigint product_id FK
-        decimal on_hand
-        decimal reserved
-        decimal avg_cost "owner only"
-    }
-    stock_batches {
-        bigint id PK
-        varchar batch_no
-        date expires_on
-        decimal quantity
-    }
-    stock_movements {
-        bigint id PK
-        enum type
-        decimal quantity "negative = out"
-        decimal unit_cost
-    }
-    stock_transfers {
-        bigint id PK
-        bigint from_branch_id FK
-        bigint to_branch_id FK
-        enum status
-        varchar shipper_phone
-    }
-    stock_reservations {
-        bigint id PK
-        enum reason "transfer|customer_hold"
-        datetime expires_at
-        enum status
-    }
+  products ||--o{ product_units : ""
+  products ||--o{ stock_items : "mỗi cơ sở"
+  stock_items ||--o{ stock_batches : "lô, FIFO"
+  stock_batches ||--o{ stock_movements : "sổ kho"
+  suppliers ||--o{ purchase_receipts : ""
+  purchase_receipts ||--o{ purchase_receipt_lines : ""
+  purchase_receipt_lines ||--|| stock_batches : "tạo lô"
+  stock_adjustments ||--o{ stock_adjustment_lines : "chờ duyệt"
+  stocktakes ||--o{ stocktake_lines : ""
+  stock_transfers ||--o{ stock_transfer_lines : ""
+  stock_transfer_lines ||--o| stock_reservations : "giữ hàng"
+  invoices ||--o{ sales_returns : ""
+  sales_returns ||--o{ sales_return_lines : ""
+  sales_returns ||--o| payments : "hoàn tiền"
+  visit_items }o--o| products : "thuốc, vật tư"
+  invoice_lines }o--o| products : "hàng bán"
+  vaccines }o--o| products : ""
 ```
 
-### 2.3 Giai đoạn 3: ca làm, chấm công, lương
+### 4.3 Ca, chấm công, lương (GĐ3)
 
 ```mermaid
 erDiagram
-    branches ||--o{ shift_templates : ""
-    branches ||--o{ coverage_requirements : ""
-    shift_templates ||--o{ coverage_requirements : ""
-    shift_templates ||--o{ shift_assignments : ""
-    staff ||--o{ shift_assignments : ""
-    branches ||--o{ attendance_devices : "kiosk"
-    staff ||--o{ attendance_records : ""
-    attendance_devices |o--o{ attendance_records : ""
-    shift_assignments |o--o{ attendance_records : ""
-    staff ||--o{ salary_profiles : ""
-    payroll_periods ||--o{ payroll_entries : ""
-    staff ||--o{ payroll_entries : ""
-    payroll_periods ||--o{ payroll_adjustments : ""
-    staff ||--o{ payroll_adjustments : ""
-    users ||--o{ sensitive_access_logs : "who viewed"
-    public_holidays }o..o{ payroll_entries : "holiday pay"
-
-    shift_templates {
-        bigint id PK
-        time start_time
-        time end_time
-        decimal pay_multiplier
-        bool is_night
-    }
-    shift_assignments {
-        bigint id PK
-        bigint staff_id FK
-        date work_date
-        decimal pay_multiplier "snapshot"
-    }
-    attendance_records {
-        bigint id PK
-        bigint staff_id FK
-        datetime clock_in_at
-        datetime clock_out_at
-        enum method
-        enum status
-    }
-    salary_profiles {
-        bigint id PK
-        enum pay_type
-        decimal base_amount
-        tinyint standard_workdays
-        decimal overtime_multiplier
-        decimal holiday_multiplier
-    }
-    payroll_periods {
-        bigint id PK
-        char period UK
-        enum status "draft|locked"
-    }
-    payroll_entries {
-        bigint id PK
-        decimal net_pay
-        json breakdown
-    }
+  shift_templates ||--o{ shift_assignments : ""
+  staff ||--o{ shift_availabilities : "đăng ký"
+  shift_availabilities |o--o| shift_assignments : "chấp nhận"
+  staff ||--o{ shift_assignments : ""
+  staff ||--o{ staff_shift_rates : ""
+  shift_assignments ||--o{ attendance_records : ""
+  payroll_periods ||--o{ payroll_entries : ""
+  staff ||--o{ payroll_entries : ""
 ```
 
 ---
 
-## 3. Có `tenant_id` hay dùng chung?
+## 5. Rủi ro và cách chặn
 
-- **Dùng chung:** `tenants`, `users`, `plans`, `species`, `breeds`, `permissions`/`roles` (spatie teams), `stripe_webhook_events`, bảng Cashier, bảng hạ tầng (`jobs`, `cache`, `sessions`).
-- **Dùng chung (thêm từ v2):** `public_holidays`.
-- **Có `tenant_id`:** tất cả còn lại: `branches`, `staff`, `staff_branches`, `invitations`, `staff_working_hours`, `staff_time_off`, `tenant_closures`, `owners`, `pets`, `customer_otps`, `medical_records`, `services`, `service_duration_rules`, `staff_services`, `appointments`, `vaccines`, `care_protocols`, `care_protocol_steps`, `pet_care_records`, `reminders`, `tenant_usage`; MVP v2: `branch_daily_counters`, `visits`, `visit_items`, `invoices`, `invoice_lines`, `payments`; GĐ2: các bảng mục 1.4; GĐ3: các bảng mục 1.5 trừ `public_holidays`.
-- Có thêm `branch_id` (FK ghép, không global scope): `staff_working_hours`, `tenant_closures` (nullable), `appointments`, `visits`, `invoices`, `branch_daily_counters`, toàn bộ bảng kho và ca/chấm công. **Không** có `branch_id`: `owners`, `pets` (khách dùng chung cả chuỗi), `services`, `products` (danh mục chung).
-- Bảng con (`care_protocol_steps`, `staff_services`) vẫn **lặp `tenant_id`** dù suy ra được từ cha: để global scope áp dụng đồng nhất và FK ghép hoạt động, đổi lại một cột 8 byte.
+### 5.1 Đặt vượt hạn mức online (race condition)
+**Vấn đề:** 2 khách cùng thấy "còn 1 chỗ" rồi cùng lưu. MySQL không có exclusion constraint.
 
----
+**Cách làm** (Action `BookAppointment`, dùng chung Site và lễ tân):
+0. **Trước transaction** (autocommit): `INSERT IGNORE` hàng `booking_capacity_locks(tenant, branch, group, date)` cho mọi nhóm có trong lịch. Không làm bước này trong transaction: 2 transaction cùng `INSERT IGNORE` trúng khóa trùng sẽ cùng giữ khóa S rồi cùng xin nâng lên X ở bước 3 → deadlock.
+1. Idempotency: `idempotency_key` đã có → trả lịch cũ.
+2. `SELECT … FOR UPDATE` hàng `customers` của khách (tuần tự hóa các lịch của cùng một khách để bước 6 không bị 2 request cùng lọt). Kiểm mọi pet thuộc khách, dịch vụ có ở cơ sở, cơ sở mở cửa, giờ nằm trong khung trực.
+3. `SELECT … FOR UPDATE` các hàng `booking_capacity_locks` của **mọi nhóm có trong lịch** (khám, spa), theo thứ tự cố định (medical trước grooming) để không deadlock. Khóa một hàng đã tồn tại, không khóa dải `appointments` → tránh gap lock và deadlock ở REPEATABLE READ.
+4. Hạn mức mỗi khung 15 phút trong khoảng hẹn = `floor(số người trực của nhóm × ratio)`. Người trực đếm từ `shift_assignments` (GĐ3) hoặc `staff_working_hours` theo `service_group`, trừ `staff_time_off`, `branch_closures`.
+5. Site: với mỗi nhóm, (số dòng online đang chiếm chỗ chồng giờ + số dòng mới của nhóm đó) > hạn mức ở bất kỳ khung nào → `SlotTakenException` cho cả lịch + gợi ý giờ gần nhất đủ chỗ. Lễ tân: không chặn; tổng lịch chồng giờ > số người trực thì trả cờ cảnh báo, vẫn lưu.
+6. Kiểm từng pet không có dòng lịch khác chồng giờ (an toàn nhờ khóa khách ở bước 2).
+7. Quota gói (khóa cuối, giữ ngắn nhất vì là hàng nóng của cả shop): `INSERT … ON DUPLICATE KEY UPDATE` hàng tháng rồi `UPDATE tenant_usage SET appointments_count = appointments_count + 1 WHERE … AND appointments_count < ?`; affected = 0 → từ chối.
+8. Tạo lịch `confirmed` + các `appointment_items`, ghi `appointment_changes`, phát event sau commit (tạo nhắc hẹn). Quota gói đếm theo lịch, không theo dòng.
 
-## 4. Mô hình hóa nghiệp vụ
+Deadlock hoặc lock wait timeout: retry tối đa 3 lần (`DB::transaction(..., attempts: 3)`). Dời lịch, thêm dòng, khôi phục lịch đã hủy dùng cùng đường (bỏ bước 7); đổi sang ngày/nhóm khác thì khóa mọi hàng cũ và mới theo thứ tự (ngày, nhóm) tăng dần. **Test concurrency** (bắt buộc, điểm nhấn CV): 20 tiến trình, mỗi tiến trình một kết nối MySQL, cùng đặt vào khung còn 1 chỗ → đúng 1 thành công; thêm ca lịch 2 pet vào khung còn 1 chỗ → bị từ chối, không lưu dòng nào.
 
-### 4.1 Thời lượng dịch vụ động theo giống/cỡ
-- Bảng quy tắc `service_duration_rules`, **không dùng JSON**: validate được, có FK, query được.
-- Thứ tự resolve (cụ thể nhất thắng): `breed` → `species + size` → `species` → `services.default_duration_min`. Một query `ORDER BY (breed_id IS NOT NULL) DESC, (size IS NOT NULL) DESC LIMIT 1`.
-- `pets.size` lưu sẵn (gợi ý từ `breeds.default_size` + `weight_kg`, nhân viên sửa được), vì cân nặng thay đổi và cỡ là quyết định nghiệp vụ, không phải công thức.
-- Kết quả được **snapshot** vào `appointments.duration_min/price`; `ends_at = starts_at + duration + buffer`.
+### 5.2 Lộ dữ liệu giữa các shop
+- Trait `BelongsToTenant`: global scope + tự gán `tenant_id`; tạo model khi chưa có tenant → exception (fail closed).
+- FK ghép `(tenant_id, x_id)` ở DB.
+- Validation `Rule::exists(...)->where('tenant_id', …)`.
+- Job mang `tenant_id`, middleware đặt context trước `handle()`; scheduler lặp từng shop.
+- Cache key, lock key, đường dẫn file có tiền tố `t:{tenant_id}`.
+- `public_id` ULID cho URL công khai; phiên khách Site gắn với shop của slug (middleware so `customer.tenant_id` với shop của slug mỗi request).
+- Thông báo CMS gắn `staff` (không gắn `users`), quyền spatie đặt `team_id` theo shop đang mở: người làm ở 2 shop không thấy chéo.
+- Test: user shop A gọi mọi endpoint với ID của shop B → 404. Test kiến trúc cấm `withoutGlobalScopes()` ngoài danh sách cho phép.
 
-### 4.2 Lịch làm việc + ngày nghỉ nhân viên
-- **Ca cố định hàng tuần**: `staff_working_hours` (weekday + `TIME` local). Lưu giờ local, không UTC: "9h sáng thứ 2" phải luôn là 9h dù đổi giờ DST.
-- **Ngoại lệ**: `staff_time_off` (khoảng `DATETIME` UTC, nghỉ cả ngày hoặc vài giờ) + `tenant_closures` (ngày lễ toàn tiệm).
-- **Tính slot trống** cho ngày D: ca tuần (convert sang UTC theo `tenants.timezone` cho đúng ngày D) − time_off − closures − appointments đang active → chia theo bước 15 phút với độ dài dịch vụ đã resolve. Tính trong PHP, không lưu bảng slot (tránh phải sinh/đồng bộ trước hàng triệu dòng).
-- Để sau MVP: `staff_schedule_overrides` (ca đặc biệt cho 1 ngày), tài nguyên phòng/bàn grooming.
+### 5.3 Lộ dữ liệu nhạy cảm trong cùng shop
+Giá vốn, lương, bệnh án đầy đủ, ghi chú nội bộ: API Resource riêng theo quyền (mục 3.2); Site không bao giờ trả `internal_notes`; báo cáo ép khoảng ngày ở server theo quyền; trang lương mở khóa 10 phút + `sensitive_access_logs`.
 
-### 4.3 Phác đồ tiêm phòng / tẩy giun định kỳ
-- **Mẫu** (`care_protocols` + `care_protocol_steps`) tách khỏi **thực tế** (`pet_care_records`). Vd Vaccine 7 bệnh chó: step 1 `min_age_days=42`, step 2 `offset_days=21`, step 3 `offset_days=21`, step 4 `is_recurring`, `repeat_every_days=365`. Tẩy giun: 1 step recurring 90 ngày.
-- Khi ghi một mũi: tính `next_due_on` từ step kế tiếp (hoặc lặp lại) rồi lưu; đánh dấu record cũ của cùng vaccine `superseded_at` để scheduler chỉ thấy mũi mới nhất.
-- Scheduler hàng ngày: `WHERE next_due_on BETWEEN today AND today+7 AND superseded_at IS NULL` (dùng index ở trên), tạo `reminders` với `dedupe_key = care:{record_id}:{offset}:{channel}` → chạy lại bao nhiêu lần cũng không nhắc trùng.
-- `next_due_on` là `DATE` theo ngày local của tenant (lịch tiêm theo "ngày", không theo giờ).
+### 5.4 Múi giờ
+App và kết nối MySQL chạy UTC. Chuyển UTC ↔ giờ shop chỉ ở biên (form, hiển thị, tính khung, giờ gửi nhắc). Ca làm `TIME` local chuyển theo từng ngày cụ thể (không cộng offset cố định). "Hôm nay" của shop query theo khoảng UTC `[đầu ngày local, đầu ngày kế)`, không dùng `DATE(starts_at)`. Test với múi giờ có DST.
 
-### 4.4 Đa chi nhánh
-- Tenant = một chủ. Chi nhánh là thuộc tính vận hành: lịch, lượt khám, hóa đơn, tồn kho, ca làm thuộc 1 chi nhánh. Khách, thú cưng, dịch vụ, sản phẩm dùng chung cả chuỗi (khách khám ở Q3 hôm nay, mai qua Q7 vẫn thấy hồ sơ).
-- Session lưu `current_branch_id` (chỉ chọn trong `staff_branches` của mình; Owner chọn được "Tất cả" ở báo cáo). Query màn vận hành luôn lọc theo chi nhánh hiện tại; riêng **tra tồn liên chi nhánh** đọc mọi chi nhánh (chỉ cột tồn khả dụng, không giá vốn).
-- Giá dịch vụ chung cả chuỗi. **[Mặc định, cần xác nhận]** chưa có giá riêng theo chi nhánh; cần thì thêm `branch_service_prices` sau.
+### 5.5 Trừ kho đồng thời (GĐ2)
+Mọi thay đổi tồn đi qua một service `StockLedger`: khóa `stock_items` theo `product_id` tăng dần → kiểm khả dụng → chọn lô FIFO → trừ lô + `on_hand` → ghi movement. Đổi trạng thái phiếu bằng `UPDATE … WHERE status = :expected` (nhận phiếu chuyển 2 lần không cộng đôi). Test: 10 request bán món còn 1 → đúng 1 thành công. Lệch lô giữa sổ và kệ: màn hình hiện lô sẽ xuất, chọn lô tay có quyền, kiểm kê theo lô.
 
-### 4.5 Tiếp nhận, hàng đợi, lượt khám
-- Lịch hẹn (kế hoạch) tách khỏi lượt khám (thực tế). Khách có hẹn đến: check-in → tạo `visit` gắn `appointment_id`. Khách vãng lai: lễ tân tìm SĐT → chọn/tạo hồ sơ + pet → tạo `visit` không có hẹn. Thú hoang: chọn hồ sơ hệ thống "Thú hoang/vô chủ" của chi nhánh, tạo pet "Thú hoang #n".
-- Số thứ tự: `queue_no` cấp nguyên tử từ `branch_daily_counters` theo ngày local. Màn hàng đợi sắp theo: lịch hẹn đúng giờ trước, vãng lai theo số. **[Mặc định, cần xác nhận]** khách có hẹn được ưu tiên trong ±15 phút quanh giờ hẹn.
-- Trạng thái: `waiting` → `in_progress` (bác sĩ/groomer nhận, gán `assigned_staff_id`; nhận bằng `UPDATE ... WHERE status='waiting'` để 2 bác sĩ không bấm nhận cùng một khách) → `done` (đã ghi dịch vụ/thuốc) → `invoiced`.
-- Bác sĩ ghi chẩn đoán vào `medical_records`, dịch vụ/thuốc/vật tư vào `visit_items` (giá snapshot). Lễ tân lập hóa đơn từ visit, không gõ lại.
+### 5.6 Hóa đơn và tiền
+Hoàn thành, hủy, sửa, trả hàng đều khóa hóa đơn (`FOR UPDATE`) và kiểm trạng thái. `payments` có `idempotency_key`, append-only (sửa hóa đơn dùng bút toán `transfer_out`/`transfer_in`, không đổi `invoice_id`). Thứ tự khóa `invoices` → `visits`. Hóa đơn `completed` bất biến (Action từ chối + model guard + test). Ca thu ngân: `open_key` unique chặn mở 2 ca một két; thu tiền mặt khi chưa mở ca → từ chối.
 
-### 4.6 Hóa đơn & thanh toán
-- `draft` (sửa được) → `issued` (khóa nội dung) → `partially_paid` / `paid`. **Đã issued thì không sửa dòng**: muốn sửa → `void` (lý do, ai hủy) + lập hóa đơn mới `replaces_invoice_id`. Khóa ở 3 lớp: Action từ chối, model `updating` guard ném exception khi status ≠ draft, test.
-- Một visit chỉ có một hóa đơn hiệu lực (unique trên cột sinh `active_visit_id`).
-- Thanh toán: mỗi lần trả một dòng `payments` với `idempotency_key` (bấm 2 lần không ghi 2 lần). Trong transaction: `lockForUpdate` hóa đơn → cộng `paid_amount` → đổi status. Hoàn tiền = dòng `refund`, `paid_amount` giảm.
-- Số hóa đơn: `{branch.code}-{yyyymmdd}-{seq}` từ `branch_daily_counters`, không có lỗ hổng do rollback vì cấp trong cùng transaction với insert hóa đơn.
-- Hồ sơ khách theo loại hóa đơn: xem quy tắc ở mục 1.3.
-
-### 4.7 Kho, thuốc, điều chuyển (GĐ2)
-- **Giá vốn bình quân gia quyền** theo chi nhánh: nhập lô mới `avg_cost = (on_hand*avg_cost + qty*unit_cost) / (on_hand + qty)`. Xuất kho ghi `unit_cost = avg_cost` hiện tại vào movement và `invoice_lines.unit_cost` → lợi nhuận = doanh thu − giá vốn − thuế, tính được cho từng hóa đơn.
-- **Trừ kho khi kê/bán**: trong transaction, `lockForUpdate` dòng `stock_items` (theo `product_id` tăng dần nếu nhiều sản phẩm, tránh deadlock) → kiểm khả dụng → chọn lô FEFO (bỏ lô hết hạn) → trừ lô + on_hand → ghi movement. Thuốc kê trong lượt khám trừ ngay khi bác sĩ lưu; hủy dòng thì ghi movement trả lại.
-- **Tra tồn liên chi nhánh**: query `stock_items` theo `product_id` mọi chi nhánh, trả `available = on_hand − reserved` + hạn gần nhất. Không trả giá vốn.
-- **Luồng hết thuốc ở chi nhánh 1, chi nhánh 2 còn**:
-  1. Lễ tân/bác sĩ CN1 tìm thuốc → thấy CN2 còn → hẹn khách ngày mai lấy.
-  2. Khách đồng ý → tạo `stock_transfers` (requested, CN2 → CN1) **và** `stock_reservations` ở CN2 (`reason=transfer`) để CN2 không bán mất số đó. Gắn `owner_id`/`visit_id` của khách.
-  3. CN2 duyệt (`approved`) → xuất kho, chọn lô FEFO, ghi shipper (`in_transit`, movement `transfer_out`, reservation `consumed`).
-  4. CN1 nhận (`received`, movement `transfer_in`, lô giữ nguyên số lô + HSD, `avg_cost` CN1 cập nhật theo giá vốn chuyển sang) → tạo `stock_reservations` ở CN1 (`reason=customer_hold`, hết hạn mặc định 48h) cho khách.
-  5. Khách đến lấy → bán qua hóa đơn, reservation `consumed`. Quá hạn → job chuyển `expired`, nhả `reserved`.
-  - Nếu cả chuỗi hết: lập phiếu nhập từ nhà phân phối (`purchase_receipts`), vẫn có thể giữ hàng cho khách khi nhập về.
-- Cảnh báo tồn thấp (`on_hand − reserved ≤ reorder_level`) và lô sắp hết hạn (≤ 30 ngày): job hằng ngày → thông báo in-app cho Owner/quản lý chi nhánh.
-- **Giá nhập chỉ Owner thấy**: cột `avg_cost`, `unit_cost`, `total_cost` không bao giờ nằm trong API Resource mặc định; chỉ `ProductCostResource` khi có permission `inventory.view_cost` (chỉ Owner). Test assert JSON trả cho lễ tân không có khóa `cost` nào.
-
-### 4.8 Ca làm, chấm công, lương (GĐ3)
-- Owner tạo mẫu ca theo chi nhánh, xếp ca theo ngày; hệ thống so với `coverage_requirements` và cảnh báo "Thứ 7 ca tối thiếu 1 bác sĩ".
-- Chấm công: kiosk (tablet ở quầy, đã đăng ký bằng token thiết bị) → nhân viên nhập mã NV + PIN (rate limit, khóa 15 phút sau 5 lần sai). Kiểm IP thuộc `branches.allowed_ips`. Không cần mọi nhân viên có tài khoản. Chỉ ghi ngày đi làm, không có nghỉ phép.
-- Công thức lương (mỗi kỳ tháng): `đơn giá ngày = base_amount / standard_workdays`; giờ thường × hệ số ca (`pay_multiplier`); tăng ca × `overtime_multiplier`; giờ đêm (22:00-06:00) cộng `night_extra_rate`; ngày lễ × `holiday_multiplier`; + thưởng − phạt − tạm ứng. Kết quả và công thức snapshot vào `payroll_entries.breakdown`. **[Mặc định, cần xác nhận]** tăng ca = phần vượt giờ ca được xếp.
-- Chốt kỳ: `payroll_periods.status=locked` → mọi sửa `attendance_records`, `payroll_adjustments` thuộc kỳ đó bị từ chối.
-- **Trang lương** (chỉ Owner, permission `payroll.view`): middleware `RequireSensitiveUnlock:payroll` bắt nhập lại mật khẩu (**[Mặc định, cần xác nhận]** dùng lại mật khẩu đăng nhập; nếu muốn mật khẩu cấp 2 riêng thì thêm `users.secondary_password_hash`), mở khóa 10 phút (lưu `unlocked_until` trong session, không gia hạn tự động), ghi `sensitive_access_logs` mỗi lần mở khóa/xem/xuất file. Không cache trang lương.
-- Thống kê: Lễ tân chỉ xem số liệu **hôm nay của chi nhánh mình**; chặn ở query (server ép khoảng ngày = hôm nay), không chỉ ẩn bộ lọc ngày trên UI.
+### 5.7 Admin nền tảng
+Bảng, guard, cookie riêng; không cột quyền nền tảng trên `users`; 2FA bắt buộc; admin chỉ thấy số tổng hợp, muốn xem dữ liệu shop phải đăng nhập thay (lý do bắt buộc, 30 phút, log mọi thao tác ghi, chủ shop xem được lịch sử).
 
 ---
 
-## 5. Rủi ro lớn nhất
+## 6. ADR nên viết
 
-### 5.1 Race condition: double-booking
-**Vấn đề:** 2 request cùng check "slot trống" rồi cùng insert. MySQL không có exclusion constraint như Postgres.
-
-**Giảm thiểu (đề xuất):** khóa bi quan trên **một hàng `staff`**, không khóa theo range `appointments`:
-```php
-DB::transaction(function () use ($data) {
-    Staff::whereKey($data->staffId)->lockForUpdate()->first();   // serialize theo nhân viên
-    $overlap = Appointment::where('staff_id', $data->staffId)
-        ->whereIn('status', Appointment::BLOCKING)
-        ->where('starts_at', '<', $data->endsAt)
-        ->where('ends_at', '>', $data->startsAt)
-        ->exists();
-    if ($overlap) throw new SlotTakenException();
-    Appointment::create([...]);
-});
-```
-- Khóa 1 hàng đã tồn tại tránh gap lock / next-key lock trên `appointments` (nguồn deadlock phổ biến ở REPEATABLE READ).
-- "Nhân viên bất kỳ": thử từng nhân viên trong **transaction riêng** (lock → check → insert → commit, fail thì sang người kế), không giữ nhiều lock cùng lúc → không deadlock.
-- Kiểm tra cả trùng lịch của **pet** trong cùng transaction.
-- Kèm `idempotency_key` để double-click/retry không tạo 2 lịch.
-- Quota gói cũng là race: `UPDATE tenant_usage SET appointments_count = appointments_count + 1 WHERE tenant_id=? AND period=? AND appointments_count < ?`, affected = 0 thì từ chối.
-- Bắt buộc có **test concurrency** (bắn song song N request vào cùng slot, assert đúng 1 thành công). Đây là điểm đáng show trên CV.
-
-Phương án thay thế: bảng `appointment_slots` với `UNIQUE(staff_id, slot_start)` theo bước 15 phút, cho đảm bảo cứng ở DB nhưng phải insert/xóa nhiều dòng và khóa cứng granularity. Để dành làm ADR so sánh.
-
-### 5.2 Rò rỉ dữ liệu giữa tenant
-**Vấn đề:** quên global scope ở 1 query, route model binding lấy ID của tenant khác, validation `exists:pets,id` không check tenant, job queue chạy không có context tenant, cache key trùng.
-
-**Giảm thiểu:**
-- Trait `BelongsToTenant`: global scope + tự gán `tenant_id` khi `creating`; ném exception nếu tạo model khi chưa có tenant context (fail closed).
-- **FK ghép `(tenant_id, x_id)`** ở DB: dù code sai cũng không thể gắn pet tenant A vào owner tenant B.
-- Validation: `Rule::exists('pets','id')->where('tenant_id', tenant()->id)`.
-- Job implement `TenantAware` (serialize `tenant_id`, middleware set context trước khi `handle()`); scheduler lặp qua từng tenant hoặc query có chủ đích `withoutGlobalScope` và chỉ ở chỗ đó.
-- Cache/lock key luôn prefix `t:{tenant_id}:`.
-- `public_id` ULID cho URL công khai; Larastan rule hoặc test cấm `withoutGlobalScopes()` ngoài whitelist.
-- Pest dataset test: user tenant A gọi mọi endpoint với ID của tenant B → luôn 404.
-
-### 5.3 Timezone
-**Vấn đề:** tenant ở tz khác server; giờ ca làm việc là giờ local; DST làm 1 ngày có 23/25 giờ; nhắc "9h sáng" bị lệch; `TIMESTAMP` tự convert theo session.
-
-**Giảm thiểu:**
-- `config('app.timezone') = 'UTC'`, MySQL connection `timezone => '+00:00'`, cột `DATETIME` lưu UTC.
-- `tenants.timezone` (IANA). Convert UTC ↔ local **chỉ ở biên**: input form, hiển thị, tính slot, tính giờ gửi nhắc.
-- Ca làm việc `TIME` local, convert theo từng ngày cụ thể (`CarbonImmutable::parse("$date $time", $tz)->utc()`), không cộng offset cố định.
-- "Lịch theo ngày" của tiệm query theo khoảng UTC `[startOfDay local → UTC, endOfDay local → UTC)`, không dùng `DATE(starts_at)`.
-- Test với tz có DST (`America/New_York`) dù khách chính ở VN.
-
-### 5.4 Race condition: trừ kho, giữ hàng, điều chuyển (GĐ2)
-**Vấn đề:** 2 quầy bán món cuối cùng cùng lúc; CN2 bán mất thuốc đang chờ chuyển cho CN1; nhận phiếu chuyển 2 lần làm cộng kho đôi.
-**Giảm thiểu:** mọi thay đổi tồn đi qua một service `StockLedger` duy nhất: `lockForUpdate` hàng `stock_items` (thứ tự product_id tăng dần) → kiểm `on_hand − reserved` → ghi movement. Chuyển trạng thái phiếu bằng `UPDATE ... WHERE status = :expected` (affected = 0 → đã có người xử lý). Test concurrency: 10 request bán 1 món còn 1 → đúng 1 thành công (`->group('mysql')`).
-
-### 5.5 Lộ dữ liệu nhạy cảm trong cùng tenant
-**Vấn đề:** giá vốn, lương lộ qua JSON API dù UI đã ẩn; lễ tân xem thống kê tháng bằng cách sửa query string.
-**Giảm thiểu:** API Resource riêng cho dữ liệu nhạy cảm, gated bằng permission; filter ngày ép ở server theo quyền; trang lương thêm lớp mở khóa 10 phút + audit log; test dataset "role × endpoint → không có khóa cost/salary trong response".
+1. Một DB + `tenant_id` + FK ghép (so với DB riêng mỗi shop).
+2. Hạn mức đặt online bằng khóa một hàng đếm theo (cơ sở, nhóm, ngày) (so với khóa hàng nhân viên, bảng slot unique, `GET_LOCK`).
+3. Lưu UTC `DATETIME` + giờ ca `TIME` local.
+4. Cơ sở là `branch_id` + FK ghép, không global scope.
+5. Lịch hẹn tách Visit, Visit tách hóa đơn; hóa đơn bất biến sau hoàn thành (hủy + bản thay thế).
+6. Sổ kho append-only, xuất FIFO theo lô nhập, giá vốn = giá lô (so với FEFO, bình quân gia quyền); phiếu nhập 2 bước.
+7. Tin nhắn khách: tách "cần nhắc gì" (`reminders`) khỏi "đã gửi qua kênh nào" (`message_deliveries`), Zalo trước SMS sau.
+8. Admin nền tảng cùng app, guard riêng, đăng nhập thay bằng token 1 lần.
 
 ---
 
-## Gợi ý ADR
-1. Một DB + `tenant_id` + FK ghép (vs DB riêng mỗi tenant).
-2. Chống double-booking bằng lock hàng `staff` (vs bảng slot unique).
-3. Lưu UTC `DATETIME` + giờ ca local `TIME`.
-4. Chi nhánh: `branch_id` + FK ghép, không global scope (vs coi chi nhánh là tenant con).
-5. Lịch hẹn tách lượt khám; hóa đơn bất biến sau khi phát hành (void + lập mới).
-6. Sổ kho append-only + giá vốn bình quân gia quyền (vs FIFO theo lô).
+## 7. Đổi tên so với bản cũ
+
+Để đối chiếu với code cũ trên nhánh `dev` và tài liệu trong `old/`:
+
+| Bản cũ | Bản này | Lý do |
+|---|---|---|
+| `owners` | `customers` | Tránh nhầm với chủ shop (role `owner`). |
+| `tenant_closures` | `branch_closures` | Ngày nghỉ theo cơ sở. |
+| `service_duration_rules` | `service_price_rules` | Chứa cả thời lượng và giá. |
+| `medical_records` (dòng) + `pets.record_no` | `medical_records` (hồ sơ) + `medical_entries` (dòng) | Đúng mô hình "một hồ sơ, nhiều dòng". |
+| `medical_record_addenda` | `medical_entry_addenda` | Theo tên bảng dòng. |
+| `pet_care_records` | `pet_vaccinations` | Rõ nghĩa sổ tiêm; thêm `visit_id`, trạng thái hoãn. |
+| `reminders` (có channel) | `reminders` + `message_deliveries` | Gửi Zalo rồi SMS dự phòng cần ghi từng lần gửi. |
+| `appointments` (1 pet + 1 dịch vụ) | `appointments` (đầu lịch) + `appointment_items` (mỗi pet + dịch vụ) | Một lịch nhiều pet. `price` → `reference_price`, `staff_id` → `assigned_staff_id` trên dòng, `source=portal` → `online`. |
+| `invoices.kind=visit`, `owner_id` | `kind=service`, `customer_id` + `payer_name` | Thêm người trả cho thú hoang. |
+| `tenants` (cột cài đặt) | `tenant_settings` | Tách cài đặt shop khỏi dữ liệu nền tảng. |
+| `staff.position`, `is_bookable` | bỏ; `title` + `staff_working_hours.service_group` | Quyền theo role; người trực đếm theo khung trực. |
+| `services.category` (có boarding) | `services.service_group` (medical, grooming) | Lưu chuồng ngoài V1. |
+| `stock_items.avg_cost` | bỏ | Giá vốn theo lô. |
+| `purchase_receipts.status` draft | bỏ `draft` | Lưu phiếu là cộng tồn ngay. |
+| `visits.appointment_item_id` (UNIQUE) | `appointment_items.visit_id` | Một Visit gom mọi dòng cùng pet, cùng nhóm (khám + tiêm = 1 Visit). |
+| Mới | `appointment_items`, `appointment_changes`, `branch_services`, `tenant_counters`, `message_deliveries`, `platform_admin_invitations` | Lịch sử đổi lịch; dịch vụ theo cơ sở; số hồ sơ; nhật ký gửi tin; mời admin nền tảng. |
+| Bỏ | `staff_services`, `loyalty_transactions`, `salary_profiles`, `payroll_adjustments`, `is_member` | Không còn dùng hoặc sau V1. |

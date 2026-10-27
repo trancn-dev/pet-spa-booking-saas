@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiến trúc PawBook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f5f5f5;--ink:#2d3142;--muted:#6b6f80;--accent:#bf4520;--rule:#d6d7dc}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Geist,system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:40px 16px}
+.eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font:400 40px/1.1 'Instrument Serif',serif;margin:8px 0 6px}
+p.lede{color:var(--muted);margin:0 0 24px;max-width:760px;font-size:15px}
+.wrap{overflow-x:auto}
+svg{display:block;min-width:1240px}
+.tag{font:500 9.5px 'Geist Mono',monospace;letter-spacing:.06em}
+.name{font:600 14px Geist,sans-serif;fill:var(--ink)}
+.sub{font:400 10.5px 'Geist Mono',monospace;fill:var(--muted)}
+.lbl{font:500 9.5px 'Geist Mono',monospace;fill:var(--muted);letter-spacing:.05em}
+.leg{font:400 12px Geist,sans-serif;fill:var(--ink)}
+.cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:16px;margin-top:28px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:16px 18px;font-size:13.5px;line-height:1.55}
+.card h3{margin:0 0 8px;font:600 13px Geist}
+.card ul{margin:0;padding-left:18px}
+.card code{font:12px 'Geist Mono',monospace}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--ink)}
+.dot.p{background:none;border:1px dashed var(--muted)}.dot.a{background:var(--accent)}
+@media(max-width:800px){.cards{grid-template-columns:1fr}}
+</style></head><body><main>
+<div class="eyebrow">Pet Spa Booking SaaS · nhánh dev · 20/10/2026</div>
+<h1>Kiến trúc hệ thống hiện tại</h1>
+<p class="lede">Một app Laravel, một DB MySQL dùng <code>tenant_id</code>. Ba khu vào cùng một domain; mọi truy vấn model của tiệm đi qua TenantScope và sẽ ném lỗi nếu chưa có tenant.</p>
+<div class="wrap">
+<svg viewBox="0 64 1240 646" role="img" aria-labelledby="pawbook-arch-title pawbook-arch-desc">
+<title id="pawbook-arch-title">Kiến trúc PawBook (nhánh dev)</title>
+<desc id="pawbook-arch-desc">Site chủ nuôi, CMS nhân viên và trang admin đi vào app Laravel; ResolveTenant đặt tenant cho Actions và Models, dữ liệu nằm trong MySQL, Redis lo cache và queue, worker gửi nhắc hẹn.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b6f80"/></marker>
+<marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#bf4520"/></marker>
+<marker id="arrow-link" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3b6ea8"/></marker>
+</defs>
+<path d="M240 132 H272 Q280 132 280 140 V168 Q280 176 288 176 H316" fill="none" stroke="#3b6ea8" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+<path d="M240 244 H272 Q280 244 280 236 V208 Q280 200 288 200 H316" fill="none" stroke="#3b6ea8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+<path d="M240 424 H664 Q672 424 672 416 V228" fill="none" stroke="#3b6ea8" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+<path d="M520 188 H596" fill="none" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M820 176 H896" fill="none" stroke="#6b6f80" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M820 200 H852 Q860 200 860 208 V316 Q860 324 868 324 H896" fill="none" stroke="#6b6f80" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M970 360 V420" fill="none" stroke="#6b6f80" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M1040 460 H1064 Q1072 460 1072 452 V196 Q1072 188 1064 188 H1044" fill="none" stroke="#6b6f80" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M970 496 V556" fill="none" stroke="#6b6f80" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="523" y="164" width="74" height="14" fill="#f5f5f5"/><text x="560" y="174" class="lbl" text-anchor="middle">SET TENANT</text>
+<rect x="413" y="402" width="87" height="14" fill="#f5f5f5"/><text x="456" y="412" class="lbl" text-anchor="middle">BYPASS SCOPE</text>
+<rect x="821" y="154" width="74" height="14" fill="#f5f5f5"/><text x="858" y="164" class="lbl" text-anchor="middle">SCOPED SQL</text>
+<rect x="775" y="258" width="80" height="14" fill="#f5f5f5"/><text x="850" y="268" class="lbl" text-anchor="end">CACHE·QUEUE</text>
+<rect x="931" y="384" width="36" height="14" fill="#f5f5f5"/><text x="962" y="394" class="lbl" text-anchor="end">JOBS</text>
+<rect x="1077" y="314" width="93" height="14" fill="#f5f5f5"/><text x="1082" y="324" class="lbl" text-anchor="start">RUN AS TENANT</text>
+<rect x="906" y="520" width="61" height="14" fill="#f5f5f5"/><text x="962" y="530" class="lbl" text-anchor="end">NHẮC HẸN</text>
+<g><rect x="40" y="96" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="96" width="200" height="72" rx="6" fill="#ffffff" stroke="#6b6f80" stroke-width="1" stroke-dasharray="4,3"/><rect x="52" y="106" width="62" height="16" rx="2" fill="none" stroke="#6b6f80" stroke-width="0.8"/><text x="58" y="117.5" class="tag" fill="#6b6f80">KHÁCH</text><text x="52" y="142" class="name">Site của shop</text><text x="52" y="158" class="sub">/{slug} · guard customer</text></g>
+<g><rect x="40" y="208" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="208" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="52" y="218" width="68" height="16" rx="2" fill="none" stroke="#2d3142" stroke-width="0.8"/><text x="58" y="229.5" class="tag" fill="#2d3142">NHÂN VIÊN</text><text x="52" y="254" class="name">CMS shop</text><text x="52" y="270" class="sub">/app/{slug} · guard web</text></g>
+<g><rect x="40" y="388" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="388" width="200" height="72" rx="6" fill="#ffffff" stroke="#6b6f80" stroke-width="1" stroke-dasharray="4,3"/><rect x="52" y="398" width="99" height="16" rx="2" fill="none" stroke="#6b6f80" stroke-width="0.8"/><text x="58" y="409.5" class="tag" fill="#6b6f80">ADMIN NỀN TẢNG</text><text x="52" y="434" class="name">Quản trị /admin</text><text x="52" y="450" class="sub">guard platform</text></g>
+<g><rect x="320" y="152" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="320" y="152" width="200" height="72" rx="6" fill="#f9ece7" stroke="#bf4520" stroke-width="1.5"/><rect x="332" y="162" width="74" height="16" rx="2" fill="none" stroke="#bf4520" stroke-width="0.8"/><text x="338" y="173.5" class="tag" fill="#bf4520">MIDDLEWARE</text><text x="332" y="198" class="name">ResolveTenant</text><text x="332" y="214" class="sub">slug → tenant + staff</text></g>
+<g><rect x="600" y="152" width="220" height="72" rx="6" fill="#f5f5f5"/><rect x="600" y="152" width="220" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="612" y="162" width="74" height="16" rx="2" fill="none" stroke="#2d3142" stroke-width="0.8"/><text x="618" y="173.5" class="tag" fill="#2d3142">LARAVEL 12</text><text x="612" y="198" class="name">Actions + Models</text><text x="612" y="214" class="sub">TenantScope fail closed</text></g>
+<g><rect x="900" y="152" width="140" height="72" rx="6" fill="#f5f5f5"/><rect x="900" y="152" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="912" y="162" width="24" height="16" rx="2" fill="none" stroke="#2d3142" stroke-width="0.8"/><text x="918" y="173.5" class="tag" fill="#2d3142">DB</text><text x="912" y="198" class="name">MySQL 8</text><text x="912" y="214" class="sub">1 DB · tenant_id</text></g>
+<g><rect x="900" y="288" width="140" height="72" rx="6" fill="#f5f5f5"/><rect x="900" y="288" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="912" y="298" width="43" height="16" rx="2" fill="none" stroke="#2d3142" stroke-width="0.8"/><text x="918" y="309.5" class="tag" fill="#2d3142">CACHE</text><text x="912" y="334" class="name">Redis 7</text><text x="912" y="350" class="sub">cache·session·queue</text></g>
+<g><rect x="900" y="424" width="140" height="72" rx="6" fill="#f5f5f5"/><rect x="900" y="424" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="912" y="434" width="49" height="16" rx="2" fill="none" stroke="#2d3142" stroke-width="0.8"/><text x="918" y="445.5" class="tag" fill="#2d3142">WORKER</text><text x="912" y="470" class="name">Worker</text><text x="912" y="486" class="sub">queue + scheduler</text></g>
+<g><rect x="900" y="560" width="140" height="72" rx="6" fill="#f5f5f5"/><rect x="900" y="560" width="140" height="72" rx="6" fill="#ffffff" stroke="#6b6f80" stroke-width="1" stroke-dasharray="4,3"/><rect x="912" y="570" width="43" height="16" rx="2" fill="none" stroke="#6b6f80" stroke-width="0.8"/><text x="918" y="581.5" class="tag" fill="#6b6f80">NGOÀI</text><text x="912" y="606" class="name">Zalo / SMS</text><text x="912" y="622" class="sub">nhắc hẹn, tiêm</text></g>
+<line x1="40" y1="660" x2="1200" y2="660" stroke="#d6d7dc"/>
+<rect x="40" y="674" width="24" height="14" rx="3" fill="#fff" stroke="#2d3142"/><text x="72" y="685" class="leg">Đã có trên dev</text>
+<rect x="240" y="674" width="24" height="14" rx="3" fill="#fff" stroke="#6b6f80" stroke-dasharray="4,3"/><text x="272" y="685" class="leg">Kế hoạch MVP</text>
+<rect x="440" y="674" width="24" height="14" rx="3" fill="#f9ece7" stroke="#bf4520"/><text x="472" y="685" class="leg">Điểm chốt cô lập tenant</text>
+<line x1="640" y1="681" x2="668" y2="681" stroke="#3b6ea8" stroke-width="1.2" marker-end="url(#arrow-link)"/><text x="676" y="685" class="leg">HTTP request</text>
+<line x1="790" y1="681" x2="818" y2="681" stroke="#6b6f80" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><text x="826" y="685" class="leg">Luồng chưa làm</text>
+</svg></div>
+<div class="cards">
+<div class="card"><h3><span class="dot"></span>Đã có trên dev (phase 1-2)</h3><ul>
+<li>Bảng <code>tenants</code>, <code>users</code> (toàn cục), <code>staff</code> (thành viên shop)</li>
+<li><code>ResolveTenant</code>: slug → tenant, kiểm tra staff active, sai thì 404</li>
+<li><code>TenantContext</code> + <code>TenantScope</code> fail closed, <code>BelongsToTenant</code></li>
+<li>Auth (Vue starter kit), settings, <code>/app/{slug}/dashboard</code>; Docker app + queue + MySQL + Redis</li></ul></div>
+<div class="card"><h3><span class="dot p"></span>Kế hoạch MVP (chưa có code)</h3><ul>
+<li>Admin <code>/admin</code> + guard <code>platform</code>, tạo shop, mời chủ shop</li>
+<li>Site <code>/{slug}</code> + guard <code>customer</code>, OTP, đặt lịch</li>
+<li>Đặt lịch theo hạn mức online (khóa hàng <code>booking_capacity_locks</code>), Visit, hóa đơn, ca thu ngân</li>
+<li>Job nhắc hẹn / tiêm phòng qua queue + scheduler</li></ul></div>
+<div class="card"><h3><span class="dot a"></span>Điểm yếu cần xử lý</h3><ul>
+<li>Job chưa mang <code>tenant_id</code>: worker không có context sẽ ném lỗi</li>
+<li>Cache key chưa có tiền tố tenant</li>
+<li>Admin bypass scope: cần audit log, chỉ đọc mặc định</li></ul></div>
+</div></main></body></html>
