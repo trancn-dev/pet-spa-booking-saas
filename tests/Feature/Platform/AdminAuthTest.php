@@ -36,7 +36,7 @@ it('hides every protected admin page from guests and CMS users (404)', function 
 
 it('sends /admin to the admin login page', function () {
     $this->get('/admin')->assertRedirect('/admin/login');
-    $this->get('/admin/login')->assertOk()->assertInertia(fn (Assert $page) => $page->component('admin/auth/Login'));
+    $this->get('/admin/login')->assertOk()->assertInertia(fn (Assert $page) => $page->component('Admin/Login'));
 });
 
 it('signs in with password then TOTP, and only after the TOTP step', function () {
@@ -93,7 +93,7 @@ it('forces an admin without 2FA through setup before reaching A2', function () {
     $this->get('/admin/tenants')->assertNotFound();
 
     $this->get('/admin/two-factor/setup')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('admin/auth/TwoFactorSetup')->has('qrSvg')->has('secret'));
+        ->assertInertia(fn (Assert $page) => $page->component('Admin/TwoFactor/Setup')->has('qrSvg')->has('secret'));
 
     $secret = (string) $new->fresh()->two_factor_secret;
     $this->post('/admin/two-factor/setup', ['code' => app(Google2FA::class)->getCurrentOtp($secret)])

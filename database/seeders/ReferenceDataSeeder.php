@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Authorization\PermissionCatalog;
 use App\Models\Breed;
 use App\Models\Plan;
 use App\Models\Species;
@@ -70,5 +71,8 @@ class ReferenceDataSeeder extends Seeder
         }
 
         Breed::query()->upsert($breeds, ['species_id', 'name'], ['default_size']);
+
+        // Permission catalogue (config/permissions.php) → permissions table.
+        PermissionCatalog::sync();
     }
 }

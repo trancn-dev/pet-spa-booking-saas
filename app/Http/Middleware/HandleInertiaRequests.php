@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -47,6 +48,16 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => fn () => $request->user(),
             ],
+            // Inside a shop (/app/{slug}): the shop and the user's permission codes there, so the
+            // UI can hide / disable actions. The backend still checks every request (policies).
+            'tenant' => fn (): ?array => ($tenant = tenant()) === null ? null : [
+                'slug' => $tenant->slug,
+                'name' => $tenant->name,
+            ],
+            'flash' => ['status' => fn () => $request->session()->get('status')],
+            'permissions' => fn (): array => tenant() !== null && $request->user() instanceof User
+                ? $request->user()->getAllPermissions()->pluck('name')->values()->all()
+                : [],
         ]);
     }
 }

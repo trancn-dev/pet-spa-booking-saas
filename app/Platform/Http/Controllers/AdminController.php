@@ -24,7 +24,7 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('admin/admins/Index', [
+        return Inertia::render('Admin/Admins/Index', [
             'admins' => PlatformAdmin::query()->orderBy('name')->get()->map(fn (PlatformAdmin $admin): array => [
                 'id' => $admin->id,
                 'name' => $admin->name,

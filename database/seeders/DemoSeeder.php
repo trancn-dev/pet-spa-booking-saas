@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Actions\Roles\CreateDefaultRoles;
 use App\Enums\ActorType;
 use App\Enums\AppointmentChangeAction;
 use App\Enums\AppointmentItemStatus;
@@ -62,6 +63,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Demo dataset of docs/design/design.md section 9 (local / demo only).
@@ -69,7 +71,7 @@ use LogicException;
  * (08:00 in Asia/Ho_Chi_Minh = 01:00 UTC). Shop-local TIME / DATE columns stay local.
  *
  * Tenants are created directly here; task 4.3 replaces that with the ProvisionTenant action.
- * Roles are assigned in task 4.2 (titles below are display labels only).
+ * Roles follow design.md section 9 (titles are display labels only; permissions come from roles).
  */
 class DemoSeeder extends Seeder
 {
@@ -122,6 +124,8 @@ class DemoSeeder extends Seeder
         $this->meowClinic();
         $this->smallShop('Happy Tails', 'happy-tails', 'starter', TenantStatus::Trial, $this->at('23:59', 5), 'HT', 'Trịnh Văn Phúc', 'phuc@happytails.test');
         $this->smallShop('Bé Cún Spa', 'be-cun-spa', 'starter', TenantStatus::Suspended, $this->at('23:59', -10), 'BC', 'Lâm Thị Ngọc', 'ngoc@becun.test', 'Chưa thanh toán');
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     }
 
     // ---------------------------------------------------------------- Paw House
@@ -160,20 +164,20 @@ class DemoSeeder extends Seeder
     private function pawHouseStaff(Branch $q3, Branch $q7): void
     {
         $people = [
-            // key => [name, email (null = no account), title, color, primary, extra branches]
-            'khoa' => ['Trần Minh Khoa', 'khoa@pawhouse.test', 'Chủ shop · Bác sĩ', '#0D9488', $q3, [$q7]],
-            'ha' => ['BS. Lê Thu Hà', 'ha@pawhouse.test', 'Bác sĩ', '#8B5CF6', $q3, []],
-            'tri' => ['BS. Phan Đức Trí', 'tri@pawhouse.test', 'Bác sĩ', '#22C55E', $q3, []],
-            'ngocanh' => ['Nguyễn Ngọc Anh', 'ngocanh@pawhouse.test', 'Nhân viên spa', '#F97362', $q3, []],
-            'bao' => ['Phạm Quốc Bảo', 'bao@pawhouse.test', 'Nhân viên spa', '#0EA5E9', $q3, [$q7]],
-            'mai' => ['Võ Thị Mai', 'mai@pawhouse.test', 'Lễ tân · Thu ngân', '#EAB308', $q3, []],
-            'hung' => ['Đỗ Văn Hùng', 'hung@pawhouse.test', 'Quản lý chi nhánh', '#EC4899', $q7, []],
-            'kim' => ['Lý Thị Kim', 'kim@pawhouse.test', 'Nhân viên kho', '#64748B', $q3, []],
-            'tu' => ['Lê Văn Tư', null, 'Bảo vệ', null, $q3, []],
+            // key => [name, email (null = no account), title, color, primary, extra branches, roles]
+            'khoa' => ['Trần Minh Khoa', 'khoa@pawhouse.test', 'Chủ shop · Bác sĩ', '#0D9488', $q3, [$q7], ['owner', 'vet']],
+            'ha' => ['BS. Lê Thu Hà', 'ha@pawhouse.test', 'Bác sĩ', '#8B5CF6', $q3, [], ['vet']],
+            'tri' => ['BS. Phan Đức Trí', 'tri@pawhouse.test', 'Bác sĩ', '#22C55E', $q3, [], ['vet']],
+            'ngocanh' => ['Nguyễn Ngọc Anh', 'ngocanh@pawhouse.test', 'Nhân viên spa', '#F97362', $q3, [], ['groomer']],
+            'bao' => ['Phạm Quốc Bảo', 'bao@pawhouse.test', 'Nhân viên spa', '#0EA5E9', $q3, [$q7], ['groomer']],
+            'mai' => ['Võ Thị Mai', 'mai@pawhouse.test', 'Lễ tân · Thu ngân', '#EAB308', $q3, [], ['receptionist', 'cashier']],
+            'hung' => ['Đỗ Văn Hùng', 'hung@pawhouse.test', 'Quản lý chi nhánh', '#EC4899', $q7, [], ['branch_manager']],
+            'kim' => ['Lý Thị Kim', 'kim@pawhouse.test', 'Nhân viên kho', '#64748B', $q3, [], ['inventory']],
+            'tu' => ['Lê Văn Tư', null, 'Bảo vệ', null, $q3, [], []],
         ];
 
-        foreach ($people as $key => [$name, $email, $title, $color, $primary, $extra]) {
-            $this->staff[$key] = $this->member($primary, $extra, $name, $title, $color, $email === null ? null : $this->user($name, $email));
+        foreach ($people as $key => [$name, $email, $title, $color, $primary, $extra, $roles]) {
+            $this->staff[$key] = $this->member($primary, $extra, $name, $title, $color, $email === null ? null : $this->user($name, $email), $roles);
         }
 
         $this->staff['khoa']->forceFill(['license_no' => 'CCHN-0123/HCM', 'qualifications' => 'Bác sĩ thú y, 12 năm kinh nghiệm'])->save();
@@ -474,7 +478,7 @@ class DemoSeeder extends Seeder
         $this->context->runAs($tenant, function (): void {
             TenantSetting::query()->create();
             $branch = $this->branch('MC1', 'Meow Clinic Thủ Đức', '9 Võ Văn Ngân, Thủ Đức, TP.HCM', '+842837200009');
-            $this->member($branch, [], 'Phạm Thị Thu', 'Chủ shop · Bác sĩ', '#7C3AED', $this->user('Phạm Thị Thu', 'thu@meowclinic.test'));
+            $this->member($branch, [], 'Phạm Thị Thu', 'Chủ shop · Bác sĩ', '#7C3AED', $this->user('Phạm Thị Thu', 'thu@meowclinic.test'), ['owner', 'vet']);
 
             Service::query()->create(['code' => 'KB01', 'name' => 'Khám mèo', 'service_group' => ServiceGroup::Medical, 'duration_min' => 30, 'price' => 200_000]);
 
@@ -497,7 +501,7 @@ class DemoSeeder extends Seeder
         $this->context->runAs($tenant, function () use ($code, $name, $owner, $email): void {
             TenantSetting::query()->create();
             $branch = $this->branch($code.'1', $name, null, null);
-            $this->member($branch, [], $owner, 'Chủ shop', '#0D9488', $this->user($owner, $email));
+            $this->member($branch, [], $owner, 'Chủ shop', '#0D9488', $this->user($owner, $email), ['owner']);
         });
     }
 
@@ -520,6 +524,10 @@ class DemoSeeder extends Seeder
             'created_by_admin_id' => $this->adminId,
             ...$extra,
         ]);
+
+        // TODO(task 4.3): ProvisionTenant does this (and settings, first branch, owner invitation).
+        app(CreateDefaultRoles::class)->handle($tenant);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getKey());
 
         if ($status !== TenantStatus::Trial) {
             TenantSubscription::query()->create([
@@ -568,8 +576,9 @@ class DemoSeeder extends Seeder
 
     /**
      * @param  list<Branch>  $extraBranches
+     * @param  list<string>  $roles
      */
-    private function member(Branch $primary, array $extraBranches, string $name, string $title, ?string $color, ?User $user): Staff
+    private function member(Branch $primary, array $extraBranches, string $name, string $title, ?string $color, ?User $user, array $roles = []): Staff
     {
         $staff = Staff::query()->create([
             'user_id' => $user?->id,
@@ -579,7 +588,10 @@ class DemoSeeder extends Seeder
             'color' => $color,
         ]);
 
-        // TODO(task 4.2): assign roles (owner, vet, groomer, receptionist, cashier, branch_manager, inventory).
+        if ($user !== null && $roles !== []) {
+            $user->assignRole($roles); // team = current shop (set in tenant())
+        }
+
         $staff->branches()->attach($primary->id, ['tenant_id' => $staff->tenant_id, 'is_primary' => true]);
         foreach ($extraBranches as $branch) {
             $staff->branches()->attach($branch->id, ['tenant_id' => $staff->tenant_id, 'is_primary' => false]);

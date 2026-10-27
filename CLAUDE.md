@@ -32,7 +32,7 @@ The invariant: **tenant A must never see tenant B's data.** The pieces only make
 
 - `TenantContext` (scoped singleton, registered in `AppServiceProvider`) holds the tenant for the current request/job. `runAs($tenant, fn)` temporarily switches tenant; `Tenant::forEach(fn)` runs per tenant (scheduler); `withoutTenancy(fn)` is the explicit, greppable cross-tenant escape hatch. `withoutGlobalScope(s)` is banned in `app/` (arch test).
 - **`User` is a global identity** (`UNIQUE(email)`, `last_tenant_id`), not tenant-owned. Membership = an active `staff` row (`TenantMembership` interface, `StaffMembership` impl). Auth, password reset and account settings are central routes.
-- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/suspended), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`tenant.dashboard`).
+- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/suspended), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`app.dashboard`).
 - `BelongsToTenant` trait adds `TenantScope`, auto-fills `tenant_id` on create, rejects creating for another tenant, and makes `tenant_id` immutable.
 - **Fails closed** on reads and writes: with no tenant in context (and no bypass) any query on a tenant-owned model throws `TenantNotResolvedException` rather than returning all rows, and so does creating one (even with an explicit `tenant_id`). Inside `withoutTenancy` creating needs an explicit `tenant_id`. Seeders, artisan commands, factories and tests must set a tenant (`TenantContext::runAs` / `inTenant()` in tests) or use `withoutTenancy`. `runAs` re-enables scoping even inside `withoutTenancy`.
 - `Tenant` is deliberately not scoped. `App\Models\Platform\*` (subscriptions, impersonation, platform audit) is data *about* shops: has `tenant_id` but is never scoped, only read from `/admin` (arch test exempts that namespace only).
@@ -47,7 +47,16 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): seeders (task 3.2), spatie roles (teams mode, task 4.2), platform admin guard (4.1), shop provisioning / invitations (4.3–4.4; removes self-registration), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- Still to do (see plan): shop provisioning / invitations (4.3–4.4; removes self-registration), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+
+## Roles & permissions (ADR 0009, `app/Authorization/`)
+
+- spatie/laravel-permission in teams mode, `team_id = tenant_id`, guard `web` only. `ResolveTenant` sets the team id per request (and resets it, the user's loaded roles and `CurrentStaff`); outside a request wrap checks in the team (`asTeam($tenant, fn)` in tests).
+- The catalogue lives in `config/permissions.php` (code, Vietnamese label, module, `sensitive`, `assignable`, `owner`, `phase`). Never create permissions elsewhere; after changing it run `php artisan permissions:sync` (also run by `ReferenceDataSeeder`): new codes go to every shop's `owner` role only.
+- `App\Models\Role` (`name` = stable code, `display_name` = shop label, custom roles `custom_{id}`; `{role}` binds within the current shop). Template roles come from `CreateDefaultRoles`; edits go through `SaveRole` / `DeleteRole` (owner role locked, `roles.manage` never assignable, sensitive grants need confirmation and log to `activity_logs`).
+- Check abilities with Policies (`app/Policies`, `Concerns\ChecksPermissions`), never role names. No `Gate::before` owner bypass: clinical permissions (`owner => false`) need the `vet` role. Branch scope: `CurrentBranch` / `CurrentStaff` (staff branches unless `branches.all`).
+- `ResolveTenant` drops the `{tenant}` route parameter after resolving it: controllers in tenant routes only receive their own parameters.
+- Inertia shares `tenant` and `permissions` (codes) for the open shop (UI disables buttons; the server still authorises).
 
 ## Infra notes
 

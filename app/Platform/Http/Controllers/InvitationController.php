@@ -24,7 +24,7 @@ class InvitationController extends Controller
         $invitation = AcceptPlatformAdminInvitation::find($token);
         abort_if($invitation === null, 404);
 
-        return Inertia::render('admin/auth/AcceptInvitation', [
+        return Inertia::render('Admin/Invitations/Accept', [
             'token' => $token,
             'email' => $invitation->email,
             'role' => $invitation->role->value,

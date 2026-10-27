@@ -27,7 +27,7 @@ class AuthController extends Controller
 {
     public function create(): Response
     {
-        return Inertia::render('admin/auth/Login');
+        return Inertia::render('Admin/Login');
     }
 
     public function store(Request $request, CompletePlatformLogin $complete): RedirectResponse

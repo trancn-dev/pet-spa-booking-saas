@@ -34,7 +34,7 @@ class TwoFactorController extends Controller
             return to_route('admin.two-factor.setup');
         }
 
-        return Inertia::render('admin/auth/TwoFactorChallenge', ['email' => $admin->email]);
+        return Inertia::render('Admin/TwoFactor/Challenge', ['email' => $admin->email]);
     }
 
     public function verify(Request $request, CompletePlatformLogin $complete): RedirectResponse
@@ -69,7 +69,7 @@ class TwoFactorController extends Controller
 
         $secret = (string) $admin->two_factor_secret;
 
-        return Inertia::render('admin/auth/TwoFactorSetup', [
+        return Inertia::render('Admin/TwoFactor/Setup', [
             'email' => $admin->email,
             'qrSvg' => $this->twoFactor->qrCodeSvg($admin, $secret),
             'secret' => trim(chunk_split($secret, 4, ' ')),

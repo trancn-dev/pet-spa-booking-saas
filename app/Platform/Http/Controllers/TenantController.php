@@ -26,7 +26,7 @@ class TenantController extends Controller
 
         $page = $list->paginate($search, $status);
 
-        return Inertia::render('admin/tenants/Index', [
+        return Inertia::render('Admin/Tenants/Index', [
             'kpis' => $list->kpis(),
             'tenants' => $page->through(fn (Tenant $tenant): array => [
                 'id' => $tenant->public_id,

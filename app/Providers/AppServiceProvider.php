@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Tenancy\CurrentStaff;
 use App\Tenancy\StaffMembership;
 use App\Tenancy\TenantContext;
 use App\Tenancy\TenantMembership;
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class);
+        $this->app->scoped(CurrentStaff::class);
         $this->app->bind(TenantMembership::class, StaffMembership::class);
     }
 

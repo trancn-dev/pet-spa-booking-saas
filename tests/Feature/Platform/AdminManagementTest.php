@@ -42,7 +42,7 @@ it('keeps admin management away from support admins', function () {
 
 it('lists admins for a super-admin', function () {
     $this->actingAs($this->super, 'platform')->get('/admin/admins')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('admin/admins/Index')->has('admins', 2));
+        ->assertInertia(fn (Assert $page) => $page->component('Admin/Admins/Index')->has('admins', 2));
 });
 
 it('invites by e-mail and stores only the token hash', function () {
@@ -76,7 +76,7 @@ it('accepts an invitation once, then forces 2FA setup', function () {
     [$token] = ($this->invitation)(['role' => PlatformAdminRole::Support]);
 
     $this->get("/admin/invite/{$token}")->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('admin/auth/AcceptInvitation')->where('email', 'new@pawbook.test'));
+        ->assertInertia(fn (Assert $page) => $page->component('Admin/Invitations/Accept')->where('email', 'new@pawbook.test'));
 
     $this->post("/admin/invite/{$token}", ['name' => 'Admin Mới', 'password' => 'a-long-password', 'password_confirmation' => 'a-long-password'])
         ->assertRedirect('/admin/two-factor/setup');

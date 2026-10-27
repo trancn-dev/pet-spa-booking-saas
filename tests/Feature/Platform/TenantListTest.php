@@ -38,7 +38,7 @@ beforeEach(function () {
 
 it('shows an empty state when there is no shop yet', function () {
     $this->actingAs($this->super, 'platform')->get('/admin/tenants')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('admin/tenants/Index')
+        ->assertInertia(fn (Assert $page) => $page->component('Admin/Tenants/Index')
             ->where('kpis.total', 0)
             ->has('tenants.data', 0));
 });

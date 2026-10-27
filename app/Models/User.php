@@ -9,14 +9,17 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * A global identity (one person may work at several tenants); membership lives in `staff`.
+ * Roles are per shop (spatie teams mode, team = tenant): ResolveTenant sets the team, so
+ * `$user->can('…')` always answers for the shop being opened.
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
