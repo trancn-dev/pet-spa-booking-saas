@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\WorkspaceRedirectController;
 use Illuminate\Support\Facades\Route;
@@ -16,12 +17,19 @@ Route::get('/', function () {
 Route::get('dashboard', WorkspaceRedirectController::class)
     ->middleware(['auth', 'verified'])->name('dashboard');
 
+// S13: accept a shop invitation (owner or staff). Guests and signed-in users alike.
+Route::get('invite/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+Route::post('invite/{token}', [InvitationController::class, 'accept'])
+    ->middleware('throttle:10,1')->name('invitations.accept');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 
 // Everything below belongs to one tenant, resolved from the slug; members only.
 Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/', fn () => to_route('app.dashboard'))->name('app.home');
+
         Route::get('dashboard', function () {
             return Inertia::render('Dashboard');
         })->name('app.dashboard');

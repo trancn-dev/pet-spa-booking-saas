@@ -52,11 +52,20 @@ it('ignores members whose staff row is disabled or deleted', function () {
     $user = User::factory()->create();
     $staff = inTenant($this->a, fn () => Staff::factory()->create(['user_id' => $user->id, 'status' => 'disabled']));
 
-    $this->actingAs($user)->get('/app/a/__staff')->assertNotFound();
+    // Disabled with no other shop: no data, signed out, back to login (task 4.3).
+    $this->actingAs($user)->get('/app/a/__staff')->assertRedirect('/login');
+    $this->assertGuest('web');
 
     $staff->update(['status' => 'active']);
     $staff->delete();
     $this->actingAs($user)->get('/app/a/__staff')->assertNotFound();
+});
+
+it('fills the shop slug into generated URLs, with no stray query string', function () {
+    Route::middleware(['web', 'tenant'])->prefix('app/{tenant:slug}')
+        ->get('__urls', fn () => [route('app.dashboard'), route('app.settings.roles.update', ['role' => 5])]);
+
+    $this->get('/app/a/__urls')->assertExactJson([url('/app/a/dashboard'), url('/app/a/settings/roles/5')]);
 });
 
 it('remembers the last opened tenant', function () {

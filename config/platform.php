@@ -13,6 +13,13 @@ return [
 
     'invitation_ttl_hours' => 72,
 
+    // Shop invitations (owner from /admin, staff from the CMS): one use, 7 days.
+    'shop_invitation_ttl_days' => 7,
+
+    // A3: default trial length and the Site address shown as a preview of the slug.
+    'trial_days' => 14,
+    'site_host' => env('PLATFORM_SITE_HOST', 'pawbook.vn'),
+
     // Shown on the admin sidebar badge.
     'environment_label' => env('PLATFORM_ENV_LABEL'),
 ];

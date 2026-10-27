@@ -5,9 +5,14 @@ declare(strict_types=1);
 use App\Actions\Roles\CreateDefaultRoles;
 use App\Authorization\PermissionCatalog;
 use App\Models\Branch;
+use App\Models\Plan;
+use App\Models\Platform\PlatformAdmin;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Platform\Actions\ProvisionTenant;
+use App\Platform\Data\NewShop;
+use App\Platform\Data\ProvisionedShop;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
@@ -43,6 +48,30 @@ function shopWithRoles(array $attributes = []): Tenant
     app(CreateDefaultRoles::class)->handle($tenant);
 
     return $tenant;
+}
+
+/**
+ * A complete shop through the real provisioning path (branch, roles, owner invitation...).
+ *
+ * @param  array<string, mixed>  $overrides  NewShop constructor arguments
+ */
+function provisionShop(array $overrides = [], ?PlatformAdmin $admin = null, bool $sendInvitation = false): ProvisionedShop
+{
+    PermissionCatalog::sync();
+
+    $shop = new NewShop(...[
+        'name' => 'Paw Test',
+        'slug' => 'paw-test',
+        'plan' => Plan::factory()->create(),
+        'branchCode' => 'Q1',
+        'branchName' => 'CN Quận 1',
+        'ownerName' => 'Chủ Shop',
+        'ownerEmail' => 'owner@paw.test',
+        'trialDays' => 14,
+        ...$overrides,
+    ]);
+
+    return app(ProvisionTenant::class)->handle($admin ?? PlatformAdmin::factory()->create(), $shop, $sendInvitation);
 }
 
 /**

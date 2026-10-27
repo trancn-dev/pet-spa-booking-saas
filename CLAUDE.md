@@ -47,7 +47,13 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): shop provisioning / invitations (4.3–4.4; removes self-registration), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- Still to do (see plan): staff invitations (4.4), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+
+## Shops, invitations, sign-in (task 4.3)
+
+- `App\Platform\Actions\ProvisionTenant` (input `App\Platform\Data\NewShop`) is the ONLY way to create a shop: tenant + settings + first branch (`CreateBranch`: stray profile + "Két 1") + 7 roles + first subscription + owner invitation + `tenant.created` audit, one transaction, mail queued after commit. The demo seeder and the `provisionShop()` test helper use it. Slugs: `App\Support\ShopSlug` (reserved list; a test scans the route table, add new central first segments there).
+- Invitations: `IssueInvitation` (token 32 bytes, DB keeps sha256, 7 days, `rotate()` = resend), `AcceptInvitation` (locked row, idempotent, owner gets every branch; `owner` only from an admin invitation). `/invite/{token}` is central; the token lookup crosses tenants in `App\Tenancy\InvitationLookup`. Mails carry plain values (`ShopInvitationMail`), never tenant models.
+- No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
 
 ## Roles & permissions (ADR 0009, `app/Authorization/`)
 
@@ -57,6 +63,7 @@ Rules when adding features:
 - Check abilities with Policies (`app/Policies`, `Concerns\ChecksPermissions`), never role names. No `Gate::before` owner bypass: clinical permissions (`owner => false`) need the `vet` role. Branch scope: `CurrentBranch` / `CurrentStaff` (staff branches unless `branches.all`).
 - `ResolveTenant` drops the `{tenant}` route parameter after resolving it: controllers in tenant routes only receive their own parameters.
 - Inertia shares `tenant` and `permissions` (codes) for the open shop (UI disables buttons; the server still authorises).
+- `ResolveTenant` sets `URL::defaults` for both `tenant` and `tenant:slug` (routes bind `{tenant:slug}`), so `route('app.…')` never needs the slug.
 
 ## Infra notes
 

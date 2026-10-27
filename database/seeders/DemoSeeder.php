@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Actions\Roles\CreateDefaultRoles;
+use App\Actions\Branches\CreateBranch;
+use App\Actions\Invitations\AcceptInvitation;
 use App\Enums\ActorType;
 use App\Enums\AppointmentChangeAction;
 use App\Enums\AppointmentItemStatus;
@@ -44,19 +45,20 @@ use App\Models\Pet;
 use App\Models\PetVaccination;
 use App\Models\Plan;
 use App\Models\Platform\PlatformAdmin;
-use App\Models\Platform\TenantSubscription;
 use App\Models\Service;
 use App\Models\ServicePriceRule;
 use App\Models\Species;
 use App\Models\Staff;
 use App\Models\StaffTimeOff;
 use App\Models\StaffWorkingHour;
-use App\Models\Tenant;
 use App\Models\TenantSetting;
 use App\Models\User;
 use App\Models\Vaccine;
 use App\Models\Visit;
 use App\Models\VisitItem;
+use App\Platform\Actions\ProvisionTenant;
+use App\Platform\Data\NewShop;
+use App\Platform\Data\ProvisionedShop;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -70,7 +72,8 @@ use Spatie\Permission\PermissionRegistrar;
  * "Today" is the real current day in the shop's time zone; every DATETIME is stored in UTC
  * (08:00 in Asia/Ho_Chi_Minh = 01:00 UTC). Shop-local TIME / DATE columns stay local.
  *
- * Tenants are created directly here; task 4.3 replaces that with the ProvisionTenant action.
+ * Shops are created the only way they can be: ProvisionTenant (as admin@pawbook.test, no mail);
+ * the seeder then accepts each owner's invitation on their behalf.
  * Roles follow design.md section 9 (titles are display labels only; permissions come from roles).
  */
 class DemoSeeder extends Seeder
@@ -90,7 +93,7 @@ class DemoSeeder extends Seeder
     /** @var array<array-key, int> */
     private array $breeds = [];
 
-    private ?int $adminId = null;
+    private PlatformAdmin $admin;
 
     /** @var array<string, Staff> */
     private array $staff = [];
@@ -113,9 +116,9 @@ class DemoSeeder extends Seeder
 
         // Platform admins without 2FA: they can sign in only where TwoFactor::canSkip() holds
         // (APP_ENV local / demo + PLATFORM_SKIP_2FA); anywhere else they must set up TOTP first.
-        $this->adminId = PlatformAdmin::query()->create([
+        $this->admin = PlatformAdmin::query()->create([
             'name' => 'Nguyễn Văn A', 'email' => 'admin@pawbook.test', 'password' => self::PASSWORD, 'role' => PlatformAdminRole::SuperAdmin,
-        ])->id;
+        ]);
         PlatformAdmin::query()->create([
             'name' => 'Lê Thị Hỗ Trợ', 'email' => 'support@pawbook.test', 'password' => self::PASSWORD, 'role' => PlatformAdminRole::Support,
         ]);
@@ -132,15 +135,15 @@ class DemoSeeder extends Seeder
 
     private function pawHouse(): void
     {
-        $tenant = $this->tenant('Paw House Spa & Vet', 'paw-house', 'pro', TenantStatus::Active, $this->at('23:59', 364), [
-            'contact_name' => 'Trần Minh Khoa',
-            'contact_phone' => '+84903000111',
-        ]);
+        $shop = $this->provision('Paw House Spa & Vet', 'paw-house', 'pro', TenantStatus::Active, $this->at('23:59', 364),
+            ['Q3', 'CN Quận 3', '123 Võ Văn Tần, Phường 6, Quận 3, TP.HCM', '+842839300001'],
+            ['Trần Minh Khoa', 'khoa@pawhouse.test', '+84903000111'],
+        );
 
-        $this->context->runAs($tenant, function (): void {
-            TenantSetting::query()->create(['site_intro' => 'Spa & phòng khám thú cưng tại Quận 3 và Quận 7.']);
+        $this->context->runAs($shop->tenant, function () use ($shop): void {
+            TenantSetting::query()->update(['site_intro' => 'Spa & phòng khám thú cưng tại Quận 3 và Quận 7.']);
 
-            $q3 = $this->branch('Q3', 'CN Quận 3', '123 Võ Văn Tần, Phường 6, Quận 3, TP.HCM', '+842839300001');
+            $q3 = Branch::query()->where('code', 'Q3')->firstOrFail();
             $q7 = $this->branch('Q7', 'CN Quận 7', '45 Nguyễn Thị Thập, Tân Phú, Quận 7, TP.HCM', '+842837700002');
 
             $closure = $this->today->setDate($this->today->year, 9, 2);
@@ -153,7 +156,7 @@ class DemoSeeder extends Seeder
             OnlineBookingRate::query()->create(['branch_id' => $q3->id, 'service_group' => ServiceGroup::Medical, 'ratio' => '0.333']);
             OnlineBookingRate::query()->create(['branch_id' => $q3->id, 'service_group' => ServiceGroup::Grooming, 'ratio' => '0.500']);
 
-            $this->pawHouseStaff($q3, $q7);
+            $this->pawHouseStaff($shop, $q3, $q7);
             $this->pawHouseServices();
             $this->pawHouseCustomers();
             $this->pawHouseCare();
@@ -161,7 +164,7 @@ class DemoSeeder extends Seeder
         });
     }
 
-    private function pawHouseStaff(Branch $q3, Branch $q7): void
+    private function pawHouseStaff(ProvisionedShop $shop, Branch $q3, Branch $q7): void
     {
         $people = [
             // key => [name, email (null = no account), title, color, primary, extra branches, roles]
@@ -177,6 +180,13 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($people as $key => [$name, $email, $title, $color, $primary, $extra, $roles]) {
+            if ($key === 'khoa') {
+                // The owner joins through their invitation (owner role, every branch) + `vet`.
+                $this->staff[$key] = $this->owner($shop, $name, (string) $email, $title, (string) $color, ['vet']);
+
+                continue;
+            }
+
             $this->staff[$key] = $this->member($primary, $extra, $name, $title, $color, $email === null ? null : $this->user($name, $email), $roles);
         }
 
@@ -473,12 +483,13 @@ class DemoSeeder extends Seeder
 
     private function meowClinic(): void
     {
-        $tenant = $this->tenant('Meow Clinic', 'meow-clinic', 'starter', TenantStatus::PastDue, $this->at('23:59', -3));
+        $shop = $this->provision('Meow Clinic', 'meow-clinic', 'starter', TenantStatus::PastDue, $this->at('23:59', -3),
+            ['MC1', 'Meow Clinic Thủ Đức', '9 Võ Văn Ngân, Thủ Đức, TP.HCM', '+842837200009'],
+            ['Phạm Thị Thu', 'thu@meowclinic.test', null],
+        );
 
-        $this->context->runAs($tenant, function (): void {
-            TenantSetting::query()->create();
-            $branch = $this->branch('MC1', 'Meow Clinic Thủ Đức', '9 Võ Văn Ngân, Thủ Đức, TP.HCM', '+842837200009');
-            $this->member($branch, [], 'Phạm Thị Thu', 'Chủ shop · Bác sĩ', '#7C3AED', $this->user('Phạm Thị Thu', 'thu@meowclinic.test'), ['owner', 'vet']);
+        $this->context->runAs($shop->tenant, function () use ($shop): void {
+            $this->owner($shop, 'Phạm Thị Thu', 'thu@meowclinic.test', 'Chủ shop · Bác sĩ', '#7C3AED', ['vet']);
 
             Service::query()->create(['code' => 'KB01', 'name' => 'Khám mèo', 'service_group' => ServiceGroup::Medical, 'duration_min' => 30, 'price' => 200_000]);
 
@@ -493,75 +504,72 @@ class DemoSeeder extends Seeder
 
     private function smallShop(string $name, string $slug, string $plan, TenantStatus $status, CarbonImmutable $expiresAt, string $code, string $owner, string $email, ?string $suspendedReason = null): void
     {
-        $tenant = $this->tenant($name, $slug, $plan, $status, $expiresAt, $suspendedReason === null ? [] : [
-            'suspended_at' => $this->at('00:00', -3),
-            'suspended_reason' => $suspendedReason,
-        ]);
+        $shop = $this->provision($name, $slug, $plan, $status, $expiresAt, [$code.'1', $name, null, null], [$owner, $email, null],
+            $suspendedReason === null ? [] : ['suspended_at' => $this->at('00:00', -3), 'suspended_reason' => $suspendedReason],
+        );
 
-        $this->context->runAs($tenant, function () use ($code, $name, $owner, $email): void {
-            TenantSetting::query()->create();
-            $branch = $this->branch($code.'1', $name, null, null);
-            $this->member($branch, [], $owner, 'Chủ shop', '#0D9488', $this->user($owner, $email), ['owner']);
-        });
+        $this->context->runAs($shop->tenant, fn () => $this->owner($shop, $owner, $email, 'Chủ shop', '#0D9488', []));
     }
 
     // ---------------------------------------------------------------- Builders
 
     /**
+     * @param  array{0: string, 1: string, 2: string|null, 3: string|null}  $branch  code, name, address, phone
+     * @param  array{0: string, 1: string, 2: string|null}  $owner  name, e-mail, phone
      * @param  array<string, mixed>  $extra
      */
-    private function tenant(string $name, string $slug, string $planCode, TenantStatus $status, CarbonImmutable $expiresAt, array $extra = []): Tenant
+    private function provision(string $name, string $slug, string $planCode, TenantStatus $status, CarbonImmutable $expiresAt, array $branch, array $owner, array $extra = []): ProvisionedShop
     {
         $plan = Plan::query()->where('code', $planCode)->firstOrFail();
+        $trial = $status === TenantStatus::Trial;
 
-        $tenant = Tenant::query()->create([
-            'name' => $name,
-            'slug' => $slug,
-            'timezone' => self::TZ,
-            'plan_id' => $plan->id,
-            'status' => $status,
-            'plan_expires_at' => $expiresAt,
-            'created_by_admin_id' => $this->adminId,
-            ...$extra,
-        ]);
+        $shop = app(ProvisionTenant::class)->handle($this->admin, new NewShop(
+            name: $name,
+            slug: $slug,
+            plan: $plan,
+            branchCode: $branch[0],
+            branchName: $branch[1],
+            ownerName: $owner[0],
+            ownerEmail: $owner[1],
+            ownerPhone: $owner[2],
+            trialDays: $trial ? max(1, (int) ceil(now()->diffInDays($expiresAt))) : null,
+            paidFrom: $trial ? null : $expiresAt->subYear(),
+            paidUntil: $trial ? null : $expiresAt,
+            amount: $trial ? null : ($plan->code === 'pro' ? '6000000' : '2400000'),
+            paymentRef: $trial ? null : 'CK-'.Str::upper(Str::random(8)),
+            timezone: self::TZ,
+            branchAddress: $branch[2],
+            branchPhone: $branch[3],
+        ), sendInvitation: false);
 
-        // TODO(task 4.3): ProvisionTenant does this (and settings, first branch, owner invitation).
-        app(CreateDefaultRoles::class)->handle($tenant);
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getKey());
+        // States provisioning never produces (past due, suspended) and exact demo expiry times.
+        $shop->tenant->forceFill(['status' => $status, 'plan_expires_at' => $expiresAt, ...$extra])->save();
+        app(PermissionRegistrar::class)->setPermissionsTeamId($shop->tenant->getKey());
 
-        if ($status !== TenantStatus::Trial) {
-            TenantSubscription::query()->create([
-                'tenant_id' => $tenant->id,
-                'plan_id' => $plan->id,
-                'starts_at' => $expiresAt->subYear(),
-                'ends_at' => $expiresAt,
-                'amount' => $plan->code === 'pro' ? 6_000_000 : 2_400_000,
-                'paid_at' => $expiresAt->subYear(),
-                'payment_ref' => 'CK-'.Str::upper(Str::random(8)),
-                'created_by_admin_id' => $this->adminId,
-            ]);
-        }
-
-        return $tenant;
+        return $shop;
     }
 
     /**
-     * A branch always comes with its stray profile and a first cash drawer.
+     * Accepts the owner invitation as the demo owner would on /invite/{token}.
+     *
+     * @param  list<string>  $extraRoles
      */
+    private function owner(ProvisionedShop $shop, string $name, string $email, string $title, string $color, array $extraRoles): Staff
+    {
+        $user = $this->user($name, $email);
+        $staff = app(AcceptInvitation::class)->handle($shop->tenant, $shop->invitation, $user);
+        $staff->forceFill(['title' => $title, 'color' => $color])->save();
+
+        if ($extraRoles !== []) {
+            $user->assignRole($extraRoles); // team = current shop (set in provision())
+        }
+
+        return $staff;
+    }
+
     private function branch(string $code, string $name, ?string $address, ?string $phone): Branch
     {
-        $branch = Branch::query()->create([
-            'code' => $code,
-            'name' => $name,
-            'address' => $address,
-            'phone' => $phone,
-            'opening_hours' => array_fill_keys(array_map('strval', range(1, 7)), [['08:00', '20:00']]),
-        ]);
-
-        Customer::query()->create(['name' => 'Thú hoang / vô chủ', 'is_system' => true, 'system_branch_id' => $branch->id]);
-        CashDrawer::query()->create(['branch_id' => $branch->id, 'name' => 'Két 1']);
-
-        return $branch;
+        return app(CreateBranch::class)->handle(['code' => $code, 'name' => $name, 'address' => $address, 'phone' => $phone]);
     }
 
     private function user(string $name, string $email): User

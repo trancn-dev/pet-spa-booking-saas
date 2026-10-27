@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Tenancy\InvitationLookup;
+use App\Tenancy\TenantMembership;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    public const NO_ACTIVE_SHOP = 'Tài khoản không còn hoạt động ở shop nào. Liên hệ chủ shop.';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -53,6 +58,19 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // No self sign-up: an account only works while it is active staff of a shop that is not
+        // cancelled (task 4.3), or to accept a pending invitation. Checked after the password so
+        // it reveals nothing to strangers.
+        $user = Auth::guard('web')->user();
+        if (! $user instanceof User || (
+            app(TenantMembership::class)->tenantsFor($user)->isEmpty()
+            && ! app(InvitationLookup::class)->hasPendingFor($user->email)
+        )) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages(['email' => self::NO_ACTIVE_SHOP]);
+        }
     }
 
     /**
