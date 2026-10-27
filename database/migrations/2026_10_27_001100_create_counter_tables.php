@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Atomic sequence counters (db-schema 2.10): never MAX()+1.
- *   INSERT … ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)
+ *   INSERT … ON DUPLICATE KEY UPDATE `last_value` = LAST_INSERT_ID(`last_value` + 1)
+ *
+ * `last_value` is a reserved word in MySQL 8 (window function): always backtick it in raw SQL.
  */
 return new class extends Migration
 {

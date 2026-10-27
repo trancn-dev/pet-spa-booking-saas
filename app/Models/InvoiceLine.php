@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * `visit_item` lines are read-only at the till; `product` and `custom` lines are editable while draft.
+ *
+ * @property InvoiceLineType $line_type
  */
 class InvoiceLine extends Model
 {

@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Appointment history (append-only).
+ *
+ * @property AppointmentChangeAction $action
+ * @property ActorType $actor_type
  */
 class AppointmentChange extends Model
 {

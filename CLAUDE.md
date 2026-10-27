@@ -68,6 +68,7 @@ Rules when adding features:
 - Money is `DECIMAL(12,2)`, stock quantities `DECIMAL(12,3)`; never float. Appointment items snapshot `duration_min` / `reference_price` at booking time (display only; billing uses the price when added to the Visit).
 - Customers (pet owners, table `customers`, never "owners": `owner` is the shop-owner role) are identified by phone (`customers.phone`, unique per tenant, shared across branches) and log into the Site with phone + SMS OTP (separate `customer` guard, not `users`). Strays attach to a per-branch system customer (`is_system`, `system_branch_id`).
 - Time: all DATETIME stored in UTC; shift times are TIME in the shop's local timezone (`tenants.timezone`). Convert at the edges only.
+- Counter tables use the column `last_value` (db-schema 2.10), a reserved word in MySQL 8: backtick it in every raw SQL statement.
 - Booking/concurrency tests must run on MySQL (SQLite ignores row locks): mark them with `->group('mysql')`.
 
 ## Conventions

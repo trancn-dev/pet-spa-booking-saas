@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * One real send attempt (Zalo first, SMS fallback).
+ *
+ * @property MessageChannel $channel
+ * @property DeliveryStatus $status
  */
 class MessageDelivery extends Model
 {

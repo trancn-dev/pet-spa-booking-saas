@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Shared catalogue.
+ *
+ * @property PetSize|null $default_size
  */
 class Breed extends Model
 {

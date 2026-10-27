@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * (an active row = member). `user_id` NULL = no account (guard, cleaner).
  * Permissions come from roles (task 4.2), never from `title`.
  * CMS notifications (task 6.1) are sent to Staff, not User, as StaffNotification rows.
+ *
+ * @property StaffStatus $status
  */
 class Staff extends Model
 {

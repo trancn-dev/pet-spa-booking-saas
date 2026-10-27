@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Service, medication or consumable used in a Visit. Billable rows sync to the draft invoice.
+ *
+ * @property VisitItemType $item_type
  */
 class VisitItem extends Model
 {

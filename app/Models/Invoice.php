@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Immutable once completed: amending voids it and issues a replacement (ADR 0005).
+ *
+ * @property InvoiceKind $kind
+ * @property InvoiceStatus $status
  */
 class Invoice extends Model
 {

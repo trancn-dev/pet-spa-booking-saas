@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Vaccination book entry; `postponed` rows carry the new date in next_due_on.
+ *
+ * @property VaccinationStatus $status
  */
 class PetVaccination extends Model
 {

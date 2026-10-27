@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * allergies / chronic_conditions / behavior_notes are safety alerts shown to every role.
+ *
+ * @property PetSex $sex
+ * @property PetSize $size
  */
 class Pet extends Model
 {

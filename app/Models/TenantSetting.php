@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Per-shop settings, one row per tenant (created with the shop).
+ *
+ * @property PayrollPeriodKind $payroll_period_kind
  */
 class TenantSetting extends Model
 {

@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * One pet + one service (or grooming combo). Occupies one capacity slot of its group while booked / checked in.
+ *
+ * @property ServiceGroup $service_group
+ * @property AppointmentItemStatus $status
  */
 class AppointmentItem extends Model
 {

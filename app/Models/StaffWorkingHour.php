@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Weekly roster slot. Times are shop-local; weekday is ISO (1 = Monday).
+ *
+ * @property ServiceGroup|null $service_group
  */
 class StaffWorkingHour extends Model
 {

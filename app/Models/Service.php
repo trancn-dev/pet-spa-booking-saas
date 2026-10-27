@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Price is shared by every branch and applied when added to a Visit.
+ *
+ * @property ServiceGroup $service_group
  */
 class Service extends Model
 {

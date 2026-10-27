@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * One exam / grooming of one pet: queue ticket + work done. Independent of the invoice.
+ *
+ * @property ServiceGroup $service_group
+ * @property VisitStatus $status
  */
 class Visit extends Model
 {

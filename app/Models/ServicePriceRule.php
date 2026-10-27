@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Duration / price override; most specific wins: breed → species + size → species → service.
+ *
+ * @property PetSize|null $size
  */
 class ServicePriceRule extends Model
 {

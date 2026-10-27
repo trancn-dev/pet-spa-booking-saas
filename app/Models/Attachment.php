@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Private file on a medical entry or a Visit. Polymorphic: the Action checks the target is in the same tenant.
+ *
+ * @property AttachableType $attachable_type
+ * @property AttachmentKind $kind
  */
 class Attachment extends Model
 {

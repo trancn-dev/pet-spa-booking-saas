@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Till session; at most one open per drawer (open_key).
+ *
+ * @property CashSessionStatus $status
  */
 class CashSession extends Model
 {

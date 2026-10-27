@@ -16,6 +16,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * What to remind and when (ADR 0007). Actual sends are message_deliveries.
+ *
+ * @property RemindableType $remindable_type
+ * @property ReminderPurpose $purpose
+ * @property ReminderStatus $status
  */
 class Reminder extends Model
 {

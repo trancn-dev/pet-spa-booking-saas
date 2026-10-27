@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Money in / out (append-only, never changes invoice_id; ADR 0010).
+ *
+ * @property PaymentKind $kind
+ * @property PaymentMethod $method
  */
 class Payment extends Model
 {

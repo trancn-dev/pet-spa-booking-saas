@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Share of on-duty staff bookable online, per branch × group (optionally per weekday / time).
+ *
+ * @property ServiceGroup $service_group
  */
 class OnlineBookingRate extends Model
 {

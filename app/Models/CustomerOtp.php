@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Site login / booking OTP: 6 digits, 5 minutes, 5 attempts.
+ *
+ * @property OtpPurpose $purpose
  */
 class CustomerOtp extends Model
 {

@@ -17,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One customer, one or more pets (one item per pet + service). Reference only: no deposit.
+ *
+ * @property AppointmentSource $source
+ * @property AppointmentStatus $status
+ * @property ActorType|null $cancelled_by_type
  */
 class Appointment extends Model
 {
