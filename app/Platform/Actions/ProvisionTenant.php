@@ -44,7 +44,8 @@ class ProvisionTenant
         $this->validate($shop);
 
         $result = DB::transaction(function () use ($by, $shop): ProvisionedShop {
-            $expiresAt = $shop->isTrial() ? now()->addDays((int) $shop->trialDays) : $shop->paidUntil;
+            // DATETIME columns are UTC: Eloquent writes a Carbon in its own zone, so convert here.
+            $expiresAt = $shop->isTrial() ? now()->addDays((int) $shop->trialDays) : $shop->paidUntil?->utc();
 
             $tenant = Tenant::query()->create([
                 'name' => $shop->name,
@@ -62,7 +63,7 @@ class ProvisionTenant
             TenantSubscription::query()->create([
                 'tenant_id' => $tenant->getKey(),
                 'plan_id' => $shop->plan->getKey(),
-                'starts_at' => $shop->isTrial() ? now() : $shop->paidFrom,
+                'starts_at' => $shop->isTrial() ? now() : $shop->paidFrom?->utc(),
                 'ends_at' => $expiresAt,
                 'amount' => $shop->isTrial() ? '0' : $shop->amount,
                 'paid_at' => $shop->isTrial() ? null : now(),

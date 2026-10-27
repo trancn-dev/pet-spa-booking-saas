@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  *
  * @property TenantStatus $status
  * @property Carbon|null $plan_expires_at
+ * @property Carbon|null $created_at
  */
 class Tenant extends Model
 {

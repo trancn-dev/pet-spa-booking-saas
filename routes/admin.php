@@ -39,9 +39,17 @@ Route::middleware('platform.auth')->group(function () {
     Route::get('tenants', [TenantController::class, 'index'])->name('tenants.index');
 
     Route::middleware('platform.role:super_admin')->group(function () {
+        Route::get('tenants/create', [TenantController::class, 'create'])->name('tenants.create');
+        Route::get('tenants/slug-check', [TenantController::class, 'checkSlug'])->name('tenants.slug-check');
+        Route::post('tenants', [TenantController::class, 'store'])->name('tenants.store');
+        Route::post('tenants/{tenant:public_id}/invitation', [TenantController::class, 'resendInvitation'])->name('tenants.invitation.resend');
+
         Route::get('admins', [AdminController::class, 'index'])->name('admins.index');
         Route::post('admins/invitations', [AdminController::class, 'invite'])->name('admins.invite');
         Route::delete('admins/invitations/{invitation}', [AdminController::class, 'revoke'])->name('admins.invitations.revoke');
         Route::patch('admins/{admin}/status', [AdminController::class, 'setStatus'])->name('admins.status');
     });
+
+    // After the fixed `tenants/*` paths so `create` never binds as a shop id.
+    Route::get('tenants/{tenant:public_id}', [TenantController::class, 'show'])->name('tenants.show');
 });

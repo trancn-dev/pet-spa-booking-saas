@@ -91,8 +91,8 @@ const kpiCards = [
                     <option v-for="(meta, key) in statusMeta" :key="key" :value="key">{{ meta.label }}</option>
                 </select>
             </form>
-            <Button v-if="can.createTenant" disabled title="Tạo shop có ở bước tiếp theo (A3)">
-                <Plus /> Tạo shop
+            <Button v-if="can.createTenant" as-child>
+                <Link :href="route('admin.tenants.create')"><Plus /> Tạo shop</Link>
             </Button>
         </div>
 
@@ -113,7 +113,7 @@ const kpiCards = [
                 <tbody>
                     <tr v-for="t in tenants.data" :key="t.id" class="border-t border-stone-100 hover:bg-stone-50 dark:border-slate-800 dark:hover:bg-slate-800/50">
                         <td class="px-4 py-3">
-                            <div class="font-medium">{{ t.name }}</div>
+                            <Link :href="route('admin.tenants.show', t.id)" class="font-medium hover:underline">{{ t.name }}</Link>
                             <div class="font-mono text-xs text-stone-500">{{ t.slug }}</div>
                         </td>
                         <td class="px-4 py-3">
