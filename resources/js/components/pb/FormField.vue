@@ -6,8 +6,9 @@ import { useId } from 'vue';
 | Design K0 "Input · Select · Textarea" frame: label on top (13/500), required star, helper under, error in red with
 | an icon. The control goes in the default slot and receives `id` (slot prop) so the label points at it.
 */
-defineProps<{ label?: string; required?: boolean; hint?: string; error?: string | null }>();
-const id = useId();
+const props = defineProps<{ label?: string; required?: boolean; hint?: string; error?: string | null; inputId?: string }>();
+const generated = useId();
+const id = props.inputId ?? generated;
 </script>
 
 <template>

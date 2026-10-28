@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,26 +41,18 @@ const back = props.customer ? route('app.customers.show', props.customer.id) : r
             </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <Label for="name">Họ tên</Label>
-                    <Input id="name" v-model="form.name" required maxlength="191" autocomplete="off" />
-                    <InputError :message="form.errors.name" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="phone">Số điện thoại</Label>
-                    <Input id="phone" v-model="form.phone" type="tel" required inputmode="tel" placeholder="0901 234 567" autocomplete="off" />
-                    <InputError :message="form.errors.phone" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="email">Email (tùy chọn)</Label>
-                    <Input id="email" v-model="form.email" type="email" maxlength="191" />
-                    <InputError :message="form.errors.email" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="address">Địa chỉ (tùy chọn)</Label>
-                    <Input id="address" v-model="form.address" maxlength="255" />
-                    <InputError :message="form.errors.address" />
-                </div>
+                <FormField label="Họ tên" input-id="name" :error="form.errors.name"
+                    ><Input id="name" v-model="form.name" required maxlength="191" autocomplete="off"
+                /></FormField>
+                <FormField label="Số điện thoại" input-id="phone" :error="form.errors.phone"
+                    ><Input id="phone" v-model="form.phone" type="tel" required inputmode="tel" placeholder="0901 234 567" autocomplete="off"
+                /></FormField>
+                <FormField label="Email (tùy chọn)" input-id="email" :error="form.errors.email"
+                    ><Input id="email" v-model="form.email" type="email" maxlength="191"
+                /></FormField>
+                <FormField label="Địa chỉ (tùy chọn)" input-id="address" :error="form.errors.address"
+                    ><Input id="address" v-model="form.address" maxlength="255"
+                /></FormField>
                 <div class="grid gap-2 sm:col-span-2">
                     <Label for="notes">Ghi chú</Label>
                     <textarea

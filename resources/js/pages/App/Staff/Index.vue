@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import DataTable, { type Column } from '@/components/pb/DataTable.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
+import TabsBar from '@/components/pb/TabsBar.vue';
+import TwoLine from '@/components/pb/TwoLine.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { ShopSharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
@@ -96,6 +101,21 @@ const initials = (name: string) =>
         .map((w) => w[0])
         .join('')
         .toUpperCase();
+
+const memberColumns: Column[] = [
+    { key: 'name', label: 'Nhân viên', width: 'minmax(16rem,3fr)' },
+    { key: 'roles', label: 'Role', width: 'minmax(10rem,2fr)' },
+    { key: 'branches', label: 'Cơ sở', width: 'minmax(9rem,1.5fr)' },
+    { key: 'status', label: 'Trạng thái', width: '9rem' },
+    { key: 'actions', label: '', width: '12rem' },
+];
+const invitationColumns: Column[] = [
+    { key: 'email', label: 'Email', width: 'minmax(14rem,2fr)' },
+    { key: 'roles', label: 'Role', width: 'minmax(10rem,2fr)' },
+    { key: 'primary_branch', label: 'Cơ sở chính', width: 'minmax(9rem,1.5fr)' },
+    { key: 'expires_at', label: 'Hết hạn', width: '9rem' },
+    { key: 'actions', label: '', width: '14rem' },
+];
 </script>
 
 <template>
@@ -123,127 +143,78 @@ const initials = (name: string) =>
             <p v-if="can.manage && full" class="text-sm text-danger">Đạt giới hạn gói: liên hệ PawBook để nâng gói.</p>
             <InputError :message="errors.status ?? errors.invitation" />
 
-            <nav class="flex gap-1 border-b" aria-label="Tabs">
-                <button
-                    v-for="t in [
-                        { key: 'members', label: `Nhân viên (${staff.length})` },
-                        { key: 'invitations', label: `Lời mời (${invitations.length})` },
-                    ]"
-                    :key="t.key"
-                    type="button"
-                    class="-mb-px border-b-2 px-3 py-2 text-sm"
-                    :class="tab === t.key ? 'border-primary font-medium' : 'border-transparent text-muted-foreground'"
-                    @click="tab = t.key as 'members' | 'invitations'"
+            <TabsBar
+                v-model="tab"
+                label="Nhân viên và lời mời"
+                :items="[
+                    { value: 'members', label: 'Nhân viên', count: staff.length },
+                    { value: 'invitations', label: 'Lời mời', count: invitations.length },
+                ]"
+            />
+
+            <DataTable
+                v-if="tab === 'members'"
+                :columns="memberColumns"
+                :rows="staff"
+                row-key="id"
+                :row-class="(s) => (s.status === 'disabled' ? 'opacity-60' : undefined)"
+            >
+                <template #cell-name="{ row }">
+                    <div class="flex items-center gap-3">
+                        <RingAvatar :initials="initials(row.display_name)" :color="row.color" :size="36" />
+                        <TwoLine :title="row.display_name" :caption="[row.title, row.email ?? 'Không có tài khoản'].filter(Boolean).join(' · ')" />
+                    </div>
+                </template>
+                <template #cell-roles="{ row }">
+                    <div class="flex flex-wrap gap-1">
+                        <Badge v-for="r in row.roles" :key="r.name" tone="primary" square>{{ r.label }}</Badge>
+                        <span v-if="!row.roles.length" class="text-muted-foreground">—</span>
+                    </div>
+                </template>
+                <template #cell-branches="{ row }">
+                    <div>{{ row.primary_branch ?? '—' }}</div>
+                    <div v-if="row.branches.length" class="text-xs text-muted-foreground">+ {{ row.branches.join(', ') }}</div>
+                </template>
+                <template #cell-status="{ row }">
+                    <Badge :tone="row.status === 'active' ? 'success' : 'neutral'" dot>{{
+                        row.status === 'active' ? 'Đang làm' : 'Đã vô hiệu'
+                    }}</Badge>
+                </template>
+                <template #cell-actions="{ row }">
+                    <div v-if="can.manage" class="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" as-child>
+                            <Link :href="route('app.staff.edit', row.id)" :aria-label="`Sửa ${row.display_name}`"><Pencil /></Link>
+                        </Button>
+                        <Button v-if="row.status === 'active'" variant="ghostDanger" size="sm" @click="setStatus(row, 'disabled')">Vô hiệu</Button>
+                        <Button v-else variant="ghost" size="sm" @click="setStatus(row, 'active')">Kích hoạt lại</Button>
+                    </div>
+                </template>
+                <template #empty
+                    ><EmptyState title="Chưa có nhân viên"
+                        ><template #icon><Users /></template></EmptyState
+                ></template>
+            </DataTable>
+
+            <DataTable v-else :columns="invitationColumns" :rows="invitations" row-key="id">
+                <template #cell-email="{ row }"
+                    ><span class="font-medium">{{ row.email }}</span></template
                 >
-                    {{ t.label }}
-                </button>
-            </nav>
-
-            <!-- Members -->
-            <div v-if="tab === 'members'" class="overflow-x-auto rounded-[10px] border bg-card">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted text-left text-[13px] font-medium text-muted-foreground">
-                        <tr>
-                            <th class="px-4 py-3">Nhân viên</th>
-                            <th class="px-4 py-3">Role</th>
-                            <th class="px-4 py-3">Cơ sở</th>
-                            <th class="px-4 py-3">Trạng thái</th>
-                            <th class="px-4 py-3"><span class="sr-only">Thao tác</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="s in staff" :key="s.id" class="border-t" :class="{ 'opacity-60': s.status === 'disabled' }">
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold ring-2"
-                                        :style="{ '--tw-ring-color': s.color ?? 'transparent' }"
-                                        >{{ initials(s.display_name) }}</span
-                                    >
-                                    <div>
-                                        <div class="font-medium">{{ s.display_name }}</div>
-                                        <div class="text-xs text-muted-foreground">
-                                            {{ s.title ?? '' }}<template v-if="s.title"> · </template>{{ s.email ?? 'Không có tài khoản' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="flex flex-wrap gap-1">
-                                    <Badge v-for="r in s.roles" :key="r.name" tone="primary" square>{{ r.label }}</Badge>
-                                    <span v-if="!s.roles.length" class="text-muted-foreground">—</span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div>{{ s.primary_branch ?? '—' }}</div>
-                                <div v-if="s.branches.length" class="text-xs text-muted-foreground">+ {{ s.branches.join(', ') }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span
-                                    class="rounded-md px-2 py-0.5 text-xs font-medium"
-                                    :class="s.status === 'active' ? 'bg-primary-soft text-primary' : 'bg-muted text-muted-foreground'"
-                                    >{{ s.status === 'active' ? 'Đang làm' : 'Đã vô hiệu' }}</span
-                                >
-                            </td>
-                            <td class="px-4 py-3">
-                                <div v-if="can.manage" class="flex justify-end gap-1">
-                                    <Button variant="ghost" size="icon" as-child>
-                                        <Link :href="route('app.staff.edit', s.id)" :aria-label="`Sửa ${s.display_name}`"><Pencil /></Link>
-                                    </Button>
-                                    <Button
-                                        v-if="s.status === 'active'"
-                                        variant="ghost"
-                                        size="sm"
-                                        class="text-danger"
-                                        @click="setStatus(s, 'disabled')"
-                                        >Vô hiệu</Button
-                                    >
-                                    <Button v-else variant="ghost" size="sm" @click="setStatus(s, 'active')">Kích hoạt lại</Button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div v-if="!staff.length" class="flex flex-col items-center gap-2 px-6 py-16 text-center">
-                    <Users class="size-10 text-subtle" />
-                    <p class="font-medium">Chưa có nhân viên</p>
-                </div>
-            </div>
-
-            <!-- Invitations -->
-            <div v-else class="overflow-x-auto rounded-[10px] border bg-card">
-                <table v-if="invitations.length" class="w-full text-sm">
-                    <thead class="bg-muted text-left text-[13px] font-medium text-muted-foreground">
-                        <tr>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Role</th>
-                            <th class="px-4 py-3">Cơ sở chính</th>
-                            <th class="px-4 py-3">Hết hạn</th>
-                            <th class="px-4 py-3"><span class="sr-only">Thao tác</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="inv in invitations" :key="inv.id" class="border-t">
-                            <td class="px-4 py-3 font-medium">{{ inv.email }}</td>
-                            <td class="px-4 py-3">{{ inv.roles.join(', ') }}</td>
-                            <td class="px-4 py-3">{{ inv.primary_branch ?? '—' }}</td>
-                            <td class="px-4 py-3 tabular-nums" :class="{ 'text-danger': inv.expired }">
-                                {{ inv.expired ? 'Đã hết hạn' : date(inv.expires_at) }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <div v-if="can.manage" class="flex justify-end gap-1">
-                                    <Button variant="ghost" size="sm" @click="resend(inv)"><Send /> Gửi lại</Button>
-                                    <Button variant="ghost" size="sm" class="text-danger" @click="revoke(inv)"><X /> Thu hồi</Button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div v-else class="flex flex-col items-center gap-2 px-6 py-16 text-center">
-                    <Mail class="size-10 text-subtle" />
-                    <p class="font-medium">Không có lời mời đang chờ</p>
-                </div>
-            </div>
+                <template #cell-roles="{ row }">{{ row.roles.join(', ') }}</template>
+                <template #cell-primary_branch="{ row }">{{ row.primary_branch ?? '—' }}</template>
+                <template #cell-expires_at="{ row }">
+                    <span class="tabular-nums" :class="{ 'text-danger': row.expired }">{{ row.expired ? 'Đã hết hạn' : date(row.expires_at) }}</span>
+                </template>
+                <template #cell-actions="{ row }">
+                    <div v-if="can.manage" class="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" @click="resend(row)"><Send /> Gửi lại</Button>
+                        <Button variant="ghostDanger" size="sm" @click="revoke(row)"><X /> Thu hồi</Button>
+                    </div>
+                </template>
+                <template #empty
+                    ><EmptyState title="Không có lời mời đang chờ"
+                        ><template #icon><Mail /></template></EmptyState
+                ></template>
+            </DataTable>
         </div>
 
         <Dialog v-model:open="inviting">
@@ -255,11 +226,9 @@ const initials = (name: string) =>
                     >
                 </DialogHeader>
                 <form id="invite-form" class="grid gap-5" @submit.prevent="invite">
-                    <div class="grid gap-2">
-                        <Label for="invite-email">Email</Label>
-                        <Input id="invite-email" v-model="form.email" type="email" required />
-                        <InputError :message="form.errors.email" />
-                    </div>
+                    <FormField label="Email" input-id="invite-email" :error="form.errors.email"
+                        ><Input id="invite-email" v-model="form.email" type="email" required
+                    /></FormField>
                     <fieldset class="grid gap-2">
                         <legend class="text-sm font-medium">Role (chọn một hoặc nhiều)</legend>
                         <div class="flex flex-wrap gap-2">
@@ -280,17 +249,15 @@ const initials = (name: string) =>
                         </div>
                         <InputError :message="form.errors.roles" />
                     </fieldset>
-                    <div class="grid gap-2">
-                        <Label for="invite-primary">Cơ sở chính</Label>
-                        <select
+                    <FormField label="Cơ sở chính" input-id="invite-primary" :error="formErrors.primary_branch"
+                        ><select
                             id="invite-primary"
                             v-model="form.primary_branch"
                             class="h-9 rounded-md border border-input bg-background px-3 text-sm"
                         >
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.code }} · {{ b.name }}</option>
-                        </select>
-                        <InputError :message="formErrors.primary_branch" />
-                    </div>
+                        </select></FormField
+                    >
                     <fieldset v-if="branches.length > 1" class="grid gap-2">
                         <legend class="text-sm font-medium">Cơ sở phụ</legend>
                         <div class="flex flex-wrap gap-3 text-sm">

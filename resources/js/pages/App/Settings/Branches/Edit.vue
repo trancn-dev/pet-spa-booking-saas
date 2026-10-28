@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,17 +90,11 @@ const submit = () => {
                         <p class="text-xs text-muted-foreground">{{ editing ? 'Không đổi được (đầu số chứng từ).' : 'Đầu số chứng từ, vd Q3.' }}</p>
                         <InputError :message="form.errors.code" />
                     </div>
-                    <div class="grid gap-2">
-                        <Label for="name">Tên cơ sở</Label>
-                        <Input id="name" v-model="form.name" required />
-                        <InputError :message="form.errors.name" />
-                    </div>
+                    <FormField label="Tên cơ sở" input-id="name" :error="form.errors.name"
+                        ><Input id="name" v-model="form.name" required
+                    /></FormField>
                 </div>
-                <div class="grid gap-2">
-                    <Label for="address">Địa chỉ</Label>
-                    <Input id="address" v-model="form.address" />
-                    <InputError :message="form.errors.address" />
-                </div>
+                <FormField label="Địa chỉ" input-id="address" :error="form.errors.address"><Input id="address" v-model="form.address" /></FormField>
                 <div class="grid gap-2 sm:max-w-xs">
                     <Label for="phone">Điện thoại</Label>
                     <Input id="phone" v-model="form.phone" type="tel" placeholder="+842839300001" />

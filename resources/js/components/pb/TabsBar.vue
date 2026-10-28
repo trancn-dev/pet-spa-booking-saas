@@ -11,7 +11,7 @@ const model = defineModel<string>({ required: true });
 </script>
 
 <template>
-    <div class="mb-4 flex gap-6 overflow-x-auto border-b" role="tablist" :aria-label="label">
+    <div class="flex gap-6 overflow-x-auto border-b" role="tablist" :aria-label="label">
         <button
             v-for="t in items"
             :key="t.value"

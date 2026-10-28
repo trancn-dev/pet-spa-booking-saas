@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import DataTable, { type Column } from '@/components/pb/DataTable.vue';
 import EmptyState from '@/components/pb/EmptyState.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
+import StatusBadge from '@/components/pb/StatusBadge.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -36,6 +38,20 @@ const destroy = () => {
     if (!confirm(`Xóa hồ sơ ${props.customer.name} và các bé của khách? Hóa đơn, lịch sử vẫn được giữ.`)) return;
     router.delete(route('app.customers.destroy', props.customer.id));
 };
+
+const appointmentColumns: Column[] = [
+    { key: 'starts_at', label: 'Giờ hẹn', width: '12rem' },
+    { key: 'branch', label: 'Cơ sở', width: 'minmax(8rem,1fr)' },
+    { key: 'items_count', label: 'Số dịch vụ', width: '8rem' },
+    { key: 'status', label: 'Trạng thái', width: '10rem' },
+];
+const invoiceColumns: Column[] = [
+    { key: 'code', label: 'Mã', width: '9rem' },
+    { key: 'business_date', label: 'Ngày', width: '9rem' },
+    { key: 'branch', label: 'Cơ sở', width: 'minmax(8rem,1fr)' },
+    { key: 'status', label: 'Trạng thái', width: '11rem' },
+    { key: 'total', label: 'Tổng', width: '9rem', align: 'right' },
+];
 </script>
 
 <template>
@@ -98,58 +114,30 @@ const destroy = () => {
 
             <section v-if="can.viewAppointments" class="grid gap-3">
                 <h2 class="text-xl font-semibold">Lịch hẹn</h2>
-                <div class="overflow-x-auto rounded-[10px] border bg-card">
-                    <table class="w-full text-sm">
-                        <thead class="border-b bg-surface-muted text-left text-xs uppercase text-muted-foreground">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Giờ hẹn</th>
-                                <th class="px-4 py-2 font-medium">Cơ sở</th>
-                                <th class="px-4 py-2 font-medium">Số dịch vụ</th>
-                                <th class="px-4 py-2 font-medium">Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="a in appointments" :key="a.id" class="border-b last:border-0">
-                                <td class="whitespace-nowrap px-4 py-3">{{ formatDateTime(a.starts_at, timezone) }}</td>
-                                <td class="px-4 py-3">{{ a.branch }}</td>
-                                <td class="px-4 py-3">{{ a.items_count }}</td>
-                                <td class="px-4 py-3">{{ a.status_label }}</td>
-                            </tr>
-                            <tr v-if="!appointments.length">
-                                <td colspan="4" class="px-4 py-6 text-center text-muted-foreground">Chưa có lịch hẹn.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable :columns="appointmentColumns" :rows="appointments" row-key="id">
+                    <template #cell-starts_at="{ row }"
+                        ><span class="tabular-nums">{{ formatDateTime(row.starts_at, timezone) }}</span></template
+                    >
+                    <template #cell-status="{ row }"><StatusBadge :status="row.status" :label="row.status_label" /></template>
+                    <template #empty><EmptyState compact>Chưa có lịch hẹn.</EmptyState></template>
+                </DataTable>
             </section>
 
             <section v-if="can.viewInvoices" class="grid gap-3">
                 <h2 class="text-xl font-semibold">Hóa đơn</h2>
-                <div class="overflow-x-auto rounded-[10px] border bg-card">
-                    <table class="w-full text-sm">
-                        <thead class="border-b bg-surface-muted text-left text-xs uppercase text-muted-foreground">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Mã</th>
-                                <th class="px-4 py-2 font-medium">Ngày</th>
-                                <th class="px-4 py-2 font-medium">Cơ sở</th>
-                                <th class="px-4 py-2 font-medium">Trạng thái</th>
-                                <th class="px-4 py-2 text-right font-medium">Tổng</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="i in invoices" :key="i.id" class="border-b last:border-0">
-                                <td class="px-4 py-3 tabular-nums">{{ i.code ?? 'Nháp' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3">{{ formatDay(i.business_date) }}</td>
-                                <td class="px-4 py-3">{{ i.branch }}</td>
-                                <td class="px-4 py-3">{{ i.status_label }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ formatMoney(i.total) }}</td>
-                            </tr>
-                            <tr v-if="!invoices.length">
-                                <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">Chưa có hóa đơn.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable :columns="invoiceColumns" :rows="invoices" row-key="id">
+                    <template #cell-code="{ row }"
+                        ><span class="font-mono text-[13px]">{{ row.code ?? 'Nháp' }}</span></template
+                    >
+                    <template #cell-business_date="{ row }"
+                        ><span class="tabular-nums">{{ formatDay(row.business_date) }}</span></template
+                    >
+                    <template #cell-status="{ row }"><StatusBadge :status="row.status" :label="row.status_label" /></template>
+                    <template #cell-total="{ row }"
+                        ><span class="font-mono text-[13px] tabular-nums">{{ formatMoney(row.total) }}</span></template
+                    >
+                    <template #empty><EmptyState compact>Chưa có hóa đơn.</EmptyState></template>
+                </DataTable>
             </section>
         </div>
     </AppLayout>

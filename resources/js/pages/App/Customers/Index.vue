@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import DataTable, { type Column } from '@/components/pb/DataTable.vue';
 import EmptyState from '@/components/pb/EmptyState.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
+import Pagination from '@/components/pb/Pagination.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
+import SearchField from '@/components/pb/SearchField.vue';
+import TabsBar from '@/components/pb/TabsBar.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDay, formatMoney } from '@/lib/format';
 import type { PetAlert, PetSummary, SpeciesOption } from '@/types/pets';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { LoaderCircle, PawPrint, Plus, Search } from 'lucide-vue-next';
+import { LoaderCircle, PawPrint, Plus } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 interface CustomerRow {
@@ -31,14 +35,29 @@ const props = defineProps<{
         current_page: number;
         last_page: number;
         total: number;
-        prev_page_url: string | null;
-        next_page_url: string | null;
+        links: { url: string | null; label: string; active: boolean }[];
     };
     strays: PetSummary[];
     branch: string | null;
     species: SpeciesOption[];
     can: { create: boolean; createStray: boolean };
 }>();
+
+const columns: Column[] = [
+    { key: 'name', label: 'Khách', width: 'minmax(14rem,2fr)' },
+    { key: 'phone', label: 'SĐT', width: '10rem' },
+    { key: 'pets', label: 'Thú cưng', width: 'minmax(12rem,2fr)' },
+    { key: 'last_visit_on', label: 'Lần đến gần nhất', width: '10rem' },
+    { key: 'total_spent', label: 'Tổng chi', width: '9rem', align: 'right' },
+];
+const initials = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 
 const q = ref(props.filters.q);
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -59,7 +78,7 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <PageHeader title="Khách & Thú cưng" subtitle="Hồ sơ khách theo SĐT, dùng chung mọi cơ sở.">
+            <PageHeader title="Khách & Thú cưng" subtitle="Tra theo SĐT, tên khách hoặc tên thú cưng. Hồ sơ dùng chung mọi cơ sở.">
                 <template #actions>
                     <Button v-if="can.createStray" variant="outline" @click="showStrayForm = !showStrayForm">
                         <PawPrint class="size-4" /> Thú hoang
@@ -75,95 +94,73 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
                 class="grid gap-4 rounded-[10px] border bg-card p-4 sm:grid-cols-[12rem_1fr_auto] sm:items-end"
                 @submit.prevent="createStray"
             >
-                <div class="grid gap-2">
-                    <Label for="stray_species">Loài</Label>
-                    <select id="stray_species" v-model="strayForm.species_id" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+                <FormField label="Loài" input-id="stray_species" :error="strayForm.errors.species_id"
+                    ><select id="stray_species" v-model="strayForm.species_id" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
                         <option v-for="s in species" :key="s.id" :value="s.id">{{ s.name }}</option>
-                    </select>
-                    <InputError :message="strayForm.errors.species_id" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="stray_note">Lưu ý an toàn (tùy chọn)</Label>
-                    <Input id="stray_note" v-model="strayForm.note" maxlength="255" placeholder="vd: cắn người, bị thương ở chân" />
-                    <InputError :message="strayForm.errors.note" />
-                </div>
+                    </select></FormField
+                >
+                <FormField label="Lưu ý an toàn (tùy chọn)" input-id="stray_note" :error="strayForm.errors.note"
+                    ><Input id="stray_note" v-model="strayForm.note" maxlength="255" placeholder="vd: cắn người, bị thương ở chân"
+                /></FormField>
                 <Button type="submit" :disabled="strayForm.processing">
                     <LoaderCircle v-if="strayForm.processing" class="size-4 animate-spin" />
                     Tạo "Thú hoang #n" ở {{ branch }}
                 </Button>
             </form>
 
-            <nav class="flex gap-1 border-b" aria-label="Danh sách">
-                <Link
-                    :href="route('app.customers.index')"
-                    class="-mb-px border-b-2 px-3 py-2 text-sm font-medium"
-                    :class="tab === 'customers' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'"
-                    >Khách</Link
-                >
-                <Link
-                    :href="route('app.customers.index', { tab: 'strays' })"
-                    class="-mb-px border-b-2 px-3 py-2 text-sm font-medium"
-                    :class="tab === 'strays' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'"
-                    >Thú hoang<span v-if="branch"> · {{ branch }}</span></Link
-                >
-            </nav>
+            <TabsBar
+                :model-value="tab"
+                :items="[
+                    { value: 'customers', label: 'Khách' },
+                    { value: 'strays', label: branch ? `Thú hoang · ${branch}` : 'Thú hoang' },
+                ]"
+                label="Danh sách"
+                @update:model-value="(v) => router.get(route('app.customers.index'), v === 'strays' ? { tab: 'strays' } : {})"
+            />
 
             <template v-if="tab === 'customers'">
-                <div class="relative max-w-md">
-                    <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input v-model="q" class="pl-9" placeholder="Tên khách, tên bé, SĐT hoặc 4 số cuối" aria-label="Tìm khách" />
-                </div>
+                <SearchField v-model="q" class="max-w-md" placeholder="Tìm tên, SĐT, tên pet" label="Tìm khách" />
 
-                <div class="overflow-x-auto rounded-[10px] border bg-card">
-                    <table class="w-full text-sm">
-                        <thead class="border-b bg-surface-muted text-left text-xs uppercase text-muted-foreground">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Khách</th>
-                                <th class="px-4 py-2 font-medium">SĐT</th>
-                                <th class="px-4 py-2 font-medium">Thú cưng</th>
-                                <th class="px-4 py-2 font-medium">Lần đến gần nhất</th>
-                                <th class="px-4 py-2 text-right font-medium">Tổng chi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="c in customers.data" :key="c.id" class="border-b last:border-0 hover:bg-surface-muted/50">
-                                <td class="px-4 py-3">
-                                    <Link :href="route('app.customers.show', c.id)" class="font-medium hover:underline">{{ c.name }}</Link>
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3 tabular-nums">{{ c.phone }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="flex flex-col gap-1">
-                                        <span v-if="!c.pets_count" class="text-muted-foreground">Chưa có</span>
-                                        <div v-for="p in c.pets" :key="p.id" class="flex flex-wrap items-center gap-2">
-                                            <Link :href="route('app.pets.show', p.id)" class="hover:underline">{{ p.name }}</Link>
-                                            <PetAlertBadges :alerts="p.alerts" compact />
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3">{{ formatDay(c.last_visit_on) }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ formatMoney(c.total_spent) }}</td>
-                            </tr>
-                            <tr v-if="!customers.data.length">
-                                <td colspan="5" class="px-4 py-10 text-center text-muted-foreground">
-                                    {{ filters.q ? `Không tìm thấy khách nào khớp "${filters.q}".` : 'Chưa có khách nào.' }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable :columns="columns" :rows="customers.data" row-key="id">
+                    <template #cell-name="{ row }">
+                        <Link :href="route('app.customers.show', row.id)" class="flex items-center gap-3 font-medium hover:underline">
+                            <RingAvatar :initials="initials(row.name)" color="hsl(var(--border))" :size="36" />
+                            <span class="truncate">{{ row.name }}</span>
+                        </Link>
+                    </template>
+                    <template #cell-phone="{ row }"
+                        ><span class="font-mono text-[13px] tabular-nums">{{ row.phone }}</span></template
+                    >
+                    <template #cell-pets="{ row }">
+                        <span v-if="!row.pets_count" class="text-muted-foreground">Chưa có</span>
+                        <div v-else class="flex flex-col gap-1">
+                            <div v-for="p in row.pets" :key="p.id" class="flex flex-wrap items-center gap-2">
+                                <Link :href="route('app.pets.show', p.id)" class="hover:underline">{{ p.name }}</Link>
+                                <PetAlertBadges :alerts="p.alerts" compact />
+                            </div>
+                        </div>
+                    </template>
+                    <template #cell-last_visit_on="{ row }"
+                        ><span class="tabular-nums">{{ formatDay(row.last_visit_on) }}</span></template
+                    >
+                    <template #cell-total_spent="{ row }"
+                        ><span class="font-mono text-[13px] tabular-nums">{{ formatMoney(row.total_spent) }}</span></template
+                    >
+                    <template #empty>
+                        <EmptyState compact :title="filters.q ? undefined : 'Chưa có khách nào'">
+                            {{ filters.q ? `Không tìm thấy khách nào khớp "${filters.q}".` : 'Thêm khách đầu tiên để bắt đầu đặt lịch.' }}
+                            <template v-if="can.create && !filters.q" #action
+                                ><Button size="sm" as-child><Link :href="route('app.customers.create')">Thêm khách</Link></Button></template
+                            >
+                        </EmptyState>
+                    </template>
+                </DataTable>
 
-                <div v-if="customers.last_page > 1" class="flex items-center justify-between text-sm">
+                <div v-if="customers.last_page > 1" class="flex flex-wrap items-center justify-between gap-3 text-sm">
                     <span class="text-muted-foreground"
                         >Trang {{ customers.current_page }} / {{ customers.last_page }} · {{ customers.total }} khách</span
                     >
-                    <div class="flex gap-2">
-                        <Button variant="outline" size="sm" :disabled="!customers.prev_page_url" as-child>
-                            <Link :href="customers.prev_page_url ?? '#'" preserve-scroll>Trước</Link>
-                        </Button>
-                        <Button variant="outline" size="sm" :disabled="!customers.next_page_url" as-child>
-                            <Link :href="customers.next_page_url ?? '#'" preserve-scroll>Sau</Link>
-                        </Button>
-                    </div>
+                    <Pagination :links="customers.links" />
                 </div>
             </template>
 

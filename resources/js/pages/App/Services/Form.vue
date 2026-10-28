@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,16 +103,12 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
             </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <Label for="code">Mã</Label>
-                    <Input id="code" v-model="form.code" required maxlength="30" class="font-mono uppercase" placeholder="KHAM-TQ" />
-                    <InputError :message="form.errors.code" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="name">Tên</Label>
-                    <Input id="name" v-model="form.name" required maxlength="191" />
-                    <InputError :message="form.errors.name" />
-                </div>
+                <FormField label="Mã" input-id="code" :error="form.errors.code"
+                    ><Input id="code" v-model="form.code" required maxlength="30" class="font-mono uppercase" placeholder="KHAM-TQ"
+                /></FormField>
+                <FormField label="Tên" input-id="name" :error="form.errors.name"
+                    ><Input id="name" v-model="form.name" required maxlength="191"
+                /></FormField>
                 <fieldset class="grid gap-2">
                     <legend class="text-sm font-medium">Nhóm</legend>
                     <div class="flex gap-4 text-sm">

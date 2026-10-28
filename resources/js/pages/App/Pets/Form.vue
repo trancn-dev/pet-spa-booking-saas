@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -100,43 +101,31 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
             </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <Label for="name">Tên bé</Label>
-                    <Input id="name" v-model="form.name" required maxlength="100" autocomplete="off" />
-                    <InputError :message="form.errors.name" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="sex">Giới tính</Label>
-                    <select id="sex" v-model="form.sex" :class="select">
+                <FormField label="Tên bé" input-id="name" :error="form.errors.name"
+                    ><Input id="name" v-model="form.name" required maxlength="100" autocomplete="off"
+                /></FormField>
+                <FormField label="Giới tính" input-id="sex" :error="form.errors.sex"
+                    ><select id="sex" v-model="form.sex" :class="select">
                         <option v-for="s in sexes" :key="s.value" :value="s.value">{{ s.label }}</option>
-                    </select>
-                    <InputError :message="form.errors.sex" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="species_id">Loài</Label>
-                    <select id="species_id" v-model="form.species_id" :class="select" required>
+                    </select></FormField
+                >
+                <FormField label="Loài" input-id="species_id" :error="form.errors.species_id"
+                    ><select id="species_id" v-model="form.species_id" :class="select" required>
                         <option v-for="s in species" :key="s.id" :value="s.id">{{ s.name }}</option>
-                    </select>
-                    <InputError :message="form.errors.species_id" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="breed_id">Giống</Label>
-                    <select id="breed_id" v-model="form.breed_id" :class="select">
+                    </select></FormField
+                >
+                <FormField label="Giống" input-id="breed_id" :error="form.errors.breed_id"
+                    ><select id="breed_id" v-model="form.breed_id" :class="select">
                         <option :value="null">Không rõ / lai</option>
                         <option v-for="b in breeds" :key="b.id" :value="b.id">{{ b.name }}</option>
-                    </select>
-                    <InputError :message="form.errors.breed_id" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="birth_date">Ngày sinh (ước lượng được)</Label>
-                    <Input id="birth_date" v-model="form.birth_date" type="date" />
-                    <InputError :message="form.errors.birth_date" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="weight_kg">Cân nặng (kg)</Label>
-                    <Input id="weight_kg" v-model="form.weight_kg" type="number" step="0.01" min="0.01" max="999.99" inputmode="decimal" />
-                    <InputError :message="form.errors.weight_kg" />
-                </div>
+                    </select></FormField
+                >
+                <FormField label="Ngày sinh (ước lượng được)" input-id="birth_date" :error="form.errors.birth_date"
+                    ><Input id="birth_date" v-model="form.birth_date" type="date"
+                /></FormField>
+                <FormField label="Cân nặng (kg)" input-id="weight_kg" :error="form.errors.weight_kg"
+                    ><Input id="weight_kg" v-model="form.weight_kg" type="number" step="0.01" min="0.01" max="999.99" inputmode="decimal"
+                /></FormField>
                 <div class="grid gap-2">
                     <Label for="size">Cỡ</Label>
                     <select id="size" v-model="form.size" :class="select">
@@ -186,11 +175,9 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
                     />
                     <InputError :message="form.errors.chronic_conditions" />
                 </div>
-                <div class="grid gap-2">
-                    <Label for="behavior_notes">Lưu ý hành vi</Label>
-                    <Input id="behavior_notes" v-model="form.behavior_notes" maxlength="255" placeholder="vd: cắn người, sợ máy sấy" />
-                    <InputError :message="form.errors.behavior_notes" />
-                </div>
+                <FormField label="Lưu ý hành vi" input-id="behavior_notes" :error="form.errors.behavior_notes"
+                    ><Input id="behavior_notes" v-model="form.behavior_notes" maxlength="255" placeholder="vd: cắn người, sợ máy sấy"
+                /></FormField>
             </section>
 
             <div class="flex gap-3">

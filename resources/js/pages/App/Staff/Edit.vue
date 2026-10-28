@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,16 +82,12 @@ const submit = () => {
             <section class="grid gap-4 rounded-[10px] border bg-card p-6">
                 <h2 class="text-xl font-semibold">Thông tin</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="grid gap-2">
-                        <Label for="display_name">Họ tên hiển thị</Label>
-                        <Input id="display_name" v-model="form.display_name" required />
-                        <InputError :message="form.errors.display_name" />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="phone">Điện thoại</Label>
-                        <Input id="phone" v-model="form.phone" type="tel" />
-                        <InputError :message="form.errors.phone" />
-                    </div>
+                    <FormField label="Họ tên hiển thị" input-id="display_name" :error="form.errors.display_name"
+                        ><Input id="display_name" v-model="form.display_name" required
+                    /></FormField>
+                    <FormField label="Điện thoại" input-id="phone" :error="form.errors.phone"
+                        ><Input id="phone" v-model="form.phone" type="tel"
+                    /></FormField>
                     <div class="grid gap-2">
                         <Label for="title">Chức danh hiển thị</Label>
                         <Input id="title" v-model="form.title" maxlength="50" placeholder="Lễ tân · Thu ngân" />

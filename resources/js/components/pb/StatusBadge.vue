@@ -11,11 +11,19 @@ const tones: Record<string, [BadgeTone, string]> = {
     checked_in: ['info', 'Đã đến'],
     cancelled: ['neutral', 'Đã hủy'],
     no_show: ['danger', 'Không đến'],
+    // Visit (design 3.1): waiting muted, in progress info, done success
+    waiting: ['neutral', 'Đang chờ'],
+    in_progress: ['info', 'Đang thực hiện'],
+    done: ['success', 'Hoàn tất'],
+    // Invoice: draft = unfinished (warning), completed = success, void = struck through
+    draft: ['warning', 'Chưa hoàn thành'],
+    completed: ['success', 'Hoàn thành'],
+    void: ['neutral', 'Đã hủy'],
 };
 const tone = computed(() => tones[props.status]?.[0] ?? 'neutral');
 const text = computed(() => props.label ?? tones[props.status]?.[1] ?? props.status);
 </script>
 
 <template>
-    <Badge :tone="tone" :class="{ 'line-through': status === 'cancelled' }">{{ text }}</Badge>
+    <Badge :tone="tone" :class="{ 'line-through': status === 'cancelled' || status === 'void' }">{{ text }}</Badge>
 </template>

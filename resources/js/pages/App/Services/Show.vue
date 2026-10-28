@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import DataTable, { type Column } from '@/components/pb/DataTable.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
 import GroupBadge from '@/components/pb/GroupBadge.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
@@ -113,6 +115,13 @@ watch(
     },
     { immediate: true, deep: true },
 );
+
+const ruleColumns = computed<Column[]>(() => [
+    { key: 'label', label: 'Áp dụng cho', width: 'minmax(12rem,3fr)' },
+    { key: 'duration_min', label: 'Thời lượng', width: '8rem', align: 'right' },
+    { key: 'price', label: 'Giá', width: '9rem', align: 'right' },
+    ...(props.can.manage ? [{ key: 'actions', label: '', width: '6rem' }] : []),
+]);
 </script>
 
 <template>
@@ -225,38 +234,21 @@ watch(
                     </div>
                 </form>
 
-                <div class="overflow-x-auto rounded-[10px] border bg-card">
-                    <table class="w-full text-sm">
-                        <thead class="border-b bg-surface-muted text-left text-xs uppercase text-muted-foreground">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Áp dụng cho</th>
-                                <th class="px-4 py-2 text-right font-medium">Thời lượng</th>
-                                <th class="px-4 py-2 text-right font-medium">Giá</th>
-                                <th v-if="can.manage" class="px-4 py-2" />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="r in rules" :key="r.id" class="border-b last:border-0">
-                                <td class="px-4 py-3">{{ r.label }}</td>
-                                <td class="px-4 py-3 text-right tabular-nums">{{ r.duration_min ? `${r.duration_min} phút` : '—' }}</td>
-                                <td class="px-4 py-3 text-right tabular-nums">{{ r.price ? formatMoney(r.price) : '—' }}</td>
-                                <td v-if="can.manage" class="whitespace-nowrap px-4 py-3 text-right">
-                                    <button type="button" class="p-1" aria-label="Sửa quy tắc" @click="startRule(r)">
-                                        <Pencil class="size-4" />
-                                    </button>
-                                    <button type="button" class="p-1 text-danger" aria-label="Xóa quy tắc" @click="deleteRule(r)">
-                                        <Trash2 class="size-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr v-if="!rules.length">
-                                <td :colspan="can.manage ? 4 : 3" class="px-4 py-6 text-center text-muted-foreground">
-                                    Chưa có quy tắc: mọi pet dùng thời lượng, giá mặc định.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable :columns="ruleColumns" :rows="rules" row-key="id">
+                    <template #cell-duration_min="{ row }"
+                        ><span class="tabular-nums">{{ row.duration_min ? `${row.duration_min} phút` : '—' }}</span></template
+                    >
+                    <template #cell-price="{ row }"
+                        ><span class="font-mono text-[13px] tabular-nums">{{ row.price ? formatMoney(row.price) : '—' }}</span></template
+                    >
+                    <template #cell-actions="{ row }">
+                        <div v-if="can.manage" class="flex justify-end">
+                            <Button variant="ghost" size="icon" aria-label="Sửa quy tắc" @click="startRule(row)"><Pencil /></Button>
+                            <Button variant="ghostDanger" size="icon" aria-label="Xóa quy tắc" @click="deleteRule(row)"><Trash2 /></Button>
+                        </div>
+                    </template>
+                    <template #empty><EmptyState compact>Chưa có quy tắc: mọi pet dùng thời lượng, giá mặc định.</EmptyState></template>
+                </DataTable>
             </section>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6">

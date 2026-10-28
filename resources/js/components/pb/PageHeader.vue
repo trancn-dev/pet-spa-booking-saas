@@ -18,7 +18,11 @@ const currentBranch = computed(() => usePage<ShopSharedData>().props.currentBran
             <h1 class="flex flex-wrap items-center gap-2 text-2xl font-semibold leading-8">
                 <span class="min-w-0">{{ title }}</span>
                 <slot name="badges" />
-                <span v-if="branch && currentBranch" class="rounded-md border bg-surface-muted px-2 py-0.5 text-xs font-medium text-stone-700 dark:text-stone-300">{{ currentBranch.name }}</span>
+                <span
+                    v-if="branch && currentBranch"
+                    class="rounded-md border bg-surface-muted px-2 py-0.5 text-xs font-medium text-stone-700 dark:text-stone-300"
+                    >{{ currentBranch.name }}</span
+                >
             </h1>
             <p v-if="subtitle || $slots.subtitle" class="mt-0.5 text-sm text-muted-foreground">
                 <slot name="subtitle">{{ subtitle }}</slot>

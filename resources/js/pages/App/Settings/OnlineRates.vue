@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
+import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,11 +104,9 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
                         <option v-for="g in groups" :key="g.value" :value="g.value">{{ g.label }}</option>
                     </select>
                 </div>
-                <div class="grid gap-2">
-                    <Label for="rate_ratio">Tỉ lệ (0 – 1)</Label>
-                    <Input id="rate_ratio" v-model="form.ratio" type="number" min="0" max="1" step="0.05" required />
-                    <InputError :message="errors.ratio" />
-                </div>
+                <FormField label="Tỉ lệ (0 – 1)" input-id="rate_ratio" :error="errors.ratio"
+                    ><Input id="rate_ratio" v-model="form.ratio" type="number" min="0" max="1" step="0.05" required
+                /></FormField>
                 <div class="grid gap-2">
                     <Label for="rate_weekday">Thứ (trống = mọi ngày)</Label>
                     <select id="rate_weekday" v-model="form.weekday" :class="select">
