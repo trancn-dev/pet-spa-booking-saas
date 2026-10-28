@@ -40,14 +40,14 @@ const accept = () => {
         <Head title="Nhận lời mời" />
 
         <!-- Expired / revoked / used / unknown link -->
-        <div v-if="state !== 'pending'" class="flex flex-col gap-4 text-center">
+        <div v-if="state !== 'pending'" class="flex flex-col gap-4">
             <p class="text-sm text-muted-foreground">{{ message }}</p>
             <TextLink :href="route('login')">Về trang đăng nhập</TextLink>
         </div>
 
         <!-- Signed in with the invited e-mail: one click -->
         <form v-else-if="signedInAs && !wrongAccount" class="flex flex-col gap-4" @submit.prevent="accept">
-            <p class="text-center text-sm text-muted-foreground">Đang đăng nhập: {{ signedInAs }}</p>
+            <p class="text-sm text-muted-foreground">Đang đăng nhập: {{ signedInAs }}</p>
             <InputError :message="errors.email ?? errors.invitation" />
             <Button type="submit" class="w-full" :disabled="form.processing">
                 <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
@@ -56,7 +56,7 @@ const accept = () => {
         </form>
 
         <!-- Signed in as somebody else -->
-        <div v-else-if="wrongAccount" class="flex flex-col gap-4 text-center">
+        <div v-else-if="wrongAccount" class="flex flex-col gap-4">
             <p class="text-sm text-destructive">
                 Lời mời này dành cho {{ email }}, bạn đang đăng nhập bằng {{ signedInAs }}. Đăng xuất rồi đăng nhập đúng email được mời.
             </p>
@@ -64,7 +64,7 @@ const accept = () => {
         </div>
 
         <!-- Account exists: sign in first, the login page brings them back here -->
-        <div v-else-if="hasAccount" class="flex flex-col gap-4 text-center">
+        <div v-else-if="hasAccount" class="flex flex-col gap-4">
             <p class="text-sm text-muted-foreground">{{ email }} đã có tài khoản PawBook.</p>
             <Button as-child class="w-full">
                 <a :href="route('login')">Đăng nhập để nhận</a>
