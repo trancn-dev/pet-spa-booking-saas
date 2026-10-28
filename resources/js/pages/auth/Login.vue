@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import FormField from '@/components/pb/FormField.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import { Eye, EyeOff } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 defineProps<{
     status?: string;
@@ -17,8 +18,9 @@ defineProps<{
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
+    remember: true,
 });
+const reveal = ref(false);
 
 const submit = () => {
     form.post(route('login'), {
@@ -28,63 +30,66 @@ const submit = () => {
 </script>
 
 <template>
-    <AuthBase title="Log in to your account" description="Enter your email and password below to log in">
-        <Head title="Log in" />
+    <AuthBase title="Đăng nhập" description="Dùng email nhân viên đã được mời vào shop.">
+        <Head title="Đăng nhập" />
 
-        <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
+        <p
+            v-if="status"
+            class="mb-4 rounded-[10px] bg-green-100 px-4 py-3 text-sm text-green-900 dark:bg-green-500/15 dark:text-green-200"
+            role="status"
+        >
             {{ status }}
-        </div>
+        </p>
 
-        <form @submit.prevent="submit" class="flex flex-col gap-6">
-            <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        required
-                        autofocus
-                        tabindex="1"
-                        autocomplete="email"
-                        v-model="form.email"
-                        placeholder="email@example.com"
-                    />
-                    <InputError :message="form.errors.email" />
-                </div>
+        <form class="grid gap-5" @submit.prevent="submit">
+            <FormField label="Email" input-id="email" :error="form.errors.email">
+                <Input
+                    id="email"
+                    v-model="form.email"
+                    type="email"
+                    required
+                    autofocus
+                    autocomplete="email"
+                    tabindex="1"
+                    class="h-11 rounded-[10px]"
+                    placeholder="ten@shop.vn"
+                />
+            </FormField>
 
-                <div class="grid gap-2">
-                    <div class="flex items-center justify-between">
-                        <Label for="password">Password</Label>
-                        <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm" tabindex="5"> Forgot password? </TextLink>
-                    </div>
+            <FormField label="Mật khẩu" input-id="password" :error="form.errors.password">
+                <div class="relative">
                     <Input
                         id="password"
-                        type="password"
-                        required
-                        tabindex="2"
-                        autocomplete="current-password"
                         v-model="form.password"
-                        placeholder="Password"
+                        :type="reveal ? 'text' : 'password'"
+                        required
+                        autocomplete="current-password"
+                        tabindex="2"
+                        class="h-11 rounded-[10px] pr-11"
                     />
-                    <InputError :message="form.errors.password" />
+                    <button
+                        type="button"
+                        class="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-surface-muted"
+                        :aria-label="reveal ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+                        :aria-pressed="reveal"
+                        @click="reveal = !reveal"
+                    >
+                        <EyeOff v-if="reveal" class="size-4" /><Eye v-else class="size-4" />
+                    </button>
                 </div>
+            </FormField>
 
-                <div class="flex items-center justify-between" tabindex="3">
-                    <Label for="remember" class="flex items-center space-x-3">
-                        <Checkbox id="remember" v-model:checked="form.remember" tabindex="4" />
-                        <span>Remember me</span>
-                    </Label>
-                </div>
-
-                <Button type="submit" class="mt-4 w-full" tabindex="4" :disabled="form.processing">
-                    <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                    Log in
-                </Button>
+            <div class="flex items-center justify-between gap-3 text-sm">
+                <Label for="remember" class="flex items-center gap-2 font-normal">
+                    <Checkbox id="remember" v-model:checked="form.remember" tabindex="3" />
+                    Ghi nhớ đăng nhập
+                </Label>
+                <TextLink v-if="canResetPassword" :href="route('password.request')" tabindex="5" class="font-medium">Quên mật khẩu?</TextLink>
             </div>
 
-            <div class="text-center text-sm text-muted-foreground">
-                Chưa có tài khoản? Chủ shop sẽ gửi lời mời qua email.
-            </div>
+            <Button type="submit" size="touch" class="w-full" tabindex="4" :loading="form.processing">Đăng nhập</Button>
         </form>
+
+        <p class="mt-6 border-t pt-6 text-sm text-muted-foreground">Chưa có tài khoản? Dùng link mời trong email từ chủ shop.</p>
     </AuthBase>
 </template>

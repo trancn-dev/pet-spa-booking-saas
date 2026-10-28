@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import FormField from '@/components/pb/FormField.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import { Check, Circle } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Props {
     token: string;
@@ -21,6 +21,13 @@ const form = useForm({
     password_confirmation: '',
 });
 
+// Design S37: the rules light up as the person types (the server validates again).
+const rules = computed(() => [
+    { text: 'Ít nhất 12 ký tự', ok: form.password.length >= 12 },
+    { text: 'Có chữ hoa, chữ thường và số', ok: /[A-Z]/.test(form.password) && /[a-z]/.test(form.password) && /\d/.test(form.password) },
+]);
+const mismatch = computed(() => form.password_confirmation !== '' && form.password !== form.password_confirmation);
+
 const submit = () => {
     form.post(route('password.store'), {
         onFinish: () => {
@@ -31,51 +38,43 @@ const submit = () => {
 </script>
 
 <template>
-    <AuthLayout title="Reset password" description="Please enter your new password below">
-        <Head title="Reset password" />
+    <AuthLayout title="Đặt mật khẩu mới" :description="`Chọn mật khẩu mới cho ${email}.`">
+        <Head title="Đặt mật khẩu mới" />
 
-        <form @submit.prevent="submit">
-            <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="email">Email</Label>
-                    <Input id="email" type="email" name="email" autocomplete="email" v-model="form.email" class="mt-1 block w-full" readonly />
-                    <InputError :message="form.errors.email" class="mt-2" />
-                </div>
+        <form class="grid gap-5" @submit.prevent="submit">
+            <input v-model="form.email" type="hidden" name="email" autocomplete="email" />
+            <p
+                v-if="form.errors.email"
+                class="rounded-[10px] bg-red-100 px-4 py-3 text-sm text-red-900 dark:bg-red-500/15 dark:text-red-200"
+                role="alert"
+            >
+                {{ form.errors.email }}
+            </p>
 
-                <div class="grid gap-2">
-                    <Label for="password">Password</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        v-model="form.password"
-                        class="mt-1 block w-full"
-                        autofocus
-                        placeholder="Password"
-                    />
-                    <InputError :message="form.errors.password" />
-                </div>
+            <FormField label="Mật khẩu mới" input-id="password" :error="form.errors.password">
+                <Input id="password" v-model="form.password" type="password" autocomplete="new-password" autofocus class="h-11 rounded-[10px]" />
+                <ul class="mt-2 grid gap-1 text-xs">
+                    <li v-for="r in rules" :key="r.text" class="flex items-center gap-1.5" :class="r.ok ? 'text-success' : 'text-muted-foreground'">
+                        <Check v-if="r.ok" class="size-3.5" /><Circle v-else class="size-3.5" />{{ r.text }}
+                    </li>
+                </ul>
+            </FormField>
 
-                <div class="grid gap-2">
-                    <Label for="password_confirmation"> Confirm Password </Label>
-                    <Input
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        autocomplete="new-password"
-                        v-model="form.password_confirmation"
-                        class="mt-1 block w-full"
-                        placeholder="Confirm password"
-                    />
-                    <InputError :message="form.errors.password_confirmation" />
-                </div>
+            <FormField
+                label="Nhập lại mật khẩu"
+                input-id="password_confirmation"
+                :error="mismatch ? 'Hai mật khẩu chưa khớp.' : form.errors.password_confirmation"
+            >
+                <Input
+                    id="password_confirmation"
+                    v-model="form.password_confirmation"
+                    type="password"
+                    autocomplete="new-password"
+                    class="h-11 rounded-[10px]"
+                />
+            </FormField>
 
-                <Button type="submit" class="mt-4 w-full" :disabled="form.processing">
-                    <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                    Reset password
-                </Button>
-            </div>
+            <Button type="submit" size="touch" class="w-full" :loading="form.processing" :disabled="mismatch">Đặt mật khẩu</Button>
         </form>
     </AuthLayout>
 </template>
