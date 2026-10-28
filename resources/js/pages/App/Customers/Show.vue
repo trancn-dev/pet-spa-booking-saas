@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -41,21 +43,18 @@ const destroy = () => {
 
     <AppLayout>
         <div class="flex max-w-5xl flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <Link :href="route('app.customers.index')" class="text-sm text-muted-foreground hover:underline">← Khách & Thú cưng</Link>
-                    <h1 class="mt-1 text-2xl font-semibold">{{ customer.name }}</h1>
-                    <p v-if="customer.is_system" class="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Lock class="size-4" /> Hồ sơ hệ thống của cơ sở: không sửa, không xóa.
-                    </p>
-                </div>
-                <div class="flex gap-2">
+            <PageHeader :title="customer.name">
+                <template #before><BackLink :href="route('app.customers.index')">Khách & Thú cưng</BackLink></template>
+                <template v-if="customer.is_system" #subtitle>
+                    <span class="flex items-center gap-1.5"><Lock class="size-4" /> Hồ sơ hệ thống của cơ sở: không sửa, không xóa.</span>
+                </template>
+                <template #actions>
                     <Button v-if="can.update" variant="outline" as-child>
                         <Link :href="route('app.customers.edit', customer.id)"><Pencil class="size-4" /> Sửa</Link>
                     </Button>
                     <Button v-if="can.delete" variant="outline" class="text-danger" @click="destroy"><Trash2 class="size-4" /> Xóa</Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
             <InputError :message="deleteError" />
 
             <section v-if="!customer.is_system" class="grid gap-3 rounded-[10px] border bg-card p-6 sm:grid-cols-3">

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AppDrawer from '@/components/AppDrawer.vue';
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
-import StatusBadge from '@/components/StatusBadge.vue';
+import AppDrawer from '@/components/pb/AppDrawer.vue';
+import StatusBadge from '@/components/pb/StatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';

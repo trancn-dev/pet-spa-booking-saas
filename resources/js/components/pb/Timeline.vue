@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    <ol class="grid gap-3 border-l pl-6">
+    <ol class="grid content-start gap-3 border-l pl-6">
         <slot />
     </ol>
 </template>

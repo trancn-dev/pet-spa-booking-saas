@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import EmptyState from '@/components/EmptyState.vue';
-import GroupBadge from '@/components/GroupBadge.vue';
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
-import Timeline from '@/components/Timeline.vue';
-import TimelineItem from '@/components/TimelineItem.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
+import GroupBadge from '@/components/pb/GroupBadge.vue';
+import TabsBar from '@/components/pb/TabsBar.vue';
+import Timeline from '@/components/pb/Timeline.vue';
+import TimelineItem from '@/components/pb/TimelineItem.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -97,17 +98,12 @@ const destroy = () => {
             </header>
             <InputError :message="deleteError" />
 
-            <nav class="flex gap-1 overflow-x-auto border-b" aria-label="Hồ sơ thú cưng">
-                <Link
-                    v-for="t in tabs"
-                    :key="t.key"
-                    :href="route('app.pets.show', { pet: pet.id, tab: t.key })"
-                    preserve-scroll
-                    class="-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium"
-                    :class="tab === t.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'"
-                    >{{ t.label }}</Link
-                >
-            </nav>
+            <TabsBar
+                :model-value="tab"
+                :items="tabs.map((t) => ({ value: t.key, label: t.label }))"
+                label="Hồ sơ thú cưng"
+                @update:model-value="(v) => router.get(route('app.pets.show', { pet: pet.id, tab: v }), {}, { preserveScroll: true })"
+            />
 
             <div v-if="tab === 'overview'" class="grid gap-4 md:grid-cols-2">
                 <section class="grid content-start gap-3 rounded-[10px] border bg-card p-6">

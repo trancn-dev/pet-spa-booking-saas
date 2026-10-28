@@ -3,7 +3,7 @@ import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
-import Banner from '@/components/Banner.vue';
+import Banner from '@/components/pb/Banner.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import type { BreadcrumbItemType, ShopSharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import GroupBadge from '@/components/GroupBadge.vue';
+import GroupBadge from '@/components/pb/GroupBadge.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -42,17 +43,16 @@ const groups = [
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-semibold">Dịch vụ</h1>
-                    <p class="text-sm text-muted-foreground">
-                        Giá dùng chung mọi cơ sở. Giá trên lịch hẹn là giá tham khảo; tính tiền theo giá lúc thêm vào Visit.
-                    </p>
-                </div>
-                <Button v-if="can.manage" as-child>
-                    <Link :href="route('app.services.create')"><Plus class="size-4" /> Thêm dịch vụ</Link>
-                </Button>
-            </div>
+            <PageHeader
+                title="Dịch vụ"
+                subtitle="Giá dùng chung mọi cơ sở. Giá trên lịch hẹn là giá tham khảo; tính tiền theo giá lúc thêm vào Visit."
+            >
+                <template v-if="can.manage" #actions>
+                    <Button as-child>
+                        <Link :href="route('app.services.create')"><Plus class="size-4" /> Thêm dịch vụ</Link>
+                    </Button>
+                </template>
+            </PageHeader>
 
             <nav class="flex gap-1 border-b" aria-label="Nhóm dịch vụ">
                 <Link

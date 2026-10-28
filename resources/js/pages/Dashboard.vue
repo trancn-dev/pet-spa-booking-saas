@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import EmptyState from '@/components/EmptyState.vue';
-import ProgressBar from '@/components/ProgressBar.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
+import ProgressBar from '@/components/pb/ProgressBar.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { CheckCircle2, Circle, LayoutGrid } from 'lucide-vue-next';
@@ -26,7 +27,7 @@ const doneCount = computed(() => tracked.value.filter((s) => s.done).length);
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <h1 class="text-2xl font-semibold">Tổng quan</h1>
+            <PageHeader title="Tổng quan" />
 
             <!-- S13: first-run checklist for the owner -->
             <section v-if="checklist" class="rounded-[10px] border bg-card p-6 shadow-sm dark:shadow-none">

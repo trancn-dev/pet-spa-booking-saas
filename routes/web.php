@@ -27,6 +27,11 @@ Route::get('/', function () {
 })->name('home');
 
 // Sends a logged-in user to their (last) workspace.
+// Component gallery for designers and developers (K0 design system); never exposed in production.
+if (app()->environment(['local', 'demo', 'testing'])) {
+    Route::get('ui-kit', fn () => Inertia::render('UiKit'))->name('ui-kit');
+}
+
 Route::get('dashboard', WorkspaceRedirectController::class)
     ->middleware(['auth', 'verified'])->name('dashboard');
 

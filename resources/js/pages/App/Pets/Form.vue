@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,10 +93,11 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
 
     <AppLayout>
         <form class="flex max-w-3xl flex-col gap-6 p-4 md:p-6" @submit.prevent="submit">
-            <div>
-                <Link :href="back" class="text-sm text-muted-foreground hover:underline">← {{ pet ? pet.name : customer.name }}</Link>
-                <h1 class="mt-1 text-2xl font-semibold">{{ pet ? 'Sửa hồ sơ bé' : `Thêm bé cho ${customer.name}` }}</h1>
-            </div>
+            <PageHeader :title="pet ? 'Sửa hồ sơ bé' : `Thêm bé cho ${customer.name}`">
+                <template #before
+                    ><BackLink :href="back">{{ pet ? pet.name : customer.name }}</BackLink></template
+                >
+            </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
                 <div class="grid gap-2">
@@ -142,7 +145,9 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
                     </select>
                     <p v-if="hint" class="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Sparkles class="size-3.5" /> Gợi ý {{ hint.label }}: {{ hint.reason }}.
-                        <button v-if="form.size !== hint.size" type="button" class="text-primary hover:underline" @click="form.size = hint!.size">Dùng</button>
+                        <button v-if="form.size !== hint.size" type="button" class="text-primary hover:underline" @click="form.size = hint!.size">
+                            Dùng
+                        </button>
                     </p>
                     <p class="text-xs text-muted-foreground">Giá và thời lượng dịch vụ tính theo cỡ.</p>
                     <InputError :message="form.errors.size" />
@@ -159,12 +164,26 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
                 </div>
                 <div class="grid gap-2">
                     <Label for="allergies">Dị ứng</Label>
-                    <textarea id="allergies" v-model="form.allergies" rows="2" maxlength="2000" :class="textarea" placeholder="vd: dị ứng penicillin" />
+                    <textarea
+                        id="allergies"
+                        v-model="form.allergies"
+                        rows="2"
+                        maxlength="2000"
+                        :class="textarea"
+                        placeholder="vd: dị ứng penicillin"
+                    />
                     <InputError :message="form.errors.allergies" />
                 </div>
                 <div class="grid gap-2">
                     <Label for="chronic_conditions">Bệnh nền</Label>
-                    <textarea id="chronic_conditions" v-model="form.chronic_conditions" rows="2" maxlength="2000" :class="textarea" placeholder="vd: tim, động kinh" />
+                    <textarea
+                        id="chronic_conditions"
+                        v-model="form.chronic_conditions"
+                        rows="2"
+                        maxlength="2000"
+                        :class="textarea"
+                        placeholder="vd: tim, động kinh"
+                    />
                     <InputError :message="form.errors.chronic_conditions" />
                 </div>
                 <div class="grid gap-2">

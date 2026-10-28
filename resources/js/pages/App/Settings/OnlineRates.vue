@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -44,7 +46,9 @@ const save = () => {
     if (editing.value) form.put(route('app.settings.online-rates.update', { branch: props.branch.id, rate: editing.value }), options);
     else form.post(route('app.settings.online-rates.store', props.branch.id), options);
 };
-const remove = (rate: Rate) => confirm('Xóa tỉ lệ này?') && router.delete(route('app.settings.online-rates.destroy', { branch: props.branch.id, rate: rate.id }), { preserveScroll: true });
+const remove = (rate: Rate) =>
+    confirm('Xóa tỉ lệ này?') &&
+    router.delete(route('app.settings.online-rates.destroy', { branch: props.branch.id, rate: rate.id }), { preserveScroll: true });
 
 const scope = (r: Rate) => {
     const parts = [r.weekday ? props.weekdays[r.weekday] : null, r.start_time ? `${r.start_time}–${r.end_time}` : null].filter(Boolean);
@@ -59,14 +63,12 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
 
     <AppLayout>
         <div class="flex max-w-3xl flex-col gap-6 p-4 md:p-6">
-            <div>
-                <Link :href="route('app.rosters.index')" class="text-sm text-muted-foreground hover:underline">← Lịch trực</Link>
-                <h1 class="mt-1 text-2xl font-semibold">Tỉ lệ đặt online · {{ branch.name }}</h1>
-                <p class="text-sm text-muted-foreground">
-                    Phần số người trực mà Site được nhận đặt, theo từng nhóm. Vd 0,5 với 2 bác sĩ trực = tối đa 1 lịch khám online cùng lúc. Không có tỉ lệ = Site không
-                    nhận đặt online nhóm đó. Ghi đè theo thứ, khung giờ: cụ thể nhất thắng.
-                </p>
-            </div>
+            <PageHeader
+                :title="`Tỉ lệ đặt online · ${branch.name}`"
+                subtitle="Phần số người trực mà Site được nhận đặt, theo từng nhóm. Vd 0,5 với 2 bác sĩ trực = tối đa 1 lịch khám online cùng lúc. Không có tỉ lệ = Site không nhận đặt online nhóm đó. Ghi đè theo thứ, khung giờ: cụ thể nhất thắng."
+            >
+                <template #before><BackLink :href="route('app.rosters.index')">Lịch trực</BackLink></template>
+            </PageHeader>
 
             <section v-for="g in groups" :key="g.value" class="grid gap-3 rounded-[10px] border bg-card p-6">
                 <div class="flex items-center justify-between">
@@ -74,14 +76,22 @@ const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
                     <Button size="sm" variant="outline" @click="start(undefined, g.value)"><Plus class="size-4" /> Thêm</Button>
                 </div>
                 <ul class="grid gap-2 text-sm">
-                    <li v-for="r in rates.filter((r) => r.service_group === g.value)" :key="r.id" class="flex items-center justify-between rounded-md border px-3 py-2">
-                        <span><span class="font-medium">{{ scope(r) }}</span> · {{ percent(r.ratio) }} số người trực</span>
+                    <li
+                        v-for="r in rates.filter((r) => r.service_group === g.value)"
+                        :key="r.id"
+                        class="flex items-center justify-between rounded-md border px-3 py-2"
+                    >
+                        <span
+                            ><span class="font-medium">{{ scope(r) }}</span> · {{ percent(r.ratio) }} số người trực</span
+                        >
                         <span class="flex gap-1">
                             <button type="button" class="p-1" aria-label="Sửa" @click="start(r)"><Pencil class="size-4" /></button>
                             <button type="button" class="p-1 text-danger" aria-label="Xóa" @click="remove(r)"><Trash2 class="size-4" /></button>
                         </span>
                     </li>
-                    <li v-if="!rates.some((r) => r.service_group === g.value)" class="text-muted-foreground">Chưa có: Site không nhận đặt online nhóm {{ g.label }}.</li>
+                    <li v-if="!rates.some((r) => r.service_group === g.value)" class="text-muted-foreground">
+                        Chưa có: Site không nhận đặt online nhóm {{ g.label }}.
+                    </li>
                 </ul>
             </section>
 

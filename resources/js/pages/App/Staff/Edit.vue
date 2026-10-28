@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,14 +70,13 @@ const submit = () => {
 
     <AppLayout>
         <form class="flex max-w-3xl flex-col gap-8 p-4 md:p-6" @submit.prevent="submit">
-            <div>
-                <Link :href="route('app.staff.index')" class="text-sm text-muted-foreground hover:underline">← Nhân viên</Link>
-                <h1 class="mt-1 text-2xl font-semibold">{{ editing ? staff!.display_name : 'Thêm nhân viên không tài khoản' }}</h1>
-                <p class="text-sm text-muted-foreground">
+            <PageHeader :title="editing ? staff!.display_name : 'Thêm nhân viên không tài khoản'">
+                <template #before><BackLink :href="route('app.staff.index')">Nhân viên</BackLink></template>
+                <template #subtitle>
                     <template v-if="!editing">Bảo vệ, lao công…: không đăng nhập, không tính vào giới hạn gói.</template>
                     <template v-else>{{ staff!.email ?? 'Không có tài khoản' }}</template>
-                </p>
-            </div>
+                </template>
+            </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6">
                 <h2 class="text-xl font-semibold">Thông tin</h2>
@@ -143,7 +144,12 @@ const submit = () => {
                 </div>
                 <div class="grid gap-2">
                     <Label for="qualifications">Bằng cấp, kinh nghiệm</Label>
-                    <textarea id="qualifications" v-model="form.qualifications" rows="3" class="rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                    <textarea
+                        id="qualifications"
+                        v-model="form.qualifications"
+                        rows="3"
+                        class="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
                     <InputError :message="form.errors.qualifications" />
                 </div>
             </section>
@@ -161,7 +167,12 @@ const submit = () => {
                     <legend class="text-sm font-medium">Cơ sở phụ</legend>
                     <div class="flex flex-wrap gap-3 text-sm">
                         <label v-for="b in branches.filter((b) => b.id !== form.primary_branch)" :key="b.id" class="flex items-center gap-2">
-                            <input type="checkbox" class="accent-primary" :checked="form.branches.includes(b.id)" @change="toggle(form.branches, b.id)" />
+                            <input
+                                type="checkbox"
+                                class="accent-primary"
+                                :checked="form.branches.includes(b.id)"
+                                @change="toggle(form.branches, b.id)"
+                            />
                             {{ b.name }}
                         </label>
                     </div>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import AppDrawer from '@/components/AppDrawer.vue';
-import Banner from '@/components/Banner.vue';
-import Chip from '@/components/Chip.vue';
-import GroupBadge from '@/components/GroupBadge.vue';
 import InputError from '@/components/InputError.vue';
+import AppDrawer from '@/components/pb/AppDrawer.vue';
+import Banner from '@/components/pb/Banner.vue';
+import Chip from '@/components/pb/Chip.vue';
+import GroupBadge from '@/components/pb/GroupBadge.vue';
+import SlotPicker, { type SlotOption } from '@/components/pb/SlotPicker.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -207,6 +208,18 @@ const loadOnDuty = async () => {
 };
 watch(() => JSON.stringify(allLines.value.map((l) => [l.pet.id, l.service.id])) + date.value, loadSlots);
 watch(date, loadOnDuty);
+const slotOptions = computed<SlotOption[]>(() =>
+    slots.value.map((s) => ({
+        time: s.time,
+        over: s.over,
+        caption: Object.entries(s.groups)
+            .map(([g, v]) => `${groupLabel[g as Group][0]} ${v.taken}/${v.on_duty}`)
+            .join(' · '),
+        title: Object.entries(s.groups)
+            .map(([g, v]) => `${groupLabel[g as Group]} ${v.taken}/${v.on_duty}`)
+            .join(' · '),
+    })),
+);
 const chosen = computed(() => slots.value.find((s) => s.time === time.value) ?? null);
 
 // Summary
@@ -366,35 +379,9 @@ const select = 'h-9 w-full rounded-md border border-input bg-background px-2 tex
                 <p v-if="loadingSlots" class="text-xs text-muted-foreground">
                     <LoaderCircle class="inline size-3 animate-spin" /> Đang tải khung giờ…
                 </p>
-                <div v-else class="grid max-h-60 grid-cols-4 gap-1.5 overflow-y-auto" role="listbox" aria-label="Khung giờ">
-                    <button
-                        v-for="s in slots"
-                        :key="s.time"
-                        type="button"
-                        role="option"
-                        :aria-selected="time === s.time"
-                        class="rounded-md border px-1 py-1 text-xs tabular-nums"
-                        :class="[
-                            time === s.time
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : s.over
-                                  ? 'border-warning/60 bg-warning/10'
-                                  : 'hover:bg-surface-muted',
-                        ]"
-                        :title="
-                            Object.entries(s.groups)
-                                .map(([g, v]) => `${groupLabel[g as Group]} ${v.taken}/${v.on_duty}`)
-                                .join(' · ')
-                        "
-                        @click="time = s.time"
-                    >
-                        <span class="block font-medium">{{ s.time }}</span>
-                        <span v-for="(v, g) in s.groups" :key="g" class="block opacity-80"
-                            >{{ groupLabel[g as Group][0] }} {{ v.taken }}/{{ v.on_duty }}</span
-                        >
-                    </button>
-                    <p v-if="!slots.length" class="col-span-4 text-xs text-muted-foreground">Ngày này cơ sở không mở cửa.</p>
-                </div>
+                <SlotPicker v-else v-model="time" class="max-h-60 overflow-y-auto" label="Khung giờ" :slots="slotOptions">
+                    <template #empty>Ngày này cơ sở không mở cửa.</template>
+                </SlotPicker>
                 <p v-if="chosen?.over" class="flex items-start gap-1.5 rounded-md bg-warning/10 p-2 text-xs text-warning" role="alert">
                     <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
                     <span>

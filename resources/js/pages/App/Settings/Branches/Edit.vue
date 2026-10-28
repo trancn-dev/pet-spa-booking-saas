@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,8 +53,7 @@ const form = useForm({
 });
 
 const errors = computed(() => form.errors as Record<string, string | undefined>);
-const dayError = (day: string) =>
-    Object.entries(errors.value).find(([key]) => key.startsWith(`opening_hours.${day}.`))?.[1];
+const dayError = (day: string) => Object.entries(errors.value).find(([key]) => key.startsWith(`opening_hours.${day}.`))?.[1];
 
 const toggleDay = (day: string, open: boolean) => {
     form.opening_hours[day] = open ? [['08:00', '20:00']] : [];
@@ -71,13 +72,14 @@ const submit = () => {
 
     <AppLayout>
         <form class="flex max-w-3xl flex-col gap-8 p-4 md:p-6" @submit.prevent="submit">
-            <div>
-                <Link :href="route('app.settings.branches')" class="text-sm text-muted-foreground hover:underline">← Cơ sở</Link>
-                <h1 class="mt-1 text-2xl font-semibold">{{ editing ? branch?.name : 'Thêm cơ sở' }}</h1>
-                <Link v-if="branch && canRates" :href="route('app.settings.online-rates', branch.id)" class="text-sm text-primary hover:underline">
-                    Tỉ lệ đặt online của cơ sở →
-                </Link>
-            </div>
+            <PageHeader :title="editing ? (branch?.name ?? '') : 'Thêm cơ sở'">
+                <template #before><BackLink :href="route('app.settings.branches')">Cơ sở</BackLink></template>
+                <template v-if="branch && canRates" #subtitle>
+                    <Link :href="route('app.settings.online-rates', branch.id)" class="text-primary hover:underline"
+                        >Tỉ lệ đặt online của cơ sở →</Link
+                    >
+                </template>
+            </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6">
                 <div class="grid gap-4 sm:grid-cols-[140px_1fr]">

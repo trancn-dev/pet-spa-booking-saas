@@ -13,12 +13,17 @@ export const buttonVariants = cva(
                 secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
                 ghost: 'hover:bg-accent hover:text-accent-foreground',
                 link: 'text-primary underline-offset-4 hover:underline',
+                // Design K0: accent = coral CTA (Site), ghostDanger = quiet destructive
+                accent: 'bg-coral text-stone-900 shadow-sm hover:bg-coral/90',
+                ghostDanger: 'text-danger hover:bg-danger/10',
             },
             size: {
                 default: 'h-9 px-4 py-2',
                 sm: 'h-8 rounded-md px-3 text-xs',
                 lg: 'h-10 rounded-md px-8',
                 icon: 'h-9 w-9',
+                // 44px touch target for the Site
+                touch: 'h-11 px-5 text-base',
             },
         },
         defaultVariants: {

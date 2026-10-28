@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -102,22 +103,23 @@ const initials = (name: string) =>
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-semibold">Nhân viên</h1>
-                    <p class="text-sm" :class="full ? 'text-danger' : 'text-muted-foreground'">
-                        Tài khoản theo gói: {{ quota.used }}/{{ quota.max ?? '∞' }} (gồm lời mời còn hạn)
-                    </p>
-                </div>
-                <div v-if="can.manage" class="flex flex-wrap gap-2">
+            <PageHeader title="Nhân viên">
+                <template #subtitle>
+                    <span :class="full ? 'text-danger' : ''">Tài khoản theo gói: {{ quota.used }}/{{ quota.max ?? '∞' }} (gồm lời mời còn hạn)</span>
+                </template>
+                <template v-if="can.manage" #actions>
                     <Button variant="outline" as-child>
                         <Link :href="route('app.staff.create')"><Plus /> Nhân viên không tài khoản</Link>
                     </Button>
-                    <Button :disabled="full" :title="full ? 'Đã đủ số nhân viên của gói. Liên hệ nâng gói.' : undefined" @click="inviting = true">
+                    <Button
+                        :disabled="full"
+                        :disabled-reason="full ? 'Đã đủ số nhân viên của gói. Liên hệ nâng gói.' : undefined"
+                        @click="inviting = true"
+                    >
                         <UserPlus /> Mời nhân viên
                     </Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
             <p v-if="can.manage && full" class="text-sm text-danger">Đạt giới hạn gói: liên hệ PawBook để nâng gói.</p>
             <InputError :message="errors.status ?? errors.invitation" />
 

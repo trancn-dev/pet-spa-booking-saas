@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,10 +48,16 @@ const props = defineProps<{
 }>();
 
 const tone = (group: string | null) =>
-    group === 'medical' ? 'bg-info/10 text-info border-info/30' : group === 'grooming' ? 'bg-coral/10 text-coral border-coral/30' : 'bg-surface-muted text-muted-foreground';
+    group === 'medical'
+        ? 'bg-info/10 text-info border-info/30'
+        : group === 'grooming'
+          ? 'bg-coral/10 text-coral border-coral/30'
+          : 'bg-surface-muted text-muted-foreground';
 
 const slotsOn = (p: Person, day: Day) =>
-    p.slots.filter((s) => s.weekday === day.weekday && (!s.effective_from || s.effective_from <= day.date) && (!s.effective_to || s.effective_to >= day.date));
+    p.slots.filter(
+        (s) => s.weekday === day.weekday && (!s.effective_from || s.effective_from <= day.date) && (!s.effective_to || s.effective_to >= day.date),
+    );
 const offOn = (p: Person, day: Day) => p.time_off.filter((t) => t.starts_at.slice(0, 10) <= day.date && t.ends_at.slice(0, 10) >= day.date);
 
 // Add / edit a slot.
@@ -91,13 +98,22 @@ const deleteSlot = () => {
 const personName = computed(() => props.people.find((p) => p.id === slotForm.staff_id)?.name ?? '');
 
 // Time off, closed days.
-const offForm = useForm({ staff_id: props.people[0]?.id ?? null, starts_on: props.week.from, starts_time: '', ends_on: props.week.from, ends_time: '', reason: '' });
-const addOff = () => offForm.post(route('app.rosters.time-off.store'), { preserveScroll: true, onSuccess: () => offForm.reset('reason', 'starts_time', 'ends_time') });
+const offForm = useForm({
+    staff_id: props.people[0]?.id ?? null,
+    starts_on: props.week.from,
+    starts_time: '',
+    ends_on: props.week.from,
+    ends_time: '',
+    reason: '',
+});
+const addOff = () =>
+    offForm.post(route('app.rosters.time-off.store'), { preserveScroll: true, onSuccess: () => offForm.reset('reason', 'starts_time', 'ends_time') });
 const deleteOff = (id: number) => confirm('Xóa ngày nghỉ này?') && router.delete(route('app.rosters.time-off.destroy', id), { preserveScroll: true });
 
 const closeForm = useForm({ date: props.week.from, reason: '', whole_shop: false });
 const addClosure = () => closeForm.post(route('app.rosters.closures.store'), { preserveScroll: true, onSuccess: () => closeForm.reset('reason') });
-const deleteClosure = (id: number) => confirm('Bỏ ngày nghỉ này?') && router.delete(route('app.rosters.closures.destroy', id), { preserveScroll: true });
+const deleteClosure = (id: number) =>
+    confirm('Bỏ ngày nghỉ này?') && router.delete(route('app.rosters.closures.destroy', id), { preserveScroll: true });
 
 const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
 const percent = (ratio: string | null) => (ratio === null ? 'không nhận online' : `${Math.round(Number(ratio) * 100)}% số người trực`);
@@ -108,15 +124,12 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-semibold">Lịch trực · {{ branch.name }}</h1>
-                    <p class="text-sm text-muted-foreground">
-                        Mỗi khung chọn trực nhóm nào. Người có cả role bác sĩ và spa vẫn là một người trực trong khung đó.
-                        <template v-if="!can.seeAll"> Bạn đang xem lịch của chính mình.</template>
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
+            <PageHeader :title="`Lịch trực · ${branch.name}`">
+                <template #subtitle>
+                    Mỗi khung chọn trực nhóm nào. Người có cả role bác sĩ và spa vẫn là một người trực trong khung đó.
+                    <template v-if="!can.seeAll"> Bạn đang xem lịch của chính mình.</template>
+                </template>
+                <template #actions>
                     <Button variant="outline" size="icon" as-child>
                         <Link :href="route('app.rosters.index', { week: week.prev })" aria-label="Tuần trước"><ChevronLeft class="size-4" /></Link>
                     </Button>
@@ -124,8 +137,8 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                     <Button variant="outline" size="icon" as-child>
                         <Link :href="route('app.rosters.index', { week: week.next })" aria-label="Tuần sau"><ChevronRight class="size-4" /></Link>
                     </Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
 
             <form v-if="slotOpen" class="grid gap-4 rounded-[10px] border bg-card p-4 md:grid-cols-4 md:items-end" @submit.prevent="saveSlot">
                 <div class="flex items-center justify-between md:col-span-4">
@@ -152,7 +165,9 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                         <label v-for="g in groups" :key="g.value" class="flex items-center gap-1.5">
                             <input v-model="slotForm.service_group" type="radio" :value="g.value" class="accent-primary" /> {{ g.label }}
                         </label>
-                        <label class="flex items-center gap-1.5"><input v-model="slotForm.service_group" type="radio" :value="null" class="accent-primary" /> Không tính</label>
+                        <label class="flex items-center gap-1.5"
+                            ><input v-model="slotForm.service_group" type="radio" :value="null" class="accent-primary" /> Không tính</label
+                        >
                     </div>
                 </fieldset>
                 <div class="grid gap-2">
@@ -164,8 +179,12 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                     <Input id="slot_to" v-model="slotForm.effective_to" type="date" />
                 </div>
                 <div class="flex gap-2 md:col-span-2">
-                    <Button type="submit" :disabled="slotForm.processing"><LoaderCircle v-if="slotForm.processing" class="size-4 animate-spin" /> Lưu</Button>
-                    <Button v-if="editing" type="button" variant="outline" class="text-danger" @click="deleteSlot"><Trash2 class="size-4" /> Xóa</Button>
+                    <Button type="submit" :disabled="slotForm.processing"
+                        ><LoaderCircle v-if="slotForm.processing" class="size-4 animate-spin" /> Lưu</Button
+                    >
+                    <Button v-if="editing" type="button" variant="outline" class="text-danger" @click="deleteSlot"
+                        ><Trash2 class="size-4" /> Xóa</Button
+                    >
                 </div>
                 <div class="md:col-span-4" role="alert" aria-live="polite">
                     <InputError :message="slotErrors.start_time ?? slotErrors.end_time ?? slotErrors.branch_id ?? slotErrors.effective_to" />
@@ -181,7 +200,14 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                                 {{ d.label }}
                                 <div v-if="d.closed" class="font-normal text-danger">
                                     Nghỉ{{ d.closed.whole_shop ? ' cả shop' : '' }}<template v-if="d.closed.reason">: {{ d.closed.reason }}</template>
-                                    <button v-if="can.manage && (!d.closed.whole_shop || can.closeShop)" type="button" class="ml-1 underline" @click="deleteClosure(d.closed.id)">bỏ</button>
+                                    <button
+                                        v-if="can.manage && (!d.closed.whole_shop || can.closeShop)"
+                                        type="button"
+                                        class="ml-1 underline"
+                                        @click="deleteClosure(d.closed.id)"
+                                    >
+                                        bỏ
+                                    </button>
                                 </div>
                             </th>
                         </tr>
@@ -209,7 +235,11 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                                     >
                                         {{ s.start_time }}–{{ s.end_time }}<span v-if="s.branch_id !== branch.id"> · {{ s.branch }}</span>
                                     </component>
-                                    <div v-for="t in offOn(p, d)" :key="t.id" class="rounded border border-dashed border-warning/50 bg-warning/10 px-1.5 py-0.5 text-xs text-warning">
+                                    <div
+                                        v-for="t in offOn(p, d)"
+                                        :key="t.id"
+                                        class="rounded border border-dashed border-warning/50 bg-warning/10 px-1.5 py-0.5 text-xs text-warning"
+                                    >
                                         Nghỉ<template v-if="t.affected"> · {{ t.affected }} lịch bị ảnh hưởng</template>
                                     </div>
                                     <button
@@ -232,8 +262,13 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                         <tr>
                             <th class="px-3 py-2 text-left font-medium">Số người trực</th>
                             <td v-for="d in days" :key="d.date" class="px-2 py-2 tabular-nums">
-                                <div><span class="text-info">Khám {{ d.on_duty.medical }}</span> · <span class="text-coral">Spa {{ d.on_duty.grooming }}</span></div>
-                                <div class="text-muted-foreground">Online tối đa: Khám {{ d.max_online.medical }} · Spa {{ d.max_online.grooming }}</div>
+                                <div>
+                                    <span class="text-info">Khám {{ d.on_duty.medical }}</span> ·
+                                    <span class="text-coral">Spa {{ d.on_duty.grooming }}</span>
+                                </div>
+                                <div class="text-muted-foreground">
+                                    Online tối đa: Khám {{ d.max_online.medical }} · Spa {{ d.max_online.grooming }}
+                                </div>
                             </td>
                         </tr>
                     </tfoot>
@@ -263,7 +298,9 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                                     {{ p.name }}: {{ t.starts_at.slice(5) }} → {{ t.ends_at.slice(5) }}
                                     <span v-if="t.affected" class="font-medium text-warning">· {{ t.affected }} lịch bị ảnh hưởng</span>
                                 </span>
-                                <button type="button" class="text-danger" aria-label="Xóa ngày nghỉ" @click="deleteOff(t.id)"><Trash2 class="size-3.5" /></button>
+                                <button type="button" class="text-danger" aria-label="Xóa ngày nghỉ" @click="deleteOff(t.id)">
+                                    <Trash2 class="size-3.5" />
+                                </button>
                             </li>
                         </template>
                     </ul>

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -93,10 +95,11 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
 
     <AppLayout>
         <form class="flex max-w-3xl flex-col gap-6 p-4 md:p-6" @submit.prevent="submit">
-            <div>
-                <Link :href="back" class="text-sm text-muted-foreground hover:underline">← {{ service ? service.name : 'Dịch vụ' }}</Link>
-                <h1 class="mt-1 text-2xl font-semibold">{{ service ? 'Sửa dịch vụ' : 'Thêm dịch vụ' }}</h1>
-            </div>
+            <PageHeader :title="service ? 'Sửa dịch vụ' : 'Thêm dịch vụ'">
+                <template #before
+                    ><BackLink :href="back">{{ service ? service.name : 'Dịch vụ' }}</BackLink></template
+                >
+            </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
                 <div class="grid gap-2">
@@ -115,7 +118,9 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
                         <label class="flex items-center gap-2" :class="{ 'opacity-50': form.is_combo }">
                             <input v-model="form.service_group" type="radio" value="medical" class="accent-primary" :disabled="form.is_combo" /> Khám
                         </label>
-                        <label class="flex items-center gap-2"><input v-model="form.service_group" type="radio" value="grooming" class="accent-primary" /> Spa</label>
+                        <label class="flex items-center gap-2"
+                            ><input v-model="form.service_group" type="radio" value="grooming" class="accent-primary" /> Spa</label
+                        >
                     </div>
                     <p class="text-xs text-muted-foreground">Khám, tiêm, xét nghiệm, chẩn đoán hình ảnh là Khám; tắm, cắt tỉa là Spa.</p>
                     <InputError :message="form.errors.service_group" />
@@ -128,7 +133,12 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
                     <Input id="duration_min" v-model.number="form.duration_min" type="number" min="5" max="1440" required />
                     <p v-if="form.is_combo && items.length" class="text-xs text-muted-foreground">
                         Gợi ý: {{ itemsDuration }} phút (tổng dịch vụ con).
-                        <button v-if="form.duration_min !== itemsDuration" type="button" class="text-primary hover:underline" @click="form.duration_min = itemsDuration">
+                        <button
+                            v-if="form.duration_min !== itemsDuration"
+                            type="button"
+                            class="text-primary hover:underline"
+                            @click="form.duration_min = itemsDuration"
+                        >
                             Dùng
                         </button>
                     </p>
@@ -143,33 +153,57 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
                 <div class="grid gap-2">
                     <Label for="price">{{ form.is_combo ? 'Giá combo' : 'Giá mặc định' }} (₫)</Label>
                     <Input id="price" v-model="form.price" type="number" min="0" step="1000" required inputmode="numeric" />
-                    <p v-if="form.is_combo && items.length" class="text-xs text-muted-foreground">Tổng giá lẻ: {{ formatMoney(itemsPrice) }} (tham khảo).</p>
+                    <p v-if="form.is_combo && items.length" class="text-xs text-muted-foreground">
+                        Tổng giá lẻ: {{ formatMoney(itemsPrice) }} (tham khảo).
+                    </p>
                     <InputError :message="form.errors.price" />
                 </div>
                 <div class="grid content-start gap-2 text-sm">
-                    <label class="flex items-center gap-2"><input v-model="form.is_public" type="checkbox" class="accent-primary" /> Hiện trên Site</label>
-                    <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="accent-primary" /> Đang hoạt động</label>
+                    <label class="flex items-center gap-2"
+                        ><input v-model="form.is_public" type="checkbox" class="accent-primary" /> Hiện trên Site</label
+                    >
+                    <label class="flex items-center gap-2"
+                        ><input v-model="form.is_active" type="checkbox" class="accent-primary" /> Đang hoạt động</label
+                    >
                 </div>
             </section>
 
             <section v-if="form.is_combo" class="grid gap-3 rounded-[10px] border bg-card p-6">
                 <div>
                     <h2 class="text-xl font-semibold">Dịch vụ trong combo</h2>
-                    <p class="text-sm text-muted-foreground">Chỉ dịch vụ spa, không chứa combo khác. Khám + spa là các dịch vụ riêng, gom chung hóa đơn.</p>
+                    <p class="text-sm text-muted-foreground">
+                        Chỉ dịch vụ spa, không chứa combo khác. Khám + spa là các dịch vụ riêng, gom chung hóa đơn.
+                    </p>
                 </div>
                 <ol class="grid gap-2">
                     <li v-for="(s, i) in items" :key="s.id" class="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                        <span class="w-5 text-muted-foreground tabular-nums">{{ i + 1 }}.</span>
-                        <span class="flex-1"><span class="font-mono text-xs text-muted-foreground">{{ s.code }}</span> {{ s.name }}</span>
+                        <span class="w-5 tabular-nums text-muted-foreground">{{ i + 1 }}.</span>
+                        <span class="flex-1"
+                            ><span class="font-mono text-xs text-muted-foreground">{{ s.code }}</span> {{ s.name }}</span
+                        >
                         <span class="tabular-nums text-muted-foreground">{{ s.duration_min }} phút · {{ formatMoney(s.price) }}</span>
-                        <button type="button" class="p-1 disabled:opacity-30" :disabled="i === 0" aria-label="Lên" @click="move(i, -1)"><ArrowUp class="size-4" /></button>
-                        <button type="button" class="p-1 disabled:opacity-30" :disabled="i === items.length - 1" aria-label="Xuống" @click="move(i, 1)">
+                        <button type="button" class="p-1 disabled:opacity-30" :disabled="i === 0" aria-label="Lên" @click="move(i, -1)">
+                            <ArrowUp class="size-4" />
+                        </button>
+                        <button
+                            type="button"
+                            class="p-1 disabled:opacity-30"
+                            :disabled="i === items.length - 1"
+                            aria-label="Xuống"
+                            @click="move(i, 1)"
+                        >
                             <ArrowDown class="size-4" />
                         </button>
-                        <button type="button" class="p-1 text-danger" aria-label="Bỏ" @click="form.item_ids.splice(i, 1)"><X class="size-4" /></button>
+                        <button type="button" class="p-1 text-danger" aria-label="Bỏ" @click="form.item_ids.splice(i, 1)">
+                            <X class="size-4" />
+                        </button>
                     </li>
                 </ol>
-                <select class="h-9 max-w-md rounded-md border border-input bg-background px-3 text-sm" aria-label="Thêm dịch vụ spa" @change="addItem">
+                <select
+                    class="h-9 max-w-md rounded-md border border-input bg-background px-3 text-sm"
+                    aria-label="Thêm dịch vụ spa"
+                    @change="addItem"
+                >
                     <option value="">+ Thêm dịch vụ spa…</option>
                     <option v-for="s in available" :key="s.id" :value="s.id">{{ s.code }} · {{ s.name }}</option>
                 </select>
@@ -183,7 +217,8 @@ const back = props.service ? route('app.services.show', props.service.id) : rout
                 </div>
                 <div class="flex flex-wrap gap-3 text-sm">
                     <label v-for="b in branches" :key="b.id" class="flex items-center gap-2">
-                        <input type="checkbox" class="accent-primary" :checked="form.branch_ids.includes(b.id)" @change="toggleBranch(b.id)" /> {{ b.name }}
+                        <input type="checkbox" class="accent-primary" :checked="form.branch_ids.includes(b.id)" @change="toggleBranch(b.id)" />
+                        {{ b.name }}
                     </label>
                 </div>
                 <InputError :message="errors.branch_ids" />

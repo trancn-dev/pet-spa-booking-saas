@@ -2,7 +2,8 @@
 import BookingDrawer from '@/components/appointments/BookingDrawer.vue';
 import CalendarGrid, { type GridColumn } from '@/components/appointments/CalendarGrid.vue';
 import DetailDrawer from '@/components/appointments/DetailDrawer.vue';
-import Banner from '@/components/Banner.vue';
+import Banner from '@/components/pb/Banner.vue';
+import Segmented from '@/components/pb/Segmented.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import Toaster from '@/components/Toaster.vue';
 import { Button } from '@/components/ui/button';
@@ -183,20 +184,7 @@ const views: { value: View; label: string }[] = [
                 />
                 <span class="text-sm text-muted-foreground">{{ title }}</span>
                 <div class="ml-auto flex flex-wrap items-center gap-2">
-                    <div class="flex rounded-md border p-0.5" role="tablist" aria-label="Chế độ xem">
-                        <button
-                            v-for="v in views"
-                            :key="v.value"
-                            type="button"
-                            role="tab"
-                            :aria-selected="view === v.value"
-                            class="rounded px-2.5 py-1 text-sm"
-                            :class="view === v.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'"
-                            @click="go({ view: v.value })"
-                        >
-                            {{ v.label }}
-                        </button>
-                    </div>
+                    <Segmented :model-value="view" :options="views" label="Chế độ xem" @update:model-value="(v) => go({ view: v as View })" />
                     <select
                         v-if="day"
                         v-model="staffFilter"

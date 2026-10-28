@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { ShopSharedData } from '@/types';
@@ -38,18 +39,19 @@ const remove = (branch: BranchRow) => {
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-semibold">Cơ sở</h1>
-                    <p class="text-sm" :class="full ? 'text-danger' : near ? 'text-warning' : 'text-muted-foreground'">
-                        Đang dùng {{ limit.used }}/{{ limit.max ?? '∞' }} cơ sở theo gói
-                    </p>
-                </div>
-                <Button v-if="!full" as-child>
-                    <Link :href="route('app.settings.branches.create')"><Plus /> Thêm cơ sở</Link>
-                </Button>
-                <Button v-else disabled title="Đã đủ số cơ sở của gói. Liên hệ PawBook để nâng gói."><Plus /> Thêm cơ sở</Button>
-            </div>
+            <PageHeader title="Cơ sở">
+                <template #subtitle>
+                    <span :class="full ? 'text-danger' : near ? 'text-warning' : ''"
+                        >Đang dùng {{ limit.used }}/{{ limit.max ?? '∞' }} cơ sở theo gói</span
+                    >
+                </template>
+                <template #actions>
+                    <Button v-if="!full" as-child>
+                        <Link :href="route('app.settings.branches.create')"><Plus /> Thêm cơ sở</Link>
+                    </Button>
+                    <Button v-else disabled disabled-reason="Đã đủ số cơ sở của gói. Liên hệ PawBook để nâng gói."><Plus /> Thêm cơ sở</Button>
+                </template>
+            </PageHeader>
 
             <InputError :message="errors.branch" />
 
@@ -84,7 +86,13 @@ const remove = (branch: BranchRow) => {
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="route('app.settings.branches.edit', b.id)" :aria-label="`Sửa ${b.name}`"><Pencil /></Link>
                                     </Button>
-                                    <Button variant="ghost" size="icon" :aria-label="`Xóa ${b.name}`" :disabled="branches.length === 1" @click="remove(b)">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        :aria-label="`Xóa ${b.name}`"
+                                        :disabled="branches.length === 1"
+                                        @click="remove(b)"
+                                    >
                                         <Trash2 class="text-danger" />
                                     </Button>
                                 </div>

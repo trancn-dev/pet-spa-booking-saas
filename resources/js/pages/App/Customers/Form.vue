@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,11 +33,11 @@ const back = props.customer ? route('app.customers.show', props.customer.id) : r
 
     <AppLayout>
         <form class="flex max-w-2xl flex-col gap-6 p-4 md:p-6" @submit.prevent="submit">
-            <div>
-                <Link :href="back" class="text-sm text-muted-foreground hover:underline">← {{ customer ? customer.name : 'Khách & Thú cưng' }}</Link>
-                <h1 class="mt-1 text-2xl font-semibold">{{ customer ? 'Sửa hồ sơ khách' : 'Thêm khách' }}</h1>
-                <p class="text-sm text-muted-foreground">SĐT là mã khách, dùng chung mọi cơ sở. Không cần CCCD.</p>
-            </div>
+            <PageHeader :title="customer ? 'Sửa hồ sơ khách' : 'Thêm khách'" subtitle="SĐT là mã khách, dùng chung mọi cơ sở. Không cần CCCD.">
+                <template #before
+                    ><BackLink :href="back">{{ customer ? customer.name : 'Khách & Thú cưng' }}</BackLink></template
+                >
+            </PageHeader>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6 sm:grid-cols-2">
                 <div class="grid gap-2">
@@ -60,7 +62,13 @@ const back = props.customer ? route('app.customers.show', props.customer.id) : r
                 </div>
                 <div class="grid gap-2 sm:col-span-2">
                     <Label for="notes">Ghi chú</Label>
-                    <textarea id="notes" v-model="form.notes" rows="3" maxlength="2000" class="rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                    <textarea
+                        id="notes"
+                        v-model="form.notes"
+                        rows="3"
+                        maxlength="2000"
+                        class="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
                     <InputError :message="form.errors.notes" />
                 </div>
             </section>

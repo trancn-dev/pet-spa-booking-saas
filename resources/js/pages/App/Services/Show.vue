@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import GroupBadge from '@/components/GroupBadge.vue';
 import InputError from '@/components/InputError.vue';
+import BackLink from '@/components/pb/BackLink.vue';
+import GroupBadge from '@/components/pb/GroupBadge.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,24 +120,23 @@ watch(
 
     <AppLayout>
         <div class="flex max-w-5xl flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <Link :href="route('app.services.index')" class="text-sm text-muted-foreground hover:underline">← Dịch vụ</Link>
-                    <h1 class="mt-1 flex flex-wrap items-center gap-2 text-2xl font-semibold">
-                        {{ service.name }}
-                        <GroupBadge :group="service.group" :label="service.group_label" />
-                        <Badge v-if="service.is_combo" tone="primary">Combo</Badge>
-                        <Badge v-if="!service.is_active">Ngừng hoạt động</Badge>
-                    </h1>
-                    <p class="font-mono text-sm text-muted-foreground">{{ service.code }}</p>
-                </div>
-                <div class="flex gap-2">
+            <PageHeader :title="service.name">
+                <template #before><BackLink :href="route('app.services.index')">Dịch vụ</BackLink></template>
+                <template #badges>
+                    <GroupBadge :group="service.group" :label="service.group_label" />
+                    <Badge v-if="service.is_combo" tone="primary">Combo</Badge>
+                    <Badge v-if="!service.is_active">Ngừng hoạt động</Badge>
+                </template>
+                <template #subtitle
+                    ><span class="font-mono">{{ service.code }}</span></template
+                >
+                <template #actions>
                     <Button v-if="can.manage" variant="outline" as-child>
                         <Link :href="route('app.services.edit', service.id)"><Pencil class="size-4" /> Sửa</Link>
                     </Button>
                     <Button v-if="can.delete" variant="outline" class="text-danger" @click="destroy"><Trash2 class="size-4" /> Xóa</Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
             <InputError :message="pageErrors.service" />
 
             <section class="grid gap-3 rounded-[10px] border bg-card p-6 sm:grid-cols-4">

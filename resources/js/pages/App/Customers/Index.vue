@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
+import EmptyState from '@/components/pb/EmptyState.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,20 +59,16 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div class="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-semibold">Khách & Thú cưng</h1>
-                    <p class="text-sm text-muted-foreground">Hồ sơ khách theo SĐT, dùng chung mọi cơ sở.</p>
-                </div>
-                <div class="flex gap-2">
+            <PageHeader title="Khách & Thú cưng" subtitle="Hồ sơ khách theo SĐT, dùng chung mọi cơ sở.">
+                <template #actions>
                     <Button v-if="can.createStray" variant="outline" @click="showStrayForm = !showStrayForm">
                         <PawPrint class="size-4" /> Thú hoang
                     </Button>
                     <Button v-if="can.create" as-child>
                         <Link :href="route('app.customers.create')"><Plus class="size-4" /> Thêm khách</Link>
                     </Button>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
 
             <form
                 v-if="showStrayForm"

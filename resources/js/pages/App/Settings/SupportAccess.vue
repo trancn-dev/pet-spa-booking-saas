@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/pb/PageHeader.vue';
 import SupportSessionsTable, { type SupportSession } from '@/components/SupportSessionsTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
@@ -14,12 +15,10 @@ defineProps<{
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <div>
-                <h1 class="text-2xl font-semibold">Lịch sử truy cập hỗ trợ</h1>
-                <p class="text-sm text-muted-foreground">
-                    Mỗi lần nhân viên PawBook đăng nhập thay để hỗ trợ: tối đa 30 phút, có lý do, mọi thao tác được ghi lại.
-                </p>
-            </div>
+            <PageHeader
+                title="Lịch sử truy cập hỗ trợ"
+                subtitle="Mỗi lần nhân viên PawBook đăng nhập thay để hỗ trợ: tối đa 30 phút, có lý do, mọi thao tác được ghi lại."
+            />
             <SupportSessionsTable :sessions="sessions" :timezone="timezone" />
         </div>
     </AppLayout>

@@ -90,7 +90,12 @@ Rules when adding features:
 
 - S1/S2/S3 live in `resources/js/pages/App/Appointments/Index.vue` + `components/appointments/{CalendarGrid,BookingDrawer,DetailDrawer}.vue`; data from `App\Queries\CalendarDay` (fixed query count per day/week, relations `withTrashed()`) and `Tenant\AppointmentController` (`index`, JSON `day`, `store`, `quotes`, `on-duty`, `show`). Literal `appointments/...` routes must stay before `{appointment}`.
 - Staff booking goes through `BookAppointment` (never refused by capacity, returns `warnings`); the drawer sends an idempotency key generated per open. `resources/js/lib/api.ts` is the fetch wrapper (XSRF cookie); customer / pet `store` return JSON when `expectsJson` for quick create.
-- Shared UI (design 3.5), reuse instead of copying classes: `ui/badge` (`Badge` tones), `GroupBadge`, `StatusBadge`, `Banner`, `EmptyState`, `Chip`, `ProgressBar`, `Timeline` + `TimelineItem`, `AppDrawer` (480px right drawer with header / body / sticky footer), `PetAlertBadges`; calendar: `CalendarBlock`, `CapacityBar`, `CalendarGrid`.
+- UI kit from the mockups in `docs/design/claude design/` (K0 = design system, helpers in `_tools/cms-gen.js` / `site-gen.js`). Gallery: `/ui-kit` (local / demo / testing only). Reuse, never copy classes:
+  - `components/ui/*` primitives: `Button` (variants incl. `accent`, `ghostDanger`; props `loading`, `disabledReason`; size `touch` = 44px), `badge` (`Badge` tones + `dot`), `Input`, `Skeleton`, `Sheet`, `Dialog`.
+  - `components/pb/*` CMS kit: `PageHeader`, `TabsBar`, `Segmented`, `Stepper`, `DataTable` (+ `TwoLine`), `Pagination`, `SearchField`, `FormField`, `AppModal` / `ConfirmModal`, `AppDrawer`, `Banner`, `EmptyState`, `KpiCard`, `AttentionCard`, `Timeline` + `TimelineItem`, `PetChip`, `SlotPicker`, `Chip`, `Tag`, `RingAvatar`, `GroupBadge`, `StatusBadge`, `ProgressBar`, `LockedNote`, `QueueNumber`, `OtpInput`, `KeyValue`; toasts via `useToast` + `Toaster`.
+  - `components/site/*` Site (mobile, 480px column): `SiteShell`, `SiteHeader`, `SiteStepHeader`, `SiteBottomNav`, `SiteFooter`, `BottomSheet`, `SiteCard`, `SiteChip`, `SiteField`, `ImagePlaceholder`.
+  - Calendar: `appointments/CalendarBlock`, `CapacityBar`, `CalendarGrid`; safety badges: `PetAlertBadges`.
+  - Every CMS page title goes through `PageHeader` (+ `BackLink`); do not run `prettier --write` over folders you did not touch.
 - Drag a block to reschedule is done (whole appointment shifts); browser tests are not.
 
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
