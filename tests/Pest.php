@@ -127,3 +127,20 @@ function asTeam(Tenant $tenant, Closure $callback): mixed
         $registrar->setPermissionsTeamId($previous);
     }
 }
+
+/**
+ * Tenant isolation for HTTP routes: a member of one shop must get 404 (never 403, never data) for
+ * every URL that names another shop's record. Each entry is "METHOD /uri".
+ *
+ * @param  list<string>  $requests
+ * @param  array<string, mixed>  $payload  sent with writes
+ */
+function assertTenantIsolated(User $member, array $requests, array $payload = []): void
+{
+    foreach ($requests as $request) {
+        [$method, $uri] = explode(' ', $request, 2);
+        $response = test()->actingAs($member)->call($method, $uri, in_array($method, ['GET', 'HEAD'], true) ? [] : $payload);
+
+        expect($response->getStatusCode())->toBe(404, "{$request} should be 404 for another shop's member, got {$response->getStatusCode()}");
+    }
+}

@@ -47,7 +47,8 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- HTTP isolation: `assertTenantIsolated($member, ['GET /app/acme/customers/{id}', ...], $payload)` (tests/Pest.php) expects 404 for every URL naming another shop's record; use it for each new tenant CRUD.
+- Still to do (see plan): Larastan level 8 + ESLint in CI (task 1.2). `password_reset_tokens` are global like users.
 
 ## Shops, invitations, sign-in (task 4.3)
 
@@ -57,6 +58,12 @@ Rules when adding features:
 - Permission checks in app code use `checkPermissionTo()` (false for an unknown code), not `hasPermissionTo()` (throws).
 - Staff (task 4.4, `app/Actions/Staff`): `InviteStaff`, `ManageInvitation` (resend / revoke), `SaveStaff` (profile, roles except `owner`, branches; people without an account), `SetStaffStatus` (never delete). `StaffQuota` = active staff with an account + pending invitations vs `plans.max_staff`; every check runs after `lockTenant()`, and the lock order is tenant row → invitation / staff row.
 - No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
+
+## Customers & pets (task 5.1)
+
+- Phones go through `App\Support\Phone` (`tryParse` → `e164()` stored, `display()` shown, `format()` for stored values); reuse it for the Site OTP and Zalo/SMS. Customer search is `App\Queries\CustomerSearch` (indexes only for phones, never `LIKE '%…'`; excludes the stray profiles).
+- `SaveCustomer` restores a soft-deleted profile when its phone is added again; `DeleteCustomer` / `DeletePet` refuse while upcoming appointments exist. `CreateStrayPet` numbers "Thú hoang #n" per branch profile (deleted ones count).
+- Every pet payload carries its safety alerts (`App\Http\Resources\PetSummary::alerts`), rendered with `PetAlertBadges.vue` wherever a pet appears. Size hints: `PetSizeSuggester` (weight first, then breed default), endpoint `app.pets.size-suggestion`.
 
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 

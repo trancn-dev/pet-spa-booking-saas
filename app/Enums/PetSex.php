@@ -9,4 +9,13 @@ enum PetSex: string
     case Male = 'male';
     case Female = 'female';
     case Unknown = 'unknown';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Male => 'Đực',
+            self::Female => 'Cái',
+            self::Unknown => 'Chưa rõ',
+        };
+    }
 }

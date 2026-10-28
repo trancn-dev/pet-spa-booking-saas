@@ -10,4 +10,14 @@ enum AppointmentStatus: string
     case CheckedIn = 'checked_in';
     case Cancelled = 'cancelled';
     case NoShow = 'no_show';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Confirmed => 'Đã xác nhận',
+            self::CheckedIn => 'Đã đến',
+            self::Cancelled => 'Đã hủy',
+            self::NoShow => 'Không đến',
+        };
+    }
 }

@@ -11,12 +11,15 @@ use Database\Factories\AppointmentItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * One pet + one service (or grooming combo). Occupies one capacity slot of its group while booked / checked in.
  *
  * @property ServiceGroup $service_group
  * @property AppointmentItemStatus $status
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  */
 class AppointmentItem extends Model
 {

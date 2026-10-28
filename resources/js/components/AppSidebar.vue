@@ -5,7 +5,7 @@ import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import type { NavGroup, NavItem, ShopSharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
-import { Building2, LayoutGrid, LifeBuoy, ShieldCheck, Users } from 'lucide-vue-next';
+import { Building2, LayoutGrid, LifeBuoy, PawPrint, ShieldCheck, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage<ShopSharedData>();
@@ -31,6 +31,9 @@ const groups = computed<NavGroup[]>(() => {
         {
             items: [
                 { title: 'Tổng quan', href: route('app.dashboard'), icon: LayoutGrid, isActive: isRoute('app.dashboard') },
+                ...(can('customers.view')
+                    ? [{ title: 'Khách & Thú cưng', href: route('app.customers.index'), icon: PawPrint, isActive: isRoute('app.customers') || isRoute('app.pets') }]
+                    : []),
                 ...(can('staff.view') ? [{ title: 'Nhân viên', href: route('app.staff.index'), icon: Users, isActive: isRoute('app.staff') }] : []),
             ],
         },

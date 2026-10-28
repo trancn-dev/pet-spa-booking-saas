@@ -10,11 +10,14 @@ use Database\Factories\PetVaccinationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Vaccination book entry; `postponed` rows carry the new date in next_due_on.
  *
  * @property VaccinationStatus $status
+ * @property Carbon $administered_on
+ * @property Carbon|null $next_due_on
  */
 class PetVaccination extends Model
 {

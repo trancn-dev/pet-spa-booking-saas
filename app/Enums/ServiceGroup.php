@@ -11,4 +11,12 @@ enum ServiceGroup: string
 {
     case Medical = 'medical';
     case Grooming = 'grooming';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Medical => 'Khám',
+            self::Grooming => 'Spa',
+        };
+    }
 }

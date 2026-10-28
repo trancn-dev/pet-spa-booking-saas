@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * One customer, one or more pets (one item per pet + service). Reference only: no deposit.
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property AppointmentSource $source
  * @property AppointmentStatus $status
  * @property ActorType|null $cancelled_by_type
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  */
 class Appointment extends Model
 {

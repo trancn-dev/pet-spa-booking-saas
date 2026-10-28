@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\BranchController;
+use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\PetController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\SupportAccessController;
@@ -46,6 +48,24 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::post('branch/{branch}', [BranchController::class, 'switch'])->name('app.branch.switch');
 
         // S11 Nhân viên & lời mời, S11.1 hồ sơ
+        // Customers & pets (task 5.1). Literal segments before `{customer}` / `{pet}`.
+        Route::get('customers', [CustomerController::class, 'index'])->name('app.customers.index');
+        Route::get('customers/search', [CustomerController::class, 'search'])->name('app.customers.search');
+        Route::get('customers/create', [CustomerController::class, 'create'])->name('app.customers.create');
+        Route::post('customers', [CustomerController::class, 'store'])->name('app.customers.store');
+        Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('app.customers.show');
+        Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('app.customers.edit');
+        Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('app.customers.update');
+        Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('app.customers.destroy');
+        Route::get('customers/{customer}/pets/create', [PetController::class, 'create'])->name('app.pets.create');
+        Route::post('customers/{customer}/pets', [PetController::class, 'store'])->name('app.pets.store');
+        Route::get('pets/size-suggestion', [PetController::class, 'sizeSuggestion'])->name('app.pets.size-suggestion');
+        Route::post('pets/strays', [PetController::class, 'storeStray'])->name('app.pets.strays.store');
+        Route::get('pets/{pet}', [PetController::class, 'show'])->name('app.pets.show');
+        Route::get('pets/{pet}/edit', [PetController::class, 'edit'])->name('app.pets.edit');
+        Route::put('pets/{pet}', [PetController::class, 'update'])->name('app.pets.update');
+        Route::delete('pets/{pet}', [PetController::class, 'destroy'])->name('app.pets.destroy');
+
         Route::get('staff', [StaffController::class, 'index'])->name('app.staff.index');
         Route::get('staff/create', [StaffController::class, 'create'])->name('app.staff.create');
         Route::post('staff', [StaffController::class, 'store'])->name('app.staff.store');

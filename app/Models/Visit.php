@@ -14,12 +14,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * One exam / grooming of one pet: queue ticket + work done. Independent of the invoice.
  *
  * @property ServiceGroup $service_group
  * @property VisitStatus $status
+ * @property Carbon $visit_date
  */
 class Visit extends Model
 {
