@@ -143,7 +143,8 @@ onMounted(() => {
     // arrived from the topbar button on another page (?book=1)
     if (new URLSearchParams(window.location.search).get('book') === '1') {
         openBooking();
-        router.replace({ url: route('app.appointments.index', { date: props.date, view: props.view }), preserveScroll: true, preserveState: true });
+        // drop `?book=1` without a visit (Inertia's router is not ready inside onMounted)
+        window.history.replaceState(window.history.state, '', route('app.appointments.index', { date: props.date, view: props.view }));
     }
     tick();
     clock = setInterval(tick, 60_000);

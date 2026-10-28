@@ -4,6 +4,7 @@ import AppDrawer from '@/components/pb/AppDrawer.vue';
 import Banner from '@/components/pb/Banner.vue';
 import Chip from '@/components/pb/Chip.vue';
 import GroupBadge from '@/components/pb/GroupBadge.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
 import SlotPicker, { type SlotOption } from '@/components/pb/SlotPicker.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
@@ -12,9 +13,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/composables/useToast';
 import { api, errorMessage } from '@/lib/api';
 import { formatMoney } from '@/lib/format';
+import type { ShopSharedData } from '@/types';
 import { type Group, groupLabel, hhmm, minutes, type ServiceOption } from '@/types/calendar';
 import type { PetAlert, SpeciesOption } from '@/types/pets';
-import { AlertTriangle, LoaderCircle, Plus, Search, X } from 'lucide-vue-next';
+import { usePage } from '@inertiajs/vue3';
+import { AlertTriangle, Check, LoaderCircle, Plus, Search, X } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch } from 'vue';
 
 /*
@@ -75,6 +78,15 @@ const lines = ref<Record<string, Line[]>>({}); // pet id → lines
 const quotes = ref<Record<string, Record<number, Quote>>>({});
 const date = ref(props.date);
 const time = ref<string | null>(props.time);
+const currentBranch = usePage<ShopSharedData>().props.currentBranch;
+const initialsOf = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 const slots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const onDuty = ref<{ id: number; name: string; groups: Group[] }[]>([]);
@@ -270,19 +282,22 @@ const select = 'h-9 w-full rounded-md border border-input bg-background px-2 tex
 </script>
 
 <template>
-    <AppDrawer v-model:open="open" title="Đặt lịch" description="Lễ tân đặt: không tính vào chỗ đặt online.">
+    <AppDrawer v-model:open="open" title="Đặt lịch" :description="`${currentBranch?.name ?? ''} · lễ tân đặt không tính vào chỗ đặt online`">
         <Banner v-if="quota.full" tone="danger" class="m-4">Đã đạt {{ quota.used }}/{{ quota.max }} lịch tháng này. Liên hệ để nâng gói.</Banner>
 
         <form class="space-y-6 px-5 py-4" @submit.prevent="submit">
             <!-- 1. Customer -->
             <section class="space-y-2">
                 <h3 class="text-sm font-semibold">1. Khách</h3>
-                <div v-if="customer" class="flex items-center justify-between rounded-md border bg-surface-muted px-3 py-2 text-sm">
-                    <span
-                        ><span class="font-medium">{{ customer.name }}</span>
-                        <span class="tabular-nums text-muted-foreground">· {{ customer.phone }}</span></span
-                    >
-                    <button type="button" aria-label="Đổi khách" @click="customer = null"><X class="size-4" /></button>
+                <div v-if="customer" class="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
+                    <RingAvatar :initials="initialsOf(customer.name)" :size="36" />
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate font-semibold">{{ customer.name }}</div>
+                        <div class="text-xs text-muted-foreground">
+                            <span class="font-mono">{{ customer.phone }}</span> · {{ customer.pets.length }} thú cưng
+                        </div>
+                    </div>
+                    <button type="button" class="text-sm font-semibold text-primary hover:underline" @click="customer = null">Đổi</button>
                 </div>
                 <template v-else>
                     <div class="relative">
@@ -327,8 +342,16 @@ const select = 'h-9 w-full rounded-md border border-input bg-background px-2 tex
             <section v-if="customer" class="space-y-3">
                 <h3 class="text-sm font-semibold">2. Thú cưng & dịch vụ</h3>
                 <div class="flex flex-wrap gap-2">
-                    <Chip v-for="p in customer.pets" :key="p.id" :selected="!!lines[p.id]" @click="togglePet(p)">{{ p.name }}</Chip>
-                    <Chip v-if="can.createPet" dashed @click="quickPet.open = !quickPet.open"><Plus class="inline size-3.5" /> Bé mới</Chip>
+                    <Chip
+                        v-for="p in customer.pets"
+                        :key="p.id"
+                        :selected="!!lines[p.id]"
+                        class="inline-flex items-center gap-2"
+                        @click="togglePet(p)"
+                    >
+                        <RingAvatar :initials="p.name.slice(0, 2)" :size="24" />{{ p.name }}<Check v-if="lines[p.id]" class="size-4" />
+                    </Chip>
+                    <Chip v-if="can.createPet" dashed @click="quickPet.open = !quickPet.open"><Plus class="inline size-3.5" /> Thêm pet</Chip>
                 </div>
                 <div v-if="quickPet.open" class="grid grid-cols-3 gap-2 rounded-md border p-3">
                     <Input v-model="quickPet.name" class="col-span-3" placeholder="Tên bé" aria-label="Tên bé" />
@@ -340,7 +363,7 @@ const select = 'h-9 w-full rounded-md border border-input bg-background px-2 tex
                     <InputError class="col-span-3" :message="quickPet.error ?? undefined" />
                 </div>
 
-                <div v-for="p in selectedPets" :key="p.id" class="space-y-2 rounded-md border p-3">
+                <div v-for="p in selectedPets" :key="p.id" class="space-y-2 rounded-xl border bg-card p-3">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="font-medium">{{ p.name }}</span>
                         <PetAlertBadges :alerts="p.alerts" />
@@ -353,8 +376,9 @@ const select = 'h-9 w-full rounded-md border border-input bg-background px-2 tex
                             </span>
                             <button type="button" aria-label="Bỏ dịch vụ" @click="lines[p.id].splice(i, 1)"><X class="size-4" /></button>
                         </div>
-                        <span v-if="quoteOf(p.id, l.serviceId)" class="text-xs text-muted-foreground">
-                            {{ quoteOf(p.id, l.serviceId)!.explanation }} · {{ formatMoney(quoteOf(p.id, l.serviceId)!.price) }} (tham khảo)
+                        <span v-if="quoteOf(p.id, l.serviceId)" class="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                            <span>{{ quoteOf(p.id, l.serviceId)!.explanation }}</span>
+                            <span class="font-mono tabular-nums text-foreground">{{ formatMoney(quoteOf(p.id, l.serviceId)!.price) }}</span>
                         </span>
                         <select v-model="l.staffId" :class="select" :aria-label="`Người làm ${serviceOf(l.serviceId)?.name}`">
                             <option :value="null">Chưa phân, phân khi khách đến</option>
