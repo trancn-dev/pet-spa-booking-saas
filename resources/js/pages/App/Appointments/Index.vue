@@ -7,8 +7,9 @@ import Toaster from '@/components/Toaster.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { api } from '@/lib/api';
-import { type CalendarBlock, type CalendarDayData, type Group, groupLabel, type ServiceOption } from '@/types/calendar';
+import { useToast } from '@/composables/useToast';
+import { api, errorMessage } from '@/lib/api';
+import { type CalendarBlock, type CalendarDayData, type Group, groupLabel, hhmm, minutes, type ServiceOption } from '@/types/calendar';
 import type { SpeciesOption } from '@/types/pets';
 import { Head, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-vue-next';
@@ -31,8 +32,11 @@ const props = defineProps<{
     can: { book: boolean; createCustomer: boolean; createPet: boolean };
 }>();
 
+const { show } = useToast();
+const toast = { success: (m: string) => show(m, 'success'), error: (m: string) => show(m, 'danger') };
 const groupFilter = ref<Group | 'all'>('all');
 const q = ref('');
+const staffFilter = ref<number | 'all'>('all');
 const search = ref<InstanceType<typeof Input> | null>(null);
 
 const go = (params: { date?: string; view?: View }) =>
@@ -52,7 +56,8 @@ let clock: ReturnType<typeof setInterval> | undefined;
 const matches = (b: CalendarBlock) => {
     const term = q.value.trim().toLowerCase();
     const groupOk = groupFilter.value === 'all' || b.group === groupFilter.value;
-    return groupOk && (!term || b.customer.toLowerCase().includes(term) || b.pets.some((p) => p.name.toLowerCase().includes(term)));
+    const staffOk = staffFilter.value === 'all' || b.staff_id === staffFilter.value;
+    return groupOk && staffOk && (!term || b.customer.toLowerCase().includes(term) || b.pets.some((p) => p.name.toLowerCase().includes(term)));
 };
 
 const staffColors = computed(() => Object.fromEntries((props.day?.staff ?? []).map((s) => [s.id, s.color])));
@@ -66,9 +71,9 @@ const columns = computed<GridColumn[]>(() => {
             .filter((g) => groupFilter.value === 'all' || groupFilter.value === g)
             .map((g) => ({ key: g, label: groupLabel[g], blocks: blocks.filter((b) => b.group === g) }));
     }
-    const people = day.staff.filter((s) => groupFilter.value === 'all' || s.groups.includes(groupFilter.value) || blocks.some((b) => b.staff_id === s.id));
+    const people = day.staff.filter((s) => (staffFilter.value === 'all' || s.id === staffFilter.value) && (groupFilter.value === 'all' || s.groups.includes(groupFilter.value) || blocks.some((b) => b.staff_id === s.id)));
     return [
-        { key: 'none', label: 'Chưa phân', sub: 'Lịch online, phân khi khách đến', blocks: blocks.filter((b) => b.staff_id === null) },
+        ...(staffFilter.value === 'all' ? [{ key: 'none', label: 'Chưa phân', sub: 'Lịch online, phân khi khách đến', blocks: blocks.filter((b) => b.staff_id === null) }] : []),
         ...people.map((s) => ({
             key: `s${s.id}`,
             label: s.name,
@@ -94,6 +99,21 @@ const openDetail = async (block: CalendarBlock) => {
     detail.value = block.appointment;
     const r = await api<{ data: typeof onDuty.value }>('GET', route('app.appointments.on-duty', { date: props.date }));
     onDuty.value = r.ok ? r.data.data : [];
+};
+
+// Drag a block to a new time: the whole appointment shifts by the same amount.
+const move = async (block: CalendarBlock, _column: GridColumn, time: string) => {
+    const first = Math.min(...(props.day?.blocks ?? []).filter((b) => b.appointment === block.appointment).map((b) => minutes(b.start)));
+    const target = minutes(time) - (minutes(block.start) - first);
+    if (target === first) return;
+    const newStart = hhmm(target);
+    const r = await api<{ message?: string; warnings?: string[] }>('POST', route('app.appointments.reschedule', { appointment: block.appointment }), { date: props.date, time: newStart });
+    if (r.ok) {
+        toast.success(`Đã dời lịch sang ${newStart}.${r.data.warnings?.length ? ` ${r.data.warnings.join(' ')}` : ''}`);
+        refresh();
+    } else {
+        toast.error(errorMessage(r));
+    }
 };
 
 // Shortcuts: N = new booking, / = search (not while typing).
@@ -158,6 +178,10 @@ const views: { value: View; label: string }[] = [
                             {{ v.label }}
                         </button>
                     </div>
+                    <select v-if="day" v-model="staffFilter" class="h-9 rounded-md border border-input bg-background px-2 text-sm" aria-label="Lọc nhân viên">
+                        <option value="all">Mọi nhân viên</option>
+                        <option v-for="s in day.staff" :key="s.id" :value="s.id">{{ s.name }}</option>
+                    </select>
                     <select v-model="groupFilter" class="h-9 rounded-md border border-input bg-background px-2 text-sm" aria-label="Lọc nhóm">
                         <option value="all">Khám + Spa</option>
                         <option value="medical">Khám</option>
@@ -177,8 +201,31 @@ const views: { value: View; label: string }[] = [
                 Đã đạt {{ quota.used }}/{{ quota.max }} lịch tháng này. Liên hệ để nâng gói.
             </div>
 
+            <!-- phone: list by time -->
+            <ul v-if="day" class="space-y-2 md:hidden" aria-label="Lịch hẹn theo giờ">
+                <li v-if="day.closed" class="rounded-[10px] border bg-card p-3 text-sm font-medium">Cơ sở nghỉ<template v-if="day.closed.reason">: {{ day.closed.reason }}</template></li>
+                <li v-else-if="!day.blocks.filter(matches).length" class="rounded-[10px] border bg-card p-3 text-sm text-muted-foreground">Chưa có lịch hẹn.</li>
+                <li v-for="b in [...day.blocks.filter(matches)].sort((a, c) => minutes(a.start) - minutes(c.start))" :key="b.key">
+                    <button
+                        type="button"
+                        class="w-full rounded-[10px] border border-l-4 bg-card p-3 text-left"
+                        :class="[b.group === 'medical' ? 'border-l-info' : 'border-l-coral', { 'opacity-50': b.line_status === 'cancelled' || b.line_status === 'no_show' }]"
+                        @click="openDetail(b)"
+                    >
+                        <div class="flex items-center justify-between text-sm font-medium">
+                            <span class="tabular-nums">{{ b.start }}–{{ b.end }}</span>
+                            <span class="text-xs text-muted-foreground">{{ groupLabel[b.group] }}<template v-if="b.source === 'online'"> · Online</template></span>
+                        </div>
+                        <div class="text-sm">{{ b.pets.map((p) => `${p.name} (${p.service})`).join(', ') }}</div>
+                        <div class="text-xs text-muted-foreground">{{ b.customer }}<template v-if="!b.staff_id"> · Chưa phân</template></div>
+                        <PetAlertBadges v-for="(p, i) in b.pets.filter((p) => p.alerts.length)" :key="i" :alerts="p.alerts" compact />
+                    </button>
+                </li>
+            </ul>
+
             <CalendarGrid
                 v-if="day"
+                class="hidden md:block"
                 :columns="columns"
                 :from="range.from"
                 :to="range.to"
@@ -189,6 +236,7 @@ const views: { value: View; label: string }[] = [
                 :staff-colors="staffColors"
                 @cell="(c, t) => openBooking(t, c.staffId ?? null)"
                 @block="openDetail"
+                @move="move"
             />
 
             <div v-else-if="week" class="grid gap-2 overflow-x-auto md:grid-cols-7">
