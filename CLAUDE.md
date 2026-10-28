@@ -90,7 +90,8 @@ Rules when adding features:
 
 - S1/S2/S3 live in `resources/js/pages/App/Appointments/Index.vue` + `components/appointments/{CalendarGrid,BookingDrawer,DetailDrawer}.vue`; data from `App\Queries\CalendarDay` (fixed query count per day/week, relations `withTrashed()`) and `Tenant\AppointmentController` (`index`, JSON `day`, `store`, `quotes`, `on-duty`, `show`). Literal `appointments/...` routes must stay before `{appointment}`.
 - Staff booking goes through `BookAppointment` (never refused by capacity, returns `warnings`); the drawer sends an idempotency key generated per open. `resources/js/lib/api.ts` is the fetch wrapper (XSRF cookie); customer / pet `store` return JSON when `expectsJson` for quick create.
-- Not done: drag-and-drop reschedule, browser tests.
+- Shared UI (design 3.5), reuse instead of copying classes: `ui/badge` (`Badge` tones), `GroupBadge`, `StatusBadge`, `Banner`, `EmptyState`, `Chip`, `ProgressBar`, `Timeline` + `TimelineItem`, `AppDrawer` (480px right drawer with header / body / sticky footer), `PetAlertBadges`; calendar: `CalendarBlock`, `CapacityBar`, `CalendarGrid`.
+- Drag a block to reschedule is done (whole appointment shifts); browser tests are not.
 
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 

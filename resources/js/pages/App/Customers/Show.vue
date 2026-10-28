@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,15 @@ import { Lock, Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
-    customer: { id: string; name: string; phone: string | null; email: string | null; address: string | null; notes: string | null; is_system: boolean };
+    customer: {
+        id: string;
+        name: string;
+        phone: string | null;
+        email: string | null;
+        address: string | null;
+        notes: string | null;
+        is_system: boolean;
+    };
     pets: PetSummary[];
     appointments: { id: string; starts_at: string; branch: string; status: string; status_label: string; items_count: number }[];
     invoices: { id: string; code: string | null; business_date: string; branch: string; status: string; status_label: string; total: string }[];
@@ -79,16 +88,12 @@ const destroy = () => {
                     <li v-for="p in pets" :key="p.id" class="grid gap-2 rounded-[10px] border bg-card p-4">
                         <Link :href="route('app.pets.show', p.id)" class="font-medium hover:underline">{{ p.name }}</Link>
                         <span class="text-sm text-muted-foreground">
-                            {{ p.species }}<template v-if="p.breed"> · {{ p.breed }}</template> · {{ p.sex_label }}<template v-if="p.age">
-                                · {{ p.age }}</template
-                            >
-                            · cỡ {{ p.size_label }}
+                            {{ p.species }}<template v-if="p.breed"> · {{ p.breed }}</template> · {{ p.sex_label
+                            }}<template v-if="p.age"> · {{ p.age }}</template> · cỡ {{ p.size_label }}
                         </span>
                         <PetAlertBadges :alerts="p.alerts" />
                     </li>
-                    <li v-if="!pets.length" class="col-span-full rounded-[10px] border border-dashed p-6 text-center text-sm text-muted-foreground">
-                        Khách chưa có bé nào.
-                    </li>
+                    <li v-if="!pets.length" class="col-span-full"><EmptyState compact>Khách chưa có bé nào.</EmptyState></li>
                 </ul>
             </section>
 

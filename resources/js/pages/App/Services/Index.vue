@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import GroupBadge from '@/components/GroupBadge.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatMoney } from '@/lib/format';
@@ -43,7 +45,9 @@ const groups = [
             <div class="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-semibold">Dịch vụ</h1>
-                    <p class="text-sm text-muted-foreground">Giá dùng chung mọi cơ sở. Giá trên lịch hẹn là giá tham khảo; tính tiền theo giá lúc thêm vào Visit.</p>
+                    <p class="text-sm text-muted-foreground">
+                        Giá dùng chung mọi cơ sở. Giá trên lịch hẹn là giá tham khảo; tính tiền theo giá lúc thêm vào Visit.
+                    </p>
                 </div>
                 <Button v-if="can.manage" as-child>
                     <Link :href="route('app.services.create')"><Plus class="size-4" /> Thêm dịch vụ</Link>
@@ -77,18 +81,21 @@ const groups = [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="s in services" :key="s.id" class="border-b last:border-0 hover:bg-surface-muted/50" :class="{ 'text-muted-foreground': !s.is_active }">
+                        <tr
+                            v-for="s in services"
+                            :key="s.id"
+                            class="border-b last:border-0 hover:bg-surface-muted/50"
+                            :class="{ 'text-muted-foreground': !s.is_active }"
+                        >
                             <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">{{ s.code }}</td>
                             <td class="px-4 py-3">
                                 <Link :href="route('app.services.show', s.id)" class="font-medium hover:underline">{{ s.name }}</Link>
-                                <span v-if="s.is_combo" class="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">Combo</span>
+                                <Badge v-if="s.is_combo" tone="primary" class="ml-2">Combo</Badge>
                                 <div v-if="s.is_combo" class="text-xs text-muted-foreground">{{ s.items.join(' + ') }}</div>
                                 <div v-if="s.rules_count" class="text-xs text-muted-foreground">{{ s.rules_count }} quy tắc theo pet</div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="s.group === 'medical' ? 'bg-info/10 text-info' : 'bg-coral/10 text-coral'">{{
-                                    s.group_label
-                                }}</span>
+                                <GroupBadge :group="s.group" :label="s.group_label" />
                             </td>
                             <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ s.duration_min }} phút</td>
                             <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ s.buffer_min ? `${s.buffer_min} phút` : '—' }}</td>

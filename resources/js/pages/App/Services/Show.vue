@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import GroupBadge from '@/components/GroupBadge.vue';
 import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +51,13 @@ const breedsOf = (speciesId: number | null) => props.species.find((s) => s.id ==
 
 // Add / edit a rule.
 const editing = ref<number | null>(null);
-const ruleForm = useForm({ species_id: null as number | null, breed_id: null as number | null, size: '', duration_min: '' as number | '', price: '' });
+const ruleForm = useForm({
+    species_id: null as number | null,
+    breed_id: null as number | null,
+    size: '',
+    duration_min: '' as number | '',
+    price: '',
+});
 const ruleErrors = computed(() => ruleForm.errors as Record<string, string | undefined>);
 const showRuleForm = ref(false);
 const startRule = (rule?: Rule) => {
@@ -115,11 +123,9 @@ watch(
                     <Link :href="route('app.services.index')" class="text-sm text-muted-foreground hover:underline">← Dịch vụ</Link>
                     <h1 class="mt-1 flex flex-wrap items-center gap-2 text-2xl font-semibold">
                         {{ service.name }}
-                        <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="service.group === 'medical' ? 'bg-info/10 text-info' : 'bg-coral/10 text-coral'">{{
-                            service.group_label
-                        }}</span>
-                        <span v-if="service.is_combo" class="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">Combo</span>
-                        <span v-if="!service.is_active" class="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Ngừng hoạt động</span>
+                        <GroupBadge :group="service.group" :label="service.group_label" />
+                        <Badge v-if="service.is_combo" tone="primary">Combo</Badge>
+                        <Badge v-if="!service.is_active">Ngừng hoạt động</Badge>
                     </h1>
                     <p class="font-mono text-sm text-muted-foreground">{{ service.code }}</p>
                 </div>
@@ -153,7 +159,8 @@ watch(
                     <div class="text-xs text-muted-foreground">Gồm</div>
                     <ol class="mt-1 grid gap-1 text-sm">
                         <li v-for="(i, n) in service.items" :key="i.code">
-                            {{ n + 1 }}. {{ i.name }} <span class="text-muted-foreground">· {{ i.duration_min }} phút · {{ formatMoney(i.price) }}</span>
+                            {{ n + 1 }}. {{ i.name }}
+                            <span class="text-muted-foreground">· {{ i.duration_min }} phút · {{ formatMoney(i.price) }}</span>
                         </li>
                     </ol>
                 </div>
@@ -192,7 +199,14 @@ watch(
                     </div>
                     <div class="grid gap-2">
                         <Label for="rule_duration">Phút</Label>
-                        <Input id="rule_duration" v-model.number="ruleForm.duration_min" type="number" min="5" max="1440" :placeholder="String(service.duration_min)" />
+                        <Input
+                            id="rule_duration"
+                            v-model.number="ruleForm.duration_min"
+                            type="number"
+                            min="5"
+                            max="1440"
+                            :placeholder="String(service.duration_min)"
+                        />
                     </div>
                     <div class="grid gap-2">
                         <Label for="rule_price">Giá (₫)</Label>
@@ -226,8 +240,12 @@ watch(
                                 <td class="px-4 py-3 text-right tabular-nums">{{ r.duration_min ? `${r.duration_min} phút` : '—' }}</td>
                                 <td class="px-4 py-3 text-right tabular-nums">{{ r.price ? formatMoney(r.price) : '—' }}</td>
                                 <td v-if="can.manage" class="whitespace-nowrap px-4 py-3 text-right">
-                                    <button type="button" class="p-1" aria-label="Sửa quy tắc" @click="startRule(r)"><Pencil class="size-4" /></button>
-                                    <button type="button" class="p-1 text-danger" aria-label="Xóa quy tắc" @click="deleteRule(r)"><Trash2 class="size-4" /></button>
+                                    <button type="button" class="p-1" aria-label="Sửa quy tắc" @click="startRule(r)">
+                                        <Pencil class="size-4" />
+                                    </button>
+                                    <button type="button" class="p-1 text-danger" aria-label="Xóa quy tắc" @click="deleteRule(r)">
+                                        <Trash2 class="size-4" />
+                                    </button>
                                 </td>
                             </tr>
                             <tr v-if="!rules.length">
@@ -265,7 +283,8 @@ watch(
                 </div>
                 <div v-if="quote" class="rounded-md bg-surface-muted p-4" aria-live="polite" :class="{ 'opacity-60': quoting }">
                     <div class="text-lg font-semibold tabular-nums">
-                        {{ quote.duration_min }} phút<template v-if="quote.buffer_min"> + {{ quote.buffer_min }} phút buffer</template> · {{ formatMoney(quote.price) }}
+                        {{ quote.duration_min }} phút<template v-if="quote.buffer_min"> + {{ quote.buffer_min }} phút buffer</template> ·
+                        {{ formatMoney(quote.price) }}
                         <span class="text-sm font-normal text-muted-foreground">(tham khảo)</span>
                     </div>
                     <div class="text-sm text-muted-foreground">{{ quote.explanation }}</div>

@@ -2,12 +2,13 @@
 import BookingDrawer from '@/components/appointments/BookingDrawer.vue';
 import CalendarGrid, { type GridColumn } from '@/components/appointments/CalendarGrid.vue';
 import DetailDrawer from '@/components/appointments/DetailDrawer.vue';
+import Banner from '@/components/Banner.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import Toaster from '@/components/Toaster.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import AppLayout from '@/layouts/AppLayout.vue';
 import { useToast } from '@/composables/useToast';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { api, errorMessage } from '@/lib/api';
 import { type CalendarBlock, type CalendarDayData, type Group, groupLabel, hhmm, minutes, type ServiceOption } from '@/types/calendar';
 import type { SpeciesOption } from '@/types/pets';
@@ -50,7 +51,10 @@ const refresh = () => router.reload({ only: ['day', 'week', 'quota'] });
 
 // Now, in the shop's timezone.
 const nowTime = ref('');
-const tick = () => (nowTime.value = new Intl.DateTimeFormat('en-GB', { timeZone: props.timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()));
+const tick = () =>
+    (nowTime.value = new Intl.DateTimeFormat('en-GB', { timeZone: props.timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(
+        new Date(),
+    ));
 let clock: ReturnType<typeof setInterval> | undefined;
 
 const matches = (b: CalendarBlock) => {
@@ -71,9 +75,15 @@ const columns = computed<GridColumn[]>(() => {
             .filter((g) => groupFilter.value === 'all' || groupFilter.value === g)
             .map((g) => ({ key: g, label: groupLabel[g], blocks: blocks.filter((b) => b.group === g) }));
     }
-    const people = day.staff.filter((s) => (staffFilter.value === 'all' || s.id === staffFilter.value) && (groupFilter.value === 'all' || s.groups.includes(groupFilter.value) || blocks.some((b) => b.staff_id === s.id)));
+    const people = day.staff.filter(
+        (s) =>
+            (staffFilter.value === 'all' || s.id === staffFilter.value) &&
+            (groupFilter.value === 'all' || s.groups.includes(groupFilter.value) || blocks.some((b) => b.staff_id === s.id)),
+    );
     return [
-        ...(staffFilter.value === 'all' ? [{ key: 'none', label: 'Chưa phân', sub: 'Lịch online, phân khi khách đến', blocks: blocks.filter((b) => b.staff_id === null) }] : []),
+        ...(staffFilter.value === 'all'
+            ? [{ key: 'none', label: 'Chưa phân', sub: 'Lịch online, phân khi khách đến', blocks: blocks.filter((b) => b.staff_id === null) }]
+            : []),
         ...people.map((s) => ({
             key: `s${s.id}`,
             label: s.name,
@@ -107,7 +117,10 @@ const move = async (block: CalendarBlock, _column: GridColumn, time: string) => 
     const target = minutes(time) - (minutes(block.start) - first);
     if (target === first) return;
     const newStart = hhmm(target);
-    const r = await api<{ message?: string; warnings?: string[] }>('POST', route('app.appointments.reschedule', { appointment: block.appointment }), { date: props.date, time: newStart });
+    const r = await api<{ message?: string; warnings?: string[] }>('POST', route('app.appointments.reschedule', { appointment: block.appointment }), {
+        date: props.date,
+        time: newStart,
+    });
     if (r.ok) {
         toast.success(`Đã dời lịch sang ${newStart}.${r.data.warnings?.length ? ` ${r.data.warnings.join(' ')}` : ''}`);
         refresh();
@@ -161,7 +174,13 @@ const views: { value: View; label: string }[] = [
                     <Button variant="outline" size="sm" @click="go({ date: today })">Hôm nay</Button>
                     <Button variant="outline" size="icon" aria-label="Sau" @click="shift(1)"><ChevronRight class="size-4" /></Button>
                 </div>
-                <Input :model-value="date" type="date" class="w-40" aria-label="Chọn ngày" @update:model-value="(v) => v && go({ date: String(v) })" />
+                <Input
+                    :model-value="date"
+                    type="date"
+                    class="w-40"
+                    aria-label="Chọn ngày"
+                    @update:model-value="(v) => v && go({ date: String(v) })"
+                />
                 <span class="text-sm text-muted-foreground">{{ title }}</span>
                 <div class="ml-auto flex flex-wrap items-center gap-2">
                     <div class="flex rounded-md border p-0.5" role="tablist" aria-label="Chế độ xem">
@@ -178,7 +197,12 @@ const views: { value: View; label: string }[] = [
                             {{ v.label }}
                         </button>
                     </div>
-                    <select v-if="day" v-model="staffFilter" class="h-9 rounded-md border border-input bg-background px-2 text-sm" aria-label="Lọc nhân viên">
+                    <select
+                        v-if="day"
+                        v-model="staffFilter"
+                        class="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        aria-label="Lọc nhân viên"
+                    >
                         <option value="all">Mọi nhân viên</option>
                         <option v-for="s in day.staff" :key="s.id" :value="s.id">{{ s.name }}</option>
                     </select>
@@ -191,30 +215,42 @@ const views: { value: View; label: string }[] = [
                         <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input ref="search" v-model="q" class="w-48 pl-8" placeholder="Tìm khách, bé ( / )" aria-label="Tìm trong lịch" />
                     </div>
-                    <Button v-if="can.book" :disabled="quota.full" :title="quota.full ? `Đã đạt ${quota.used}/${quota.max} lịch tháng này` : 'Phím tắt N'" @click="openBooking()">
+                    <Button
+                        v-if="can.book"
+                        :disabled="quota.full"
+                        :title="quota.full ? `Đã đạt ${quota.used}/${quota.max} lịch tháng này` : 'Phím tắt N'"
+                        @click="openBooking()"
+                    >
                         <Plus class="size-4" /> Đặt lịch
                     </Button>
                 </div>
             </div>
 
-            <div v-if="quota.full" class="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
-                Đã đạt {{ quota.used }}/{{ quota.max }} lịch tháng này. Liên hệ để nâng gói.
-            </div>
+            <Banner v-if="quota.full" tone="danger">Đã đạt {{ quota.used }}/{{ quota.max }} lịch tháng này. Liên hệ để nâng gói.</Banner>
 
             <!-- phone: list by time -->
             <ul v-if="day" class="space-y-2 md:hidden" aria-label="Lịch hẹn theo giờ">
-                <li v-if="day.closed" class="rounded-[10px] border bg-card p-3 text-sm font-medium">Cơ sở nghỉ<template v-if="day.closed.reason">: {{ day.closed.reason }}</template></li>
-                <li v-else-if="!day.blocks.filter(matches).length" class="rounded-[10px] border bg-card p-3 text-sm text-muted-foreground">Chưa có lịch hẹn.</li>
+                <li v-if="day.closed" class="rounded-[10px] border bg-card p-3 text-sm font-medium">
+                    Cơ sở nghỉ<template v-if="day.closed.reason">: {{ day.closed.reason }}</template>
+                </li>
+                <li v-else-if="!day.blocks.filter(matches).length" class="rounded-[10px] border bg-card p-3 text-sm text-muted-foreground">
+                    Chưa có lịch hẹn.
+                </li>
                 <li v-for="b in [...day.blocks.filter(matches)].sort((a, c) => minutes(a.start) - minutes(c.start))" :key="b.key">
                     <button
                         type="button"
                         class="w-full rounded-[10px] border border-l-4 bg-card p-3 text-left"
-                        :class="[b.group === 'medical' ? 'border-l-info' : 'border-l-coral', { 'opacity-50': b.line_status === 'cancelled' || b.line_status === 'no_show' }]"
+                        :class="[
+                            b.group === 'medical' ? 'border-l-info' : 'border-l-coral',
+                            { 'opacity-50': b.line_status === 'cancelled' || b.line_status === 'no_show' },
+                        ]"
                         @click="openDetail(b)"
                     >
                         <div class="flex items-center justify-between text-sm font-medium">
                             <span class="tabular-nums">{{ b.start }}–{{ b.end }}</span>
-                            <span class="text-xs text-muted-foreground">{{ groupLabel[b.group] }}<template v-if="b.source === 'online'"> · Online</template></span>
+                            <span class="text-xs text-muted-foreground"
+                                >{{ groupLabel[b.group] }}<template v-if="b.source === 'online'"> · Online</template></span
+                            >
                         </div>
                         <div class="text-sm">{{ b.pets.map((p) => `${p.name} (${p.service})`).join(', ') }}</div>
                         <div class="text-xs text-muted-foreground">{{ b.customer }}<template v-if="!b.staff_id"> · Chưa phân</template></div>
@@ -240,16 +276,26 @@ const views: { value: View; label: string }[] = [
             />
 
             <div v-else-if="week" class="grid gap-2 overflow-x-auto md:grid-cols-7">
-                <section v-for="d in week" :key="d.date" class="min-w-[10rem] rounded-[10px] border bg-card p-2" :class="{ 'ring-2 ring-primary': d.date === today }">
+                <section
+                    v-for="d in week"
+                    :key="d.date"
+                    class="min-w-[10rem] rounded-[10px] border bg-card p-2"
+                    :class="{ 'ring-2 ring-primary': d.date === today }"
+                >
                     <button type="button" class="mb-2 text-sm font-medium hover:underline" @click="go({ date: d.date, view: 'staff' })">
-                        {{ ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(`${d.date}T00:00:00`).getDay()] }} {{ d.date.slice(8) }}/{{ d.date.slice(5, 7) }}
+                        {{ ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(`${d.date}T00:00:00`).getDay()] }} {{ d.date.slice(8) }}/{{
+                            d.date.slice(5, 7)
+                        }}
                     </button>
                     <ul class="space-y-1">
                         <li v-for="b in d.blocks.filter(matches)" :key="b.key">
                             <button
                                 type="button"
                                 class="w-full rounded border px-1.5 py-1 text-left text-xs"
-                                :class="[b.group === 'medical' ? 'bg-info/10' : 'bg-coral/10', { 'opacity-50 line-through': b.line_status === 'cancelled' || b.line_status === 'no_show' }]"
+                                :class="[
+                                    b.group === 'medical' ? 'bg-info/10' : 'bg-coral/10',
+                                    { 'line-through opacity-50': b.line_status === 'cancelled' || b.line_status === 'no_show' },
+                                ]"
                                 @click="openDetail(b)"
                             >
                                 <span class="font-medium">{{ b.start }}</span> {{ b.pets.map((p) => p.name).join(', ') }}

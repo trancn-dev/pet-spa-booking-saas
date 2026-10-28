@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -167,7 +168,7 @@ const initials = (name: string) =>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-wrap gap-1">
-                                    <span v-for="r in s.roles" :key="r.name" class="rounded-md bg-primary-soft px-2 py-0.5 text-xs text-primary">{{ r.label }}</span>
+                                    <Badge v-for="r in s.roles" :key="r.name" tone="primary" square>{{ r.label }}</Badge>
                                     <span v-if="!s.roles.length" class="text-muted-foreground">—</span>
                                 </div>
                             </td>
@@ -187,7 +188,14 @@ const initials = (name: string) =>
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="route('app.staff.edit', s.id)" :aria-label="`Sửa ${s.display_name}`"><Pencil /></Link>
                                     </Button>
-                                    <Button v-if="s.status === 'active'" variant="ghost" size="sm" class="text-danger" @click="setStatus(s, 'disabled')">Vô hiệu</Button>
+                                    <Button
+                                        v-if="s.status === 'active'"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="text-danger"
+                                        @click="setStatus(s, 'disabled')"
+                                        >Vô hiệu</Button
+                                    >
                                     <Button v-else variant="ghost" size="sm" @click="setStatus(s, 'active')">Kích hoạt lại</Button>
                                 </div>
                             </td>
@@ -240,7 +248,9 @@ const initials = (name: string) =>
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Mời nhân viên</DialogTitle>
-                    <DialogDescription>Người được mời nhận email, tạo tài khoản hoặc đăng nhập rồi vào shop. Link hết hạn sau 7 ngày.</DialogDescription>
+                    <DialogDescription
+                        >Người được mời nhận email, tạo tài khoản hoặc đăng nhập rồi vào shop. Link hết hạn sau 7 ngày.</DialogDescription
+                    >
                 </DialogHeader>
                 <form id="invite-form" class="grid gap-5" @submit.prevent="invite">
                     <div class="grid gap-2">
@@ -257,7 +267,12 @@ const initials = (name: string) =>
                                 class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
                                 :class="{ 'border-primary bg-primary-soft': form.roles.includes(r.name) }"
                             >
-                                <input type="checkbox" class="accent-primary" :checked="form.roles.includes(r.name)" @change="toggle(form.roles, r.name)" />
+                                <input
+                                    type="checkbox"
+                                    class="accent-primary"
+                                    :checked="form.roles.includes(r.name)"
+                                    @change="toggle(form.roles, r.name)"
+                                />
                                 {{ r.label }}
                             </label>
                         </div>
@@ -265,7 +280,11 @@ const initials = (name: string) =>
                     </fieldset>
                     <div class="grid gap-2">
                         <Label for="invite-primary">Cơ sở chính</Label>
-                        <select id="invite-primary" v-model="form.primary_branch" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+                        <select
+                            id="invite-primary"
+                            v-model="form.primary_branch"
+                            class="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        >
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.code }} · {{ b.name }}</option>
                         </select>
                         <InputError :message="formErrors.primary_branch" />
@@ -274,7 +293,12 @@ const initials = (name: string) =>
                         <legend class="text-sm font-medium">Cơ sở phụ</legend>
                         <div class="flex flex-wrap gap-3 text-sm">
                             <label v-for="b in branches.filter((b) => b.id !== form.primary_branch)" :key="b.id" class="flex items-center gap-2">
-                                <input type="checkbox" class="accent-primary" :checked="form.branches.includes(b.id)" @change="toggle(form.branches, b.id)" />
+                                <input
+                                    type="checkbox"
+                                    class="accent-primary"
+                                    :checked="form.branches.includes(b.id)"
+                                    @change="toggle(form.branches, b.id)"
+                                />
                                 {{ b.name }}
                             </label>
                         </div>

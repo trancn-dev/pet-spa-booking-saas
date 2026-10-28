@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import GroupBadge from '@/components/GroupBadge.vue';
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
+import Timeline from '@/components/Timeline.vue';
+import TimelineItem from '@/components/TimelineItem.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDateTime, formatDay } from '@/lib/format';
@@ -75,7 +80,9 @@ const destroy = () => {
                         <template v-if="pet.customer.is_system">Thú hoang / vô chủ</template>
                         <template v-else>
                             Khách:
-                            <Link :href="route('app.customers.show', pet.customer.id)" class="font-medium hover:underline">{{ pet.customer.name }}</Link>
+                            <Link :href="route('app.customers.show', pet.customer.id)" class="font-medium hover:underline">{{
+                                pet.customer.name
+                            }}</Link>
                             <span class="tabular-nums text-muted-foreground"> · {{ pet.customer.phone }}</span>
                         </template>
                     </p>
@@ -107,7 +114,9 @@ const destroy = () => {
                     <h2 class="font-semibold">Lịch sắp tới</h2>
                     <ul class="grid gap-2 text-sm">
                         <li v-for="(u, i) in upcoming" :key="i" class="flex justify-between gap-3">
-                            <span>{{ u.service }} <span class="text-muted-foreground">· {{ u.branch }}</span></span>
+                            <span
+                                >{{ u.service }} <span class="text-muted-foreground">· {{ u.branch }}</span></span
+                            >
                             <span class="whitespace-nowrap tabular-nums">{{ formatDateTime(u.starts_at, timezone) }}</span>
                         </li>
                         <li v-if="!upcoming.length" class="text-muted-foreground">Không có lịch hẹn sắp tới.</li>
@@ -128,29 +137,24 @@ const destroy = () => {
             </div>
 
             <section v-else-if="tab === 'history'" class="grid gap-3">
-                <ol class="grid gap-3 border-l pl-6">
-                    <li v-for="(h, i) in history" :key="i" class="relative grid gap-1 rounded-[10px] border bg-card p-4">
-                        <span class="absolute -left-[1.85rem] top-5 size-3 rounded-full border-2 border-background bg-primary" />
+                <Timeline>
+                    <TimelineItem v-for="(h, i) in history" :key="i">
                         <div class="flex flex-wrap items-center gap-2 text-sm">
                             <span class="font-medium tabular-nums">{{ formatDay(h.date) }}</span>
-                            <span class="rounded-full bg-surface-muted px-2 py-0.5 text-xs">{{ h.branch }}</span>
-                            <span class="rounded-full px-2 py-0.5 text-xs" :class="h.group === 'medical' ? 'bg-info/10 text-info' : 'bg-coral/10 text-coral'">{{
-                                h.group_label
-                            }}</span>
+                            <Badge>{{ h.branch }}</Badge>
+                            <GroupBadge :group="h.group" :label="h.group_label" />
                             <span class="text-muted-foreground">{{ h.status_label }}</span>
                         </div>
                         <p v-if="can.viewVisits && h.summary" class="text-sm">{{ h.summary }}</p>
                         <p v-else-if="!can.viewVisits" class="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Lock class="size-3.5" /> Chi tiết lần đến cần quyền xem Visit.
                         </p>
-                    </li>
+                    </TimelineItem>
                     <li v-if="!history.length" class="text-sm text-muted-foreground">Bé chưa đến lần nào.</li>
-                </ol>
+                </Timeline>
             </section>
 
-            <section v-else class="rounded-[10px] border border-dashed p-10 text-center text-sm text-muted-foreground">
-                {{ tab === 'medical' ? 'Bệnh án' : 'Sổ tiêm phòng' }} sẽ có trong bản cập nhật tới.
-            </section>
+            <EmptyState v-else>{{ tab === 'medical' ? 'Bệnh án' : 'Sổ tiêm phòng' }} sẽ có trong bản cập nhật tới.</EmptyState>
         </div>
     </AppLayout>
 </template>

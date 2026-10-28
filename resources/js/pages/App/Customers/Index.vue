@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,11 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
                 </div>
             </div>
 
-            <form v-if="showStrayForm" class="grid gap-4 rounded-[10px] border bg-card p-4 sm:grid-cols-[12rem_1fr_auto] sm:items-end" @submit.prevent="createStray">
+            <form
+                v-if="showStrayForm"
+                class="grid gap-4 rounded-[10px] border bg-card p-4 sm:grid-cols-[12rem_1fr_auto] sm:items-end"
+                @submit.prevent="createStray"
+            >
                 <div class="grid gap-2">
                     <Label for="stray_species">Loài</Label>
                     <select id="stray_species" v-model="strayForm.species_id" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
@@ -151,7 +156,9 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
                 </div>
 
                 <div v-if="customers.last_page > 1" class="flex items-center justify-between text-sm">
-                    <span class="text-muted-foreground">Trang {{ customers.current_page }} / {{ customers.last_page }} · {{ customers.total }} khách</span>
+                    <span class="text-muted-foreground"
+                        >Trang {{ customers.current_page }} / {{ customers.last_page }} · {{ customers.total }} khách</span
+                    >
                     <div class="flex gap-2">
                         <Button variant="outline" size="sm" :disabled="!customers.prev_page_url" as-child>
                             <Link :href="customers.prev_page_url ?? '#'" preserve-scroll>Trước</Link>
@@ -170,12 +177,12 @@ const createStray = () => strayForm.post(route('app.pets.strays.store'));
                 <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <li v-for="p in strays" :key="p.id" class="grid gap-2 rounded-[10px] border bg-card p-4">
                         <Link :href="route('app.pets.show', p.id)" class="font-medium hover:underline">{{ p.name }}</Link>
-                        <span class="text-sm text-muted-foreground">{{ p.species }}<template v-if="p.breed"> · {{ p.breed }}</template> · cỡ {{ p.size_label }}</span>
+                        <span class="text-sm text-muted-foreground"
+                            >{{ p.species }}<template v-if="p.breed"> · {{ p.breed }}</template> · cỡ {{ p.size_label }}</span
+                        >
                         <PetAlertBadges :alerts="p.alerts" />
                     </li>
-                    <li v-if="!strays.length" class="col-span-full rounded-[10px] border border-dashed p-8 text-center text-sm text-muted-foreground">
-                        Chưa có thú hoang nào ở cơ sở này.
-                    </li>
+                    <li v-if="!strays.length" class="col-span-full"><EmptyState compact>Chưa có thú hoang nào ở cơ sở này.</EmptyState></li>
                 </ul>
             </template>
         </div>

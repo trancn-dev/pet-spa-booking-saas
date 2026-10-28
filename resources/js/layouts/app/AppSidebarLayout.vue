@@ -3,6 +3,7 @@ import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
+import Banner from '@/components/Banner.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import type { BreadcrumbItemType, ShopSharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
@@ -27,21 +28,8 @@ const notice = computed(() => page.props.planNotice);
         <AppContent variant="sidebar">
             <ImpersonationBanner />
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <div
-                v-if="notice"
-                role="alert"
-                class="mx-4 mt-4 rounded-md border px-4 py-2 text-sm"
-                :class="notice.level === 'danger' ? 'border-danger/30 bg-danger/10 text-danger' : 'border-warning/30 bg-warning/10 text-warning'"
-            >
-                {{ notice.text }}
-            </div>
-            <div
-                v-if="status"
-                role="status"
-                class="mx-4 mt-4 rounded-md border border-success/30 bg-success/10 px-4 py-2 text-sm text-success"
-            >
-                {{ status }}
-            </div>
+            <Banner v-if="notice" :tone="notice.level === 'danger' ? 'danger' : 'warning'" class="mx-4 mt-4">{{ notice.text }}</Banner>
+            <Banner v-if="status" tone="success" class="mx-4 mt-4">{{ status }}</Banner>
             <div class="mx-auto w-full max-w-[1280px]">
                 <slot />
             </div>
