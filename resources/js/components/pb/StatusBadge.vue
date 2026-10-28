@@ -3,7 +3,7 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { computed } from 'vue';
 
 /** Appointment / line status (design 3.1): the label always comes with the colour. */
-const props = defineProps<{ status: string; label?: string }>();
+const props = defineProps<{ status: string; label?: string; dot?: boolean }>();
 
 const tones: Record<string, [BadgeTone, string]> = {
     confirmed: ['primary', 'Đã xác nhận'],
@@ -25,5 +25,5 @@ const text = computed(() => props.label ?? tones[props.status]?.[1] ?? props.sta
 </script>
 
 <template>
-    <Badge :tone="tone" :class="{ 'line-through': status === 'cancelled' || status === 'void' }">{{ text }}</Badge>
+    <Badge :tone="tone" :dot="dot" :class="{ 'line-through': status === 'cancelled' || status === 'void' }">{{ text }}</Badge>
 </template>

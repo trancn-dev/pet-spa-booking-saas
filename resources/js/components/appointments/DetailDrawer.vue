@@ -2,7 +2,10 @@
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import AppDrawer from '@/components/pb/AppDrawer.vue';
+import LockedNote from '@/components/pb/LockedNote.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
 import StatusBadge from '@/components/pb/StatusBadge.vue';
+import Tag from '@/components/pb/Tag.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,7 +16,7 @@ import { formatMoney } from '@/lib/format';
 import type { Group } from '@/types/calendar';
 import type { PetAlert } from '@/types/pets';
 import { Link } from '@inertiajs/vue3';
-import { BellOff, LoaderCircle, Lock, Phone } from 'lucide-vue-next';
+import { BellOff, Clock, LoaderCircle, Phone } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 /* S3 Chi tiết lịch hẹn (task 5.7): lines per pet, actions by status, history, reminders. */
@@ -142,137 +145,173 @@ const doReschedule = () =>
 const purpose: Record<string, string> = { appointment_confirm: 'Xác nhận', appointment_24h: 'Nhắc 24h', appointment_2h: 'Nhắc 2h' };
 const reminderStatus: Record<string, string> = { pending: 'Chờ gửi', processing: 'Đang gửi', sent: 'Đã gửi', failed: 'Lỗi', skipped: 'Bỏ qua' };
 const lineStatus: Record<string, string> = { booked: 'Đã đặt', checked_in: 'Đã đến', cancelled: 'Đã hủy', no_show: 'Không đến' };
+const showCheckIn = ref(false);
+const total = computed(() =>
+    (detail.value?.lines ?? [])
+        .filter((l) => l.status !== 'cancelled' && l.status !== 'no_show')
+        .reduce((sum, l) => sum + Number(l.reference_price), 0),
+);
+const weekdays = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const longDate = (day: string) => `${weekdays[new Date(`${day}T00:00:00`).getDay()]}, ${day.split('-').reverse().join('/')}`;
+const initialsOf = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 const select = 'h-8 w-full rounded-md border border-input bg-background px-2 text-sm';
 </script>
 
 <template>
-    <AppDrawer v-model:open="open" title="Chi tiết lịch hẹn">
-        <template #header>
-            <span v-if="detail" class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-base">#{{ detail.code }}</span>
-                <StatusBadge :status="detail.status" :label="detail.status_label" />
-                <Badge :tone="detail.source === 'online' ? 'primary' : 'neutral'">{{ detail.source === 'online' ? 'Online' : 'Lễ tân' }}</Badge>
-                <Badge v-if="!detail.send_reminders"><BellOff class="size-3" /> Không nhắc</Badge>
-            </span>
-            <template v-else>Chi tiết lịch hẹn</template>
-        </template>
-        <template v-if="detail" #description
-            >{{ detail.date.split('-').reverse().join('/') }} · {{ detail.start }}–{{ detail.end }} · {{ detail.branch }}</template
-        >
-
+    <AppDrawer v-model:open="open" title="Chi tiết lịch hẹn" :description="detail?.branch">
         <div v-if="loading && !detail" class="p-6 text-sm text-muted-foreground"><LoaderCircle class="inline size-4 animate-spin" /> Đang tải…</div>
-        <template v-else-if="detail">
-            <div class="space-y-5 px-5 py-4">
-                <section class="space-y-1 text-sm">
-                    <Link :href="route('app.customers.show', detail.customer.id)" class="font-medium hover:underline">{{
+        <div v-else-if="detail" class="space-y-4 px-6 py-5">
+            <div class="flex flex-wrap items-center gap-2">
+                <Tag class="font-mono">{{ detail.code }}</Tag>
+                <StatusBadge :status="detail.status" :label="detail.status_label" dot />
+                <Badge :tone="detail.source === 'online' ? 'primary' : 'neutral'">{{ detail.source === 'online' ? 'Online' : 'Lễ tân đặt' }}</Badge>
+                <Badge v-if="!detail.send_reminders"><BellOff class="size-3" /> Không nhắc</Badge>
+            </div>
+
+            <p class="flex items-center gap-2 text-[15px] font-semibold">
+                <Clock class="size-4 text-muted-foreground" aria-hidden="true" />
+                {{ detail.start }}–{{ detail.end }}, {{ longDate(detail.date) }}
+            </p>
+
+            <section class="flex items-center gap-3 rounded-xl border p-3">
+                <RingAvatar :initials="initialsOf(detail.customer.name)" :size="36" />
+                <div class="min-w-0 flex-1">
+                    <Link :href="route('app.customers.show', detail.customer.id)" class="block truncate font-semibold hover:underline">{{
                         detail.customer.name
                     }}</Link>
-                    <div v-if="detail.customer.tel" class="flex gap-3">
-                        <a :href="`tel:${detail.customer.tel}`" class="flex items-center gap-1 text-primary"
-                            ><Phone class="size-3.5" /> {{ detail.customer.phone }}</a
-                        >
-                        <a :href="`https://zalo.me/${detail.customer.tel.replace('+84', '0')}`" target="_blank" rel="noopener" class="text-primary"
-                            >Nhắn Zalo</a
-                        >
-                    </div>
-                    <p v-if="detail.preferred" class="text-muted-foreground">Mong muốn: {{ detail.preferred }}</p>
-                    <p v-if="detail.note" class="whitespace-pre-line rounded bg-surface-muted p-2">{{ detail.note }}</p>
-                    <p v-if="detail.cancel_reason" class="text-danger">Lý do hủy: {{ detail.cancel_reason }}</p>
-                </section>
-
-                <section class="space-y-2">
-                    <h3 class="text-sm font-semibold">Dòng pet × dịch vụ</h3>
-                    <div
-                        v-for="l in detail.lines"
-                        :key="l.id"
-                        class="space-y-1 rounded-md border p-3 text-sm"
-                        :class="{ 'opacity-60': l.status === 'cancelled' || l.status === 'no_show' }"
+                    <span v-if="detail.customer.tel" class="font-mono text-xs text-muted-foreground">{{ detail.customer.phone }}</span>
+                </div>
+                <template v-if="detail.customer.tel">
+                    <a :href="`tel:${detail.customer.tel}`" class="flex items-center gap-1 text-sm font-semibold text-primary"
+                        ><Phone class="size-3.5" /> Gọi</a
                     >
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="font-medium">{{ l.pet.name }} · {{ l.service }}</span>
-                            <span class="text-xs text-muted-foreground">{{ lineStatus[l.status] }}</span>
+                    <a
+                        :href="`https://zalo.me/${detail.customer.tel.replace('+84', '0')}`"
+                        target="_blank"
+                        rel="noopener"
+                        class="text-sm font-semibold text-primary"
+                        >Nhắn Zalo</a
+                    >
+                </template>
+            </section>
+            <p v-if="detail.preferred" class="text-sm text-muted-foreground">Mong muốn: {{ detail.preferred }}</p>
+            <p v-if="detail.note" class="whitespace-pre-line rounded-[10px] bg-surface-muted p-3 text-sm">{{ detail.note }}</p>
+            <p v-if="detail.cancel_reason" class="text-sm text-danger">Lý do hủy: {{ detail.cancel_reason }}</p>
+
+            <section class="space-y-3">
+                <article
+                    v-for="l in detail.lines"
+                    :key="l.id"
+                    class="space-y-1.5 rounded-xl border p-3 text-sm"
+                    :class="{ 'opacity-60': l.status === 'cancelled' || l.status === 'no_show' }"
+                >
+                    <div class="flex items-start gap-3">
+                        <RingAvatar :initials="l.pet.name.slice(0, 2)" :size="36" />
+                        <div class="min-w-0 flex-1">
+                            <div class="font-semibold">{{ l.pet.name }}</div>
+                            <PetAlertBadges :alerts="l.pet.alerts" class="mt-1" />
                         </div>
-                        <PetAlertBadges :alerts="l.pet.alerts" />
-                        <p class="text-xs text-muted-foreground">
-                            {{ l.group_label }} · {{ l.duration_min }} phút · {{ formatMoney(l.reference_price) }} (tham khảo) ·
-                            {{ l.staff ?? 'Chưa phân' }}
-                        </p>
+                        <Badge>{{ lineStatus[l.status] }}</Badge>
                     </div>
-                </section>
-
-                <!-- Actions by status -->
-                <section v-if="booked.length" class="space-y-3 rounded-md border p-3">
-                    <template v-if="detail.can.checkIn && isToday">
-                        <h3 class="text-sm font-semibold">Check-in</h3>
-                        <label v-for="l in booked" :key="l.id" class="flex items-center gap-2 text-sm">
-                            <input v-model="arrived" type="checkbox" class="accent-primary" :value="l.id" /> {{ l.pet.name }} · {{ l.service }}
-                            <select
-                                v-if="!l.staff_id"
-                                v-model="assign[l.id]"
-                                :class="select"
-                                class="ml-auto w-40"
-                                :aria-label="`Người làm cho ${l.pet.name}`"
-                            >
-                                <option :value="null">Chưa phân</option>
-                                <option v-for="s in onDuty.filter((s) => s.groups.includes(l.group))" :key="s.id" :value="s.id">{{ s.name }}</option>
-                            </select>
-                        </label>
-                        <Button size="sm" :disabled="busy || !arrived.length" @click="checkIn">Check-in {{ arrived.length }} dòng</Button>
-                    </template>
-                    <div class="flex flex-wrap gap-2">
-                        <Button
-                            v-if="detail.can.update && detail.status === 'confirmed'"
-                            size="sm"
-                            variant="outline"
-                            @click="reschedule.open = !reschedule.open"
-                            >Dời</Button
-                        >
-                        <Button v-if="detail.can.update && started" size="sm" variant="outline" :disabled="busy" @click="noShow">Không đến</Button>
-                        <Button v-if="detail.can.cancel" size="sm" variant="outline" class="text-danger" @click="cancel.open = true">Hủy</Button>
-                    </div>
-                    <div v-if="reschedule.open" class="grid grid-cols-[1fr_7rem_auto] gap-2">
-                        <Input v-model="reschedule.date" type="date" aria-label="Ngày mới" />
-                        <Input v-model="reschedule.time" type="time" step="900" aria-label="Giờ mới" />
-                        <Button size="sm" :disabled="busy" @click="doReschedule">Dời</Button>
-                    </div>
-                    <InputError :message="error ?? undefined" />
-                </section>
-                <Button v-if="detail.status === 'checked_in'" size="sm" variant="outline" disabled title="Màn Visit có ở task 5.9">Mở Visit</Button>
-
-                <!-- Medical, by permission -->
-                <section v-if="detail.medical" class="space-y-1 text-sm">
-                    <h3 class="font-semibold">Y tế</h3>
-                    <p v-for="m in detail.medical" :key="m.pet" class="text-muted-foreground">
-                        {{ m.pet }}: lần khám gần nhất {{ m.last_exam ?? 'chưa có' }}
-                        <template v-if="m.diagnosis"> · {{ m.diagnosis }}</template>
+                    <p>
+                        <span class="font-semibold">{{ l.service }}</span>
+                        <span class="text-muted-foreground"> · {{ l.duration_min }} phút · </span>
+                        <span class="font-mono text-[13px]">{{ formatMoney(l.reference_price) }}</span>
                     </p>
-                    <p v-if="detail.medical.every((m) => m.diagnosis === null)" class="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Lock class="size-3" /> Nội dung bệnh án chỉ bác sĩ xem.
+                    <p class="text-[13px] text-muted-foreground">
+                        Người làm:
+                        <span class="font-medium" :class="l.staff ? 'text-foreground' : 'text-amber-800 dark:text-amber-300'">{{
+                            l.staff ?? 'Chưa phân'
+                        }}</span>
                     </p>
-                </section>
+                </article>
+                <div class="flex items-baseline justify-between text-sm">
+                    <span class="text-muted-foreground">Tạm tính (tham khảo)</span>
+                    <span class="font-mono font-semibold tabular-nums">{{ formatMoney(total) }}</span>
+                </div>
+            </section>
 
-                <section class="space-y-1 text-sm">
-                    <h3 class="font-semibold">Lịch sử</h3>
-                    <ol class="space-y-1 text-xs">
-                        <li v-for="(h, i) in detail.history" :key="i">
-                            <span class="tabular-nums text-muted-foreground">{{ h.at }}</span> · {{ h.action
-                            }}<template v-if="h.pet"> ({{ h.pet }})</template> <template v-if="h.from"> · {{ h.from }} → {{ h.to }}</template> ·
-                            {{ h.by }}<template v-if="h.reason"> · {{ h.reason }}</template>
-                        </li>
-                    </ol>
-                </section>
+            <!-- Check-in: pick who arrived and who works -->
+            <section v-if="showCheckIn && detail.can.checkIn && isToday" class="space-y-3 rounded-xl border border-primary/40 bg-primary-soft/40 p-3">
+                <h3 class="text-sm font-semibold">Check-in: ai đã đến?</h3>
+                <label v-for="l in booked" :key="l.id" class="flex items-center gap-2 text-sm">
+                    <input v-model="arrived" type="checkbox" class="accent-primary" :value="l.id" /> {{ l.pet.name }} · {{ l.service }}
+                    <select
+                        v-if="!l.staff_id"
+                        v-model="assign[l.id]"
+                        :class="select"
+                        class="ml-auto w-40"
+                        :aria-label="`Người làm cho ${l.pet.name}`"
+                    >
+                        <option :value="null">Chưa phân</option>
+                        <option v-for="s in onDuty.filter((s) => s.groups.includes(l.group))" :key="s.id" :value="s.id">{{ s.name }}</option>
+                    </select>
+                </label>
+                <Button size="sm" :loading="busy" :disabled="!arrived.length" @click="checkIn">Xác nhận check-in {{ arrived.length }} dòng</Button>
+            </section>
 
-                <section class="space-y-1 text-sm">
-                    <h3 class="font-semibold">Tin nhắn</h3>
-                    <p v-if="!detail.reminders.length" class="text-xs text-muted-foreground">Chưa có tin nhắc.</p>
-                    <p v-for="(r, i) in detail.reminders" :key="i" class="text-xs">
-                        {{ purpose[r.purpose] ?? r.purpose }} · {{ r.send_at }} · {{ reminderStatus[r.status] ?? r.status }}
-                        <template v-for="(d, j) in r.deliveries" :key="j">
-                            · {{ d.channel === 'zalo' ? 'Zalo' : 'SMS' }}
-                            {{ d.status === 'failed' ? 'lỗi' : d.status === 'sent' ? 'đã gửi' : 'đang gửi' }}</template
-                        >
-                    </p>
-                </section>
+            <div v-if="reschedule.open" class="grid grid-cols-[1fr_7rem_auto] gap-2 rounded-xl border p-3">
+                <Input v-model="reschedule.date" type="date" aria-label="Ngày mới" />
+                <Input v-model="reschedule.time" type="time" step="900" aria-label="Giờ mới" />
+                <Button size="sm" :loading="busy" @click="doReschedule">Dời</Button>
+            </div>
+            <InputError :message="error ?? undefined" />
+
+            <!-- Medical, by permission -->
+            <section v-if="detail.medical" class="space-y-1.5 rounded-xl bg-surface-muted p-3 text-sm">
+                <h3 class="text-[13px] font-semibold text-muted-foreground">Thông tin y tế</h3>
+                <p v-for="m in detail.medical" :key="m.pet">
+                    <span class="font-medium">{{ m.pet }}</span
+                    >: lần khám gần nhất {{ m.last_exam ?? 'chưa có' }}<template v-if="m.diagnosis"> · {{ m.diagnosis }}</template>
+                </p>
+                <LockedNote v-if="detail.medical.every((m) => m.diagnosis === null)" class="border-0 bg-transparent p-0 text-xs"
+                    >Nội dung bệnh án chỉ bác sĩ xem.</LockedNote
+                >
+            </section>
+
+            <section class="space-y-1.5 text-sm">
+                <h3 class="font-semibold">Lịch sử</h3>
+                <ol class="space-y-1 text-xs">
+                    <li v-for="(h, i) in detail.history" :key="i">
+                        <span class="tabular-nums text-muted-foreground">{{ h.at }}</span> · {{ h.action
+                        }}<template v-if="h.pet"> ({{ h.pet }})</template> <template v-if="h.from"> · {{ h.from }} → {{ h.to }}</template> · {{ h.by
+                        }}<template v-if="h.reason"> · {{ h.reason }}</template>
+                    </li>
+                </ol>
+            </section>
+
+            <section class="space-y-1.5 text-sm">
+                <h3 class="font-semibold">Tin nhắn</h3>
+                <p v-if="!detail.reminders.length" class="text-xs text-muted-foreground">Chưa có tin nhắc.</p>
+                <p v-for="(r, i) in detail.reminders" :key="i" class="text-xs">
+                    {{ purpose[r.purpose] ?? r.purpose }} · {{ r.send_at }} · {{ reminderStatus[r.status] ?? r.status }}
+                    <template v-for="(d, j) in r.deliveries" :key="j">
+                        · {{ d.channel === 'zalo' ? 'Zalo' : 'SMS' }}
+                        {{ d.status === 'failed' ? 'lỗi' : d.status === 'sent' ? 'đã gửi' : 'đang gửi' }}</template
+                    >
+                </p>
+            </section>
+        </div>
+
+        <template v-if="detail" #footer>
+            <div class="flex flex-wrap items-center gap-2">
+                <Button v-if="booked.length && detail.can.checkIn && isToday" @click="showCheckIn = !showCheckIn">Check-in</Button>
+                <Button v-if="detail.status === 'checked_in'" variant="outline" disabled disabled-reason="Màn Visit có ở task 5.9">Mở Visit</Button>
+                <Button
+                    v-if="booked.length && detail.can.update && detail.status === 'confirmed'"
+                    variant="outline"
+                    @click="reschedule.open = !reschedule.open"
+                    >Dời</Button
+                >
+                <Button v-if="booked.length && detail.can.update && started" variant="outline" :loading="busy" @click="noShow">Không đến</Button>
+                <Button v-if="booked.length && detail.can.cancel" variant="ghostDanger" @click="cancel.open = true">Hủy</Button>
             </div>
         </template>
     </AppDrawer>
