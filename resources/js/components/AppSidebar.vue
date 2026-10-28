@@ -1,62 +1,47 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, ShieldCheck } from 'lucide-vue-next';
+import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import type { NavGroup, NavItem, ShopSharedData } from '@/types';
+import { usePage } from '@inertiajs/vue3';
+import { Building2, LayoutGrid, ShieldCheck } from 'lucide-vue-next';
 import { computed } from 'vue';
-import AppLogo from './AppLogo.vue';
 
-const page = usePage<{ tenant: { slug: string } | null; permissions: string[] }>();
+const page = usePage<ShopSharedData>();
+const can = (permission: string) => page.props.permissions?.includes(permission) ?? false;
+const isRoute = (name: string) => route().current(name) || route().current(`${name}.*`);
 
-// Items the user has no permission for are not shown (design 3.4); the backend checks anyway.
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    ...(page.props.tenant && page.props.permissions?.includes('roles.manage')
-        ? [{ title: 'Phân quyền', href: route('app.settings.roles'), icon: ShieldCheck }]
-        : []),
-]);
+/*
+| Sidebar of design 3.4. Items appear as their screens are built; an item the person has no
+| permission for is not shown (the server checks again on every request).
+*/
+const groups = computed<NavGroup[]>(() => {
+    if (!page.props.tenant) return [];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
-    },
-];
+    const settings: NavItem[] = [
+        ...(can('branches.manage') ? [{ title: 'Cơ sở', href: route('app.settings.branches'), icon: Building2, isActive: isRoute('app.settings.branches') }] : []),
+        ...(can('roles.manage') ? [{ title: 'Phân quyền', href: route('app.settings.roles'), icon: ShieldCheck, isActive: isRoute('app.settings.roles') }] : []),
+    ];
+
+    return [
+        { items: [{ title: 'Tổng quan', href: route('app.dashboard'), icon: LayoutGrid, isActive: isRoute('app.dashboard') }] },
+        ...(settings.length ? [{ label: 'Cài đặt', items: settings }] : []),
+    ];
+});
 </script>
 
 <template>
     <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')">
-                            <AppLogo />
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
+            <WorkspaceSwitcher />
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :groups="groups" />
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

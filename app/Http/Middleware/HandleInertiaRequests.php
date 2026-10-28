@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Authorization\CurrentBranch;
+use App\Models\Branch;
+use App\Models\Tenant;
 use App\Models\User;
+use App\Tenancy\TenantMembership;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -58,6 +62,27 @@ class HandleInertiaRequests extends Middleware
             'permissions' => fn (): array => tenant() !== null && $request->user() instanceof User
                 ? $request->user()->getAllPermissions()->pluck('name')->values()->all()
                 : [],
+            // Topbar switchers (design 3.4): shops the user can open, branches they work at.
+            'workspaces' => fn (): array => tenant() !== null && $request->user() instanceof User
+                ? app(TenantMembership::class)->tenantsFor($request->user())
+                    ->filter(fn (Tenant $t): bool => $t->status->isAccessible())
+                    ->map(fn (Tenant $t): array => ['slug' => $t->slug, 'name' => $t->name])
+                    ->values()->all()
+                : [],
+            'branches' => fn (): array => tenant() !== null
+                ? CurrentBranch::available()->map(fn (Branch $b): array => self::branch($b))->values()->all()
+                : [],
+            'currentBranch' => fn (): ?array => tenant() !== null && ($branch = CurrentBranch::get()) !== null
+                ? self::branch($branch)
+                : null,
         ]);
+    }
+
+    /**
+     * @return array{id: string, code: string, name: string}
+     */
+    private static function branch(Branch $branch): array
+    {
+        return ['id' => $branch->public_id, 'code' => $branch->code, 'name' => $branch->name];
     }
 }

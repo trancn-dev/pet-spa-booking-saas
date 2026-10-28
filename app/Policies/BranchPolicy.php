@@ -18,6 +18,22 @@ class BranchPolicy
         return $this->atBranch($branch);
     }
 
+    /** S12.2 Cài đặt › Cơ sở. */
+    public function viewAny(User $user): bool
+    {
+        return $this->allowed($user, 'branches.manage');
+    }
+
+    public function create(User $user): bool
+    {
+        return $this->allowed($user, 'branches.manage');
+    }
+
+    public function delete(User $user, Branch $branch): bool
+    {
+        return $this->update($user, $branch);
+    }
+
     public function update(User $user, Branch $branch): bool
     {
         return $this->allowed($user, 'branches.manage') && $this->atBranch($branch);

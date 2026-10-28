@@ -17,7 +17,7 @@ trait ChecksPermissions
     protected function allowed(User $user, string ...$permissions): bool
     {
         foreach ($permissions as $permission) {
-            if ($user->hasPermissionTo($permission)) {
+            if ($user->checkPermissionTo($permission)) {
                 return true;
             }
         }

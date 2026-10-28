@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\Tenant\BranchController;
+use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\WorkspaceRedirectController;
 use Illuminate\Support\Facades\Route;
@@ -30,9 +32,18 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', fn () => to_route('app.dashboard'))->name('app.home');
 
-        Route::get('dashboard', function () {
-            return Inertia::render('Dashboard');
-        })->name('app.dashboard');
+        Route::get('dashboard', DashboardController::class)->name('app.dashboard');
+
+        // Topbar branch switcher
+        Route::post('branch/{branch}', [BranchController::class, 'switch'])->name('app.branch.switch');
+
+        // S12.2 Cài đặt › Cơ sở
+        Route::get('settings/branches', [BranchController::class, 'index'])->name('app.settings.branches');
+        Route::get('settings/branches/create', [BranchController::class, 'create'])->name('app.settings.branches.create');
+        Route::post('settings/branches', [BranchController::class, 'store'])->name('app.settings.branches.store');
+        Route::get('settings/branches/{branch}', [BranchController::class, 'edit'])->name('app.settings.branches.edit');
+        Route::put('settings/branches/{branch}', [BranchController::class, 'update'])->name('app.settings.branches.update');
+        Route::delete('settings/branches/{branch}', [BranchController::class, 'destroy'])->name('app.settings.branches.destroy');
 
         // S12.3 Cài đặt › Phân quyền
         Route::get('settings/roles', [RoleController::class, 'index'])->name('app.settings.roles');

@@ -94,7 +94,7 @@ function memberWithRoles(Tenant $tenant, array $roles, array $branches = []): Us
  */
 function memberAt(Tenant $tenant, User $user, array $roles, array $branches = []): User
 {
-    inTenant($tenant, function () use ($user, $branches): void {
+    inTenant($tenant, function () use ($tenant, $user, $branches): void {
         $branches = $branches === [] ? [Branch::factory()->create()] : $branches;
         $staff = Staff::factory()->create(['user_id' => $user->id, 'primary_branch_id' => $branches[0]->id]);
         foreach (array_slice($branches, 1) as $branch) {

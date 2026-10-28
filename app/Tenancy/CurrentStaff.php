@@ -54,7 +54,7 @@ class CurrentStaff
     {
         $user = Auth::guard('web')->user();
 
-        return $user instanceof User && $this->get() !== null && $user->hasPermissionTo('branches.all');
+        return $user instanceof User && $this->get() !== null && $user->checkPermissionTo('branches.all');
     }
 
     /**

@@ -40,3 +40,25 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface BranchOption {
+    id: string;
+    code: string;
+    name: string;
+}
+
+/** Props shared on every page inside a shop (`/app/{slug}`, HandleInertiaRequests). */
+export interface ShopSharedData extends SharedData {
+    tenant: { slug: string; name: string } | null;
+    permissions: string[];
+    workspaces: { slug: string; name: string }[];
+    branches: BranchOption[];
+    currentBranch: BranchOption | null;
+    flash: { status: string | null };
+    errors: Record<string, string>;
+}
+
+export interface NavGroup {
+    label?: string;
+    items: NavItem[];
+}

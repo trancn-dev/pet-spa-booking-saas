@@ -53,6 +53,8 @@ Rules when adding features:
 
 - `App\Platform\Actions\ProvisionTenant` (input `App\Platform\Data\NewShop`) is the ONLY way to create a shop: tenant + settings + first branch (`CreateBranch`: stray profile + "Két 1") + 7 roles + first subscription + owner invitation + `tenant.created` audit, one transaction, mail queued after commit. The demo seeder and the `provisionShop()` test helper use it. Slugs: `App\Support\ShopSlug` (reserved list; a test scans the route table, add new central first segments there).
 - Invitations: `IssueInvitation` (token 32 bytes, DB keeps sha256, 7 days, `rotate()` = resend), `AcceptInvitation` (locked row, idempotent, owner gets every branch; `owner` only from an admin invitation). `/invite/{token}` is central; the token lookup crosses tenants in `App\Tenancy\InvitationLookup`. Mails carry plain values (`ShopInvitationMail`), never tenant models.
+- CMS shell: design tokens (design 3.1) are HSL CSS variables in `resources/css/app.css` with the shadcn variables mapped onto them; extra Tailwind colours `primary-soft`, `coral`, `success`, `warning`, `danger`, `info`, `subtle`. Inertia also shares `workspaces`, `branches`, `currentBranch`. The topbar branch is `CurrentBranch::get()` (session per shop, only `available()` branches); filter branch data by it.
+- Permission checks in app code use `checkPermissionTo()` (false for an unknown code), not `hasPermissionTo()` (throws).
 - No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
 
 ## Roles & permissions (ADR 0009, `app/Authorization/`)
