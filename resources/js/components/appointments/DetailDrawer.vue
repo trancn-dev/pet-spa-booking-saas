@@ -2,13 +2,13 @@
 import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import AppDrawer from '@/components/pb/AppDrawer.vue';
+import AppModal from '@/components/pb/AppModal.vue';
 import LockedNote from '@/components/pb/LockedNote.vue';
 import RingAvatar from '@/components/pb/RingAvatar.vue';
 import StatusBadge from '@/components/pb/StatusBadge.vue';
 import Tag from '@/components/pb/Tag.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/composables/useToast';
 import { api, errorMessage } from '@/lib/api';
@@ -316,44 +316,37 @@ const select = 'h-8 w-full rounded-md border border-input bg-background px-2 tex
         </template>
     </AppDrawer>
 
-    <Dialog v-model:open="cancel.open">
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Hủy lịch</DialogTitle>
-                <DialogDescription>Dòng bị hủy nhả chỗ ngay. Có thể hoàn tác trong vài giây.</DialogDescription>
-            </DialogHeader>
-            <div class="space-y-3 text-sm">
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2"
-                        ><input v-model="cancel.scope" type="radio" value="all" class="accent-primary" /> Cả lịch</label
-                    >
-                    <label class="flex items-center gap-2"
-                        ><input v-model="cancel.scope" type="radio" value="lines" class="accent-primary" /> Từng pet</label
-                    >
-                </div>
-                <div v-if="cancel.scope === 'lines'" class="space-y-1">
-                    <label v-for="l in booked" :key="l.id" class="flex items-center gap-2"
-                        ><input v-model="cancel.lines" type="checkbox" class="accent-primary" :value="l.id" /> {{ l.pet.name }} ·
-                        {{ l.service }}</label
-                    >
-                </div>
-                <select v-model="cancel.reason" class="h-9 w-full rounded-md border border-input bg-background px-2" aria-label="Lý do hủy">
-                    <option value="" disabled>Chọn lý do…</option>
-                    <option v-for="r in REASONS" :key="r" :value="r">{{ r }}</option>
-                </select>
-                <Input v-if="cancel.reason === 'Khác'" v-model="cancel.other" placeholder="Lý do" aria-label="Lý do khác" />
-                <label class="flex items-center gap-2"><input v-model="cancel.notify" type="checkbox" class="accent-primary" /> Báo khách</label>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" @click="cancel.open = false">Thôi</Button>
-                <Button
-                    variant="destructive"
-                    :disabled="!cancel.reason || (cancel.reason === 'Khác' && !cancel.other) || (cancel.scope === 'lines' && !cancel.lines.length)"
-                    @click="confirmCancel"
+    <AppModal v-model:open="cancel.open" title="Hủy lịch hẹn?" description="Dòng bị hủy nhả chỗ ngay. Có thể hoàn tác trong vài giây.">
+        <div class="space-y-3 text-sm">
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2"
+                    ><input v-model="cancel.scope" type="radio" value="all" class="accent-primary" /> Cả lịch</label
                 >
-                    Hủy lịch
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+                <label class="flex items-center gap-2"
+                    ><input v-model="cancel.scope" type="radio" value="lines" class="accent-primary" /> Từng pet</label
+                >
+            </div>
+            <div v-if="cancel.scope === 'lines'" class="space-y-1">
+                <label v-for="l in booked" :key="l.id" class="flex items-center gap-2"
+                    ><input v-model="cancel.lines" type="checkbox" class="accent-primary" :value="l.id" /> {{ l.pet.name }} · {{ l.service }}</label
+                >
+            </div>
+            <select v-model="cancel.reason" class="h-9 w-full rounded-md border border-input bg-background px-2" aria-label="Lý do hủy">
+                <option value="" disabled>Chọn lý do…</option>
+                <option v-for="r in REASONS" :key="r" :value="r">{{ r }}</option>
+            </select>
+            <Input v-if="cancel.reason === 'Khác'" v-model="cancel.other" placeholder="Lý do" aria-label="Lý do khác" />
+            <label class="flex items-center gap-2"><input v-model="cancel.notify" type="checkbox" class="accent-primary" /> Báo khách</label>
+        </div>
+        <template #footer>
+            <Button variant="outline" @click="cancel.open = false">Giữ lịch</Button>
+            <Button
+                variant="destructive"
+                :disabled="!cancel.reason || (cancel.reason === 'Khác' && !cancel.other) || (cancel.scope === 'lines' && !cancel.lines.length)"
+                @click="confirmCancel"
+            >
+                Hủy lịch
+            </Button>
+        </template>
+    </AppModal>
 </template>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import AppModal from '@/components/pb/AppModal.vue';
 import SettingsLayout from '@/components/shell/SettingsLayout.vue';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -184,24 +184,17 @@ const destroy = () => {
                 </section>
             </div>
 
-            <Dialog v-model:open="confirmOpen">
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Giao quyền nhạy cảm?</DialogTitle>
-                        <DialogDescription>
-                            Nhân viên có role "{{ form.display_name }}" sẽ được:
-                            <ul class="mt-2 list-disc pl-5">
-                                <li v-for="p in newlySensitive" :key="p.code">{{ p.label }}</li>
-                            </ul>
-                            <span class="mt-2 block">Thay đổi này được ghi vào Nhật ký.</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="ghost" @click="confirmOpen = false">Hủy</Button>
-                        <Button @click="confirmSensitive">Xác nhận giao quyền</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <AppModal v-model:open="confirmOpen" title="Giao quyền nhạy cảm?">
+                <p class="text-sm">Nhân viên có role "{{ form.display_name }}" sẽ được:</p>
+                <ul class="mt-2 list-disc pl-5 text-sm">
+                    <li v-for="p in newlySensitive" :key="p.code">{{ p.label }}</li>
+                </ul>
+                <p class="mt-2 text-sm text-muted-foreground">Thay đổi này được ghi vào Nhật ký.</p>
+                <template #footer>
+                    <Button variant="outline" @click="confirmOpen = false">Hủy</Button>
+                    <Button @click="confirmSensitive">Xác nhận giao quyền</Button>
+                </template>
+            </AppModal>
         </SettingsLayout>
     </AppLayout>
 </template>

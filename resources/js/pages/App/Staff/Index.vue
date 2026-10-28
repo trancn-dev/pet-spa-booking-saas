@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import AppModal from '@/components/pb/AppModal.vue';
 import DataTable, { type Column } from '@/components/pb/DataTable.vue';
 import EmptyState from '@/components/pb/EmptyState.vue';
 import FormField from '@/components/pb/FormField.vue';
@@ -9,7 +10,6 @@ import TabsBar from '@/components/pb/TabsBar.vue';
 import TwoLine from '@/components/pb/TwoLine.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { ShopSharedData } from '@/types';
@@ -217,68 +217,60 @@ const invitationColumns: Column[] = [
             </DataTable>
         </div>
 
-        <Dialog v-model:open="inviting">
-            <DialogContent class="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Mời nhân viên</DialogTitle>
-                    <DialogDescription
-                        >Người được mời nhận email, tạo tài khoản hoặc đăng nhập rồi vào shop. Link hết hạn sau 7 ngày.</DialogDescription
-                    >
-                </DialogHeader>
-                <form id="invite-form" class="grid gap-5" @submit.prevent="invite">
-                    <FormField label="Email" input-id="invite-email" :error="form.errors.email"
-                        ><Input id="invite-email" v-model="form.email" type="email" required
-                    /></FormField>
-                    <fieldset class="grid gap-2">
-                        <legend class="text-sm font-medium">Role (chọn một hoặc nhiều)</legend>
-                        <div class="flex flex-wrap gap-2">
-                            <label
-                                v-for="r in roles"
-                                :key="r.name"
-                                class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
-                                :class="{ 'border-primary bg-primary-soft': form.roles.includes(r.name) }"
-                            >
-                                <input
-                                    type="checkbox"
-                                    class="accent-primary"
-                                    :checked="form.roles.includes(r.name)"
-                                    @change="toggle(form.roles, r.name)"
-                                />
-                                {{ r.label }}
-                            </label>
-                        </div>
-                        <InputError :message="form.errors.roles" />
-                    </fieldset>
-                    <FormField label="Cơ sở chính" input-id="invite-primary" :error="formErrors.primary_branch"
-                        ><select
-                            id="invite-primary"
-                            v-model="form.primary_branch"
-                            class="h-9 rounded-md border border-input bg-background px-3 text-sm"
+        <AppModal
+            v-model:open="inviting"
+            title="Mời nhân viên"
+            description="Người được mời nhận email, tạo tài khoản hoặc đăng nhập rồi vào shop. Link hết hạn sau 7 ngày."
+        >
+            <form id="invite-form" class="grid gap-5" @submit.prevent="invite">
+                <FormField label="Email" input-id="invite-email" :error="form.errors.email"
+                    ><Input id="invite-email" v-model="form.email" type="email" required
+                /></FormField>
+                <fieldset class="grid gap-2">
+                    <legend class="text-sm font-medium">Role (chọn một hoặc nhiều)</legend>
+                    <div class="flex flex-wrap gap-2">
+                        <label
+                            v-for="r in roles"
+                            :key="r.name"
+                            class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
+                            :class="{ 'border-primary bg-primary-soft': form.roles.includes(r.name) }"
                         >
-                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.code }} · {{ b.name }}</option>
-                        </select></FormField
-                    >
-                    <fieldset v-if="branches.length > 1" class="grid gap-2">
-                        <legend class="text-sm font-medium">Cơ sở phụ</legend>
-                        <div class="flex flex-wrap gap-3 text-sm">
-                            <label v-for="b in branches.filter((b) => b.id !== form.primary_branch)" :key="b.id" class="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    class="accent-primary"
-                                    :checked="form.branches.includes(b.id)"
-                                    @change="toggle(form.branches, b.id)"
-                                />
-                                {{ b.name }}
-                            </label>
-                        </div>
-                        <InputError :message="formErrors.branches" />
-                    </fieldset>
-                </form>
-                <DialogFooter>
-                    <Button variant="outline" @click="inviting = false">Hủy</Button>
-                    <Button type="submit" form="invite-form" :disabled="form.processing">Gửi lời mời</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                            <input
+                                type="checkbox"
+                                class="accent-primary"
+                                :checked="form.roles.includes(r.name)"
+                                @change="toggle(form.roles, r.name)"
+                            />
+                            {{ r.label }}
+                        </label>
+                    </div>
+                    <InputError :message="form.errors.roles" />
+                </fieldset>
+                <FormField label="Cơ sở chính" input-id="invite-primary" :error="formErrors.primary_branch"
+                    ><select id="invite-primary" v-model="form.primary_branch" class="h-9 rounded-md border border-input bg-background px-3 text-sm">
+                        <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.code }} · {{ b.name }}</option>
+                    </select></FormField
+                >
+                <fieldset v-if="branches.length > 1" class="grid gap-2">
+                    <legend class="text-sm font-medium">Cơ sở phụ</legend>
+                    <div class="flex flex-wrap gap-3 text-sm">
+                        <label v-for="b in branches.filter((b) => b.id !== form.primary_branch)" :key="b.id" class="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                class="accent-primary"
+                                :checked="form.branches.includes(b.id)"
+                                @change="toggle(form.branches, b.id)"
+                            />
+                            {{ b.name }}
+                        </label>
+                    </div>
+                    <InputError :message="formErrors.branches" />
+                </fieldset>
+            </form>
+            <template #footer>
+                <Button variant="outline" @click="inviting = false">Hủy</Button>
+                <Button type="submit" form="invite-form" :loading="form.processing">Gửi lời mời</Button>
+            </template>
+        </AppModal>
     </AppLayout>
 </template>
