@@ -8,6 +8,7 @@ use App\Authorization\CurrentBranch;
 use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Platform\Impersonation;
 use App\Support\PlanNotice;
 use App\Tenancy\TenantMembership;
 use Illuminate\Foundation\Inspiring;
@@ -63,12 +64,25 @@ class HandleInertiaRequests extends Middleware
             'permissions' => fn (): array => tenant() !== null && $request->user() instanceof User
                 ? $request->user()->getAllPermissions()->pluck('name')->values()->all()
                 : [],
+            // Red banner with countdown + "Thoát" while a platform admin acts as the owner (task 4.6).
+            'impersonating' => function () use ($request): ?array {
+                $session = Impersonation::current($request);
+
+                return $session === null ? null : [
+                    'admin' => $session->admin?->name,
+                    'shop' => $session->tenant?->name,
+                    'expires_at' => $session->expires_at->toIso8601String(),
+                    'blocked' => Impersonation::BLOCKED_HINT,
+                ];
+            },
             'planNotice' => fn (): ?array => ($tenant = tenant()) === null ? null : PlanNotice::for($tenant),
             'readOnly' => fn (): bool => tenant()?->status->isReadOnly() ?? false,
             // Topbar switchers (design 3.4): shops the user can open, branches they work at.
             'workspaces' => fn (): array => tenant() !== null && $request->user() instanceof User
                 ? app(TenantMembership::class)->tenantsFor($request->user())
                     ->filter(fn (Tenant $t): bool => $t->status->isAccessible())
+                    // While impersonating, only the supported shop.
+                    ->filter(fn (Tenant $t): bool => ! $request->session()->has(Impersonation::SESSION_KEY) || $t->is(tenant()))
                     ->map(fn (Tenant $t): array => ['slug' => $t->slug, 'name' => $t->name])
                     ->values()->all()
                 : [],

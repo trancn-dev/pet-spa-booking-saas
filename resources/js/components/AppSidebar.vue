@@ -5,7 +5,7 @@ import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import type { NavGroup, NavItem, ShopSharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
-import { Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-vue-next';
+import { Building2, LayoutGrid, LifeBuoy, ShieldCheck, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage<ShopSharedData>();
@@ -22,6 +22,9 @@ const groups = computed<NavGroup[]>(() => {
     const settings: NavItem[] = [
         ...(can('branches.manage') ? [{ title: 'Cơ sở', href: route('app.settings.branches'), icon: Building2, isActive: isRoute('app.settings.branches') }] : []),
         ...(can('roles.manage') ? [{ title: 'Phân quyền', href: route('app.settings.roles'), icon: ShieldCheck, isActive: isRoute('app.settings.roles') }] : []),
+        ...(can('settings.manage')
+            ? [{ title: 'Truy cập hỗ trợ', href: route('app.settings.support-access'), icon: LifeBuoy, isActive: isRoute('app.settings.support-access') }]
+            : []),
     ];
 
     return [

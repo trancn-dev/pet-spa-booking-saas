@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import SupportSessionsTable, { type SupportSession } from '@/components/SupportSessionsTable.vue';
 import AuditLogTable from '@/components/admin/AuditLogTable.vue';
 import TenantBillingTab from '@/components/admin/TenantBillingTab.vue';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/admin/AdminLayout.vue';
 import type { AuditLogRow, Paginated, SubscriptionRow } from '@/types/admin';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, Copy, Lock, LockOpen, Mail } from 'lucide-vue-next';
+import { ArrowLeft, Copy, LogIn, Lock, LockOpen, Mail } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 type TenantStatus = 'trial' | 'active' | 'past_due' | 'suspended' | 'cancelled';
@@ -33,14 +34,24 @@ interface Overview {
 }
 
 const props = defineProps<{
-    tab: 'overview' | 'billing' | 'logs';
+    tab: 'overview' | 'billing' | 'support' | 'logs';
     tenant: Overview;
     inviteUrl: string | null;
     subscriptions: SubscriptionRow[];
     plans: { id: number; code: string; name: string }[];
     logs: Paginated<AuditLogRow> | null;
+    sessions: SupportSession[];
+    csrf: string;
     can: { manage: boolean };
 }>();
+
+const impersonating = ref(false);
+const impersonateReason = ref('');
+// The form posts to a new tab (target=_blank); close the dialog right after.
+const startImpersonation = () => setTimeout(() => {
+    impersonating.value = false;
+    impersonateReason.value = '';
+}, 0);
 
 const suspending = ref(false);
 const suspendForm = useForm({ reason: '' });
@@ -64,7 +75,7 @@ const statusMeta: Record<TenantStatus, { label: string; class: string }> = {
 const tabs = [
     { key: 'overview', label: 'Tổng quan', ready: true },
     { key: 'billing', label: 'Gói & gia hạn', ready: true },
-    { key: 'support', label: 'Truy cập hỗ trợ', ready: false },
+    { key: 'support', label: 'Truy cập hỗ trợ', ready: true },
     { key: 'logs', label: 'Nhật ký', ready: true },
 ];
 
@@ -119,6 +130,9 @@ const copyLink = () => (props.inviteUrl ? copy() : resend(true));
                     Tạm khóa từ {{ dateTime(tenant.suspended_at) }}<template v-if="tenant.suspended_reason"> · {{ tenant.suspended_reason }}</template>
                 </p>
             </div>
+            <div v-if="tenant.status !== 'cancelled'" class="flex gap-2">
+                <Button variant="outline" @click="impersonating = true"><LogIn /> Đăng nhập như chủ shop</Button>
+            </div>
             <div v-if="can.manage && tenant.status !== 'cancelled'" class="flex gap-2">
                 <Button v-if="tenant.status === 'suspended'" variant="outline" @click="resume"><LockOpen /> Mở khóa</Button>
                 <Button v-else variant="outline" class="text-red-600" @click="suspending = true"><Lock /> Tạm khóa</Button>
@@ -151,6 +165,10 @@ const copyLink = () => (props.inviteUrl ? copy() : resend(true));
                 :plans="plans"
                 :can-manage="can.manage"
             />
+        </div>
+
+        <div v-else-if="tab === 'support'" class="mt-6">
+            <SupportSessionsTable :sessions="sessions" :timezone="tenant.timezone" />
         </div>
 
         <div v-else-if="tab === 'logs' && logs" class="mt-6">
@@ -225,6 +243,40 @@ const copyLink = () => (props.inviteUrl ? copy() : resend(true));
                 </div>
             </section>
         </div>
+
+        <Dialog v-model:open="impersonating">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Đăng nhập như chủ shop</DialogTitle>
+                    <DialogDescription>Tối đa 30 phút, mọi thao tác được ghi lại, chủ shop xem được. Mở ở tab mới.</DialogDescription>
+                </DialogHeader>
+                <form
+                    id="impersonate-form"
+                    method="post"
+                    target="_blank"
+                    :action="route('admin.tenants.impersonate', tenant.id)"
+                    class="grid gap-2"
+                    @submit="startImpersonation"
+                >
+                    <input type="hidden" name="_token" :value="csrf" />
+                    <Label for="impersonate-reason">Lý do</Label>
+                    <textarea
+                        id="impersonate-reason"
+                        v-model="impersonateReason"
+                        name="reason"
+                        rows="3"
+                        required
+                        maxlength="255"
+                        class="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="Chủ shop gọi báo lỗi không in được hóa đơn"
+                    />
+                </form>
+                <DialogFooter>
+                    <Button variant="outline" @click="impersonating = false">Hủy</Button>
+                    <Button type="submit" form="impersonate-form" variant="destructive" :disabled="!impersonateReason.trim()">Mở tab mới</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="suspending">
             <DialogContent class="sm:max-w-md">

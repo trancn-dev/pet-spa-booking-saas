@@ -47,7 +47,7 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): impersonation (4.6), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- Still to do (see plan): Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
 
 ## Shops, invitations, sign-in (task 4.3)
 
@@ -57,6 +57,12 @@ Rules when adding features:
 - Permission checks in app code use `checkPermissionTo()` (false for an unknown code), not `hasPermissionTo()` (throws).
 - Staff (task 4.4, `app/Actions/Staff`): `InviteStaff`, `ManageInvitation` (resend / revoke), `SaveStaff` (profile, roles except `owner`, branches; people without an account), `SetStaffStatus` (never delete). `StaffQuota` = active staff with an account + pending invitations vs `plans.max_staff`; every check runs after `lockTenant()`, and the lock order is tenant row → invitation / staff row.
 - No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
+
+## Impersonation (task 4.6, `App\Platform\Impersonation`)
+
+- A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.
+- `ImpersonationGuard` (web group, before `ResolveTenant`): ends expired sessions, 404s other shops, refuses `ImpersonationGuard::BLOCKED` route names (add new sensitive routes there), logs every other write as `impersonation.write`. `ActivityLog::record()` stamps `impersonation_session_id` automatically. Inertia shares `impersonating`.
+- In tests, `actingAs($admin, 'platform')` switches the default guard: call `auth()->shouldUse('web')` before the next CMS request. App code asks for `$request->user('web')` explicitly.
 
 ## Roles & permissions (ADR 0009, `app/Authorization/`)
 

@@ -55,6 +55,10 @@ Route::middleware('platform.auth')->group(function () {
         Route::patch('admins/{admin}/status', [AdminController::class, 'setStatus'])->name('admins.status');
     });
 
+    // A4 "Đăng nhập như chủ shop": super-admin and support (reason required, logged).
+    Route::post('tenants/{tenant:public_id}/impersonate', [TenantController::class, 'impersonate'])
+        ->middleware('throttle:10,1')->name('tenants.impersonate');
+
     // After the fixed `tenants/*` paths so `create` never binds as a shop id.
     Route::get('tenants/{tenant:public_id}', [TenantController::class, 'show'])->name('tenants.show');
 });

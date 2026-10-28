@@ -7,6 +7,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTenant;
 use App\Platform\Http\Middleware\AuthenticatePlatformAdmin;
 use App\Platform\Http\Middleware\HandleAdminInertiaRequests;
+use App\Platform\Http\Middleware\ImpersonationGuard;
 use App\Platform\Http\Middleware\RequirePlatformRole;
 use App\Platform\Http\Middleware\UsePlatformSessionCookie;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -47,7 +48,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // The admin session cookie name must be set before the session starts.
         $middleware->prependToPriorityList(before: StartSession::class, prepend: UsePlatformSessionCookie::class);
 
+        // Impersonation rules apply before the shop is resolved (it may forbid that shop).
+        $middleware->prependToPriorityList(before: ResolveTenant::class, prepend: ImpersonationGuard::class);
+
         $middleware->web(append: [
+            ImpersonationGuard::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

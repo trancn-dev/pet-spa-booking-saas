@@ -10,9 +10,17 @@ use Database\Factories\Platform\ImpersonationSessionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Admin acting as a shop user: one-time 60 s token, 30 min session.
+ *
+ * @property int $tenant_id
+ * @property int $target_user_id
+ * @property string $reason
+ * @property Carbon|null $started_at
+ * @property Carbon|null $ended_at
+ * @property Carbon $expires_at
  */
 class ImpersonationSession extends Model
 {

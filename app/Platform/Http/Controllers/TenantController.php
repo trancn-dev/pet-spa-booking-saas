@@ -7,6 +7,7 @@ namespace App\Platform\Http\Controllers;
 use App\Enums\TenantStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Models\Platform\ImpersonationSession;
 use App\Models\Platform\PlatformAdmin;
 use App\Models\Platform\PlatformAuditLog;
 use App\Models\Platform\TenantSubscription;
@@ -17,6 +18,7 @@ use App\Platform\Actions\ResendOwnerInvitation;
 use App\Platform\Actions\ResumeTenant;
 use App\Platform\Actions\SuspendTenant;
 use App\Platform\Http\Requests\StoreTenantRequest;
+use App\Platform\Impersonation;
 use App\Platform\Queries\TenantList;
 use App\Platform\Queries\TenantOverview;
 use App\Support\ShopSlug;
@@ -104,7 +106,7 @@ class TenantController extends Controller
     public function show(Request $request, Tenant $tenant, TenantOverview $overview): Response
     {
         $admin = $request->user('platform');
-        $tab = in_array($request->string('tab')->value(), ['billing', 'logs'], true) ? $request->string('tab')->value() : 'overview';
+        $tab = in_array($request->string('tab')->value(), ['billing', 'support', 'logs'], true) ? $request->string('tab')->value() : 'overview';
 
         return Inertia::render('Admin/Tenants/Show', [
             'tab' => $tab,
@@ -125,6 +127,8 @@ class TenantController extends Controller
                     'by' => $s->createdBy?->name,
                 ])->values(),
             'plans' => fn () => $tab !== 'billing' ? [] : Plan::query()->orderBy('id')->get(['id', 'code', 'name']),
+            'sessions' => $tab !== 'support' ? [] : self::sessions($tenant),
+            'csrf' => csrf_token(),
             'logs' => $tab === 'logs' ? AuditLogController::rows(PlatformAuditLog::query()->where('tenant_id', $tenant->getKey())) : null,
             'can' => ['manage' => $admin instanceof PlatformAdmin && $admin->isSuperAdmin()],
         ]);
@@ -166,6 +170,46 @@ class TenantController extends Controller
         $resume->handle($this->admin($request), $tenant);
 
         return back()->with('status', 'Đã mở khóa '.$tenant->name.'.');
+    }
+
+    /**
+     * A4 "Đăng nhập như chủ shop": a plain form posted to a new tab; this answers with the one-time
+     * CMS link, so the token never sits in the admin page.
+     */
+    public function impersonate(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']], ['reason.required' => 'Nhập lý do đăng nhập thay.']);
+        [, $token] = Impersonation::start($this->admin($request), $tenant, (string) $data['reason'], $request);
+
+        return redirect()->away(route('impersonation.consume', ['slug' => $tenant->slug, 'token' => $token]))
+            ->header('Referrer-Policy', 'no-referrer');
+    }
+
+    /**
+     * Support access history of one shop (A4 tab, and the owner's own view in the CMS).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function sessions(Tenant $tenant): array
+    {
+        return ImpersonationSession::query()->where('tenant_id', $tenant->getKey())
+            ->with(['admin:id,name', 'targetUser:id,name,email'])->latest('id')->limit(100)->get()
+            ->map(fn (ImpersonationSession $s): array => [
+                'id' => $s->id,
+                'admin' => $s->admin?->name,
+                'target' => $s->targetUser?->name,
+                'reason' => $s->reason,
+                'started_at' => $s->started_at?->toIso8601String(),
+                'ended_at' => $s->ended_at?->toIso8601String(),
+                'expires_at' => $s->expires_at->toIso8601String(),
+                'ip' => $s->ip,
+                'state' => match (true) {
+                    $s->started_at === null => 'unused',
+                    $s->ended_at !== null => 'ended',
+                    $s->expires_at->isPast() => 'expired',
+                    default => 'open',
+                },
+            ])->values()->all();
     }
 
     private function admin(Request $request): PlatformAdmin

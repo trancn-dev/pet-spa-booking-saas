@@ -17,7 +17,7 @@ final class ShopSlug
         // routes that exist today
         'admin', 'app', 'invite', 'login', 'logout', 'register', 'dashboard', 'settings',
         'forgot-password', 'reset-password', 'verify-email', 'confirm-password', 'email',
-        'storage', 'build', 'up',
+        'storage', 'build', 'up', 'impersonation',
         // kept free for later or for infrastructure
         'api', 'www', 'site', 'help', 'support', 'docs', 'blog', 'status', 'pricing', 'about',
         'terms', 'privacy', 'contact', 'mail', 'static', 'assets', 'public', 'webhooks', 'health',

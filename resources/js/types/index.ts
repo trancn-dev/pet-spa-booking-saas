@@ -57,6 +57,7 @@ export interface ShopSharedData extends SharedData {
     flash: { status: string | null };
     planNotice: { level: 'warning' | 'danger'; text: string } | null;
     readOnly: boolean;
+    impersonating: { admin: string | null; shop: string | null; expires_at: string; blocked: string } | null;
     errors: Record<string, string>;
 }
 

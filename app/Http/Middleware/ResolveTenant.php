@@ -42,7 +42,7 @@ class ResolveTenant
 
         abort_if($tenant === null || ! $tenant->status->isAccessible(), 404);
 
-        $user = $request->user();
+        $user = $request->user('web');
         if ($user !== null && ! $this->membership->isMember($user, $tenant)) {
             // Disabled here while signed in: move to another shop, or sign out when none is left.
             abort_unless($this->membership->wasMember($user, $tenant), 404);

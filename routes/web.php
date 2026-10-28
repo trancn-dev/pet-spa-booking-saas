@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\StaffController;
+use App\Http\Controllers\Tenant\SupportAccessController;
 use App\Http\Controllers\WorkspaceRedirectController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,6 +26,11 @@ Route::get('dashboard', WorkspaceRedirectController::class)
 Route::get('invite/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 Route::post('invite/{token}', [InvitationController::class, 'accept'])
     ->middleware('throttle:10,1')->name('invitations.accept');
+
+// Task 4.6: one-time token from /admin → CMS session as the shop owner (outside `tenant` on purpose).
+Route::get('app/{slug}/impersonate/{token}', [ImpersonationController::class, 'consume'])
+    ->middleware('throttle:20,1')->name('impersonation.consume');
+Route::post('impersonation/exit', [ImpersonationController::class, 'exit'])->name('impersonation.exit');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
@@ -48,6 +55,9 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::get('staff/{staff}/edit', [StaffController::class, 'edit'])->name('app.staff.edit');
         Route::put('staff/{staff}', [StaffController::class, 'update'])->name('app.staff.update');
         Route::patch('staff/{staff}/status', [StaffController::class, 'setStatus'])->name('app.staff.status');
+
+        // Cài đặt › Lịch sử truy cập hỗ trợ (task 4.6)
+        Route::get('settings/support-access', SupportAccessController::class)->name('app.settings.support-access');
 
         // S12.2 Cài đặt › Cơ sở
         Route::get('settings/branches', [BranchController::class, 'index'])->name('app.settings.branches');
