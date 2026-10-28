@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E5E4}a{color:#0D9488}a:hover{color:#0F766E}@keyframes pb-pulse{0%,100%{opacity:1}50%{opacity:.5}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+</helmet>
+<section style="{{ root }}">
+<div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap;width:2300px">
+
+<div id="4a" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4a</span>K4 Trạng thái / loading / bảng</div>
+  <div style="{{ frame }}">
+    <div style="display:flex;gap:12px;margin-bottom:16px"><div style="{{ skA }}"></div><div style="{{ skB }}"></div></div>
+    <div style="border:1px solid var(--color-border);border-radius:10px;overflow:hidden;background:var(--color-surface)" aria-busy="true">
+      <div style="height:36px;background:var(--color-surface-muted)"></div>
+      <sc-for list="{{ skRows }}" as="r" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:36px 1.2fr 1fr 0.8fr 0.6fr;gap:16px;align-items:center;padding:12px 16px;border-top:1px solid var(--color-border)">
+          <div style="{{ r.a }}"></div><div style="{{ r.b }}"></div><div style="{{ r.c }}"></div><div style="{{ r.d }}"></div><div style="{{ r.e }}"></div>
+        </div>
+      </sc-for>
+    </div>
+  </div></div>
+
+<div id="4b" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4b</span>K4 Trạng thái / loading / card + lưới</div>
+  <div style="{{ frame }}">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
+      <sc-for list="{{ skCards }}" as="c" hint-placeholder-count="2">
+        <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);display:flex;flex-direction:column;gap:10px"><div style="{{ skC }}"></div><div style="{{ skD }}"></div><div style="{{ skE }}"></div></div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+      <sc-for list="{{ skGrid }}" as="g" hint-placeholder-count="24"><div style="{{ g }}"></div></sc-for>
+    </div>
+  </div></div>
+
+<div id="4c" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4c</span>K4 Trạng thái / empty</div>
+  <div style="{{ frameC }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--color-border);border-radius:10px;text-align:center;padding:24px">
+      <div style="width:56px;height:56px;border-radius:9999px;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path></svg></div>
+      <div style="font-size:16px;line-height:24px;font-weight:600">Chưa có lịch hẹn nào hôm nay</div>
+      <div style="font-size:14px;color:var(--color-text-muted)">Lịch đặt qua điện thoại hoặc Site sẽ hiện ở đây.</div>
+      <div style="{{ btnP }}">Đặt lịch</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;border:1px dashed var(--color-border);border-radius:10px;text-align:center;padding:20px">
+      <div style="font-size:14px;line-height:20px;font-weight:600">Không tìm thấy khách phù hợp</div>
+      <div style="font-size:14px;color:var(--color-text-muted)">Thử 4 số cuối SĐT hoặc tên pet khác.</div>
+      <div style="{{ btnS }}">Xóa bộ lọc</div>
+    </div>
+  </div></div>
+
+<div id="4d" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4d</span>K4 Trạng thái / error trong màn</div>
+  <div style="{{ frameC }}">
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:10px;border:1px solid color-mix(in srgb,var(--color-danger) 50%,transparent);background:color-mix(in srgb,var(--color-danger) 10%,var(--color-surface))">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-danger)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4 M12 16h.01"></path></svg>
+      <div style="flex:1"><div style="font-weight:600">Không tải được danh sách lịch hẹn</div><div style="color:var(--color-text-muted)">Kiểm tra kết nối mạng rồi thử lại. Dữ liệu đã nhập không bị mất.</div></div>
+      <div style="{{ btnS }}">Thử lại</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:13px;line-height:18px;font-weight:500">Họ tên</div>
+      <div style="height:36px;border:1px solid var(--color-danger);border-radius:6px;background:var(--color-surface);display:flex;align-items:center;padding:0 10px;color:var(--color-text-subtle)">Nhập họ tên</div>
+      <div style="font-size:12px;line-height:16px;color:var(--color-danger)" aria-live="polite">Vui lòng nhập họ tên</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-radius:10px;background:var(--color-text);color:var(--color-bg);box-shadow:var(--shadow-md)" aria-live="polite"><span>Lưu thất bại. Bạn đang ngoại tuyến.</span><span style="font-weight:600;text-decoration:underline">Thử lại</span></div>
+  </div></div>
+
+<div id="4e" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4e</span>K4 Trạng thái / không có quyền (read-only)</div>
+  <div style="{{ frameC }}">
+    <div style="display:flex;gap:10px;align-items:center;padding:10px 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface-muted)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+      <span style="color:var(--color-text-muted)">Bạn chỉ có quyền xem hồ sơ này. Liên hệ chủ shop để được cấp quyền ghi.</span>
+    </div>
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:16px;font-weight:600">Bệnh án · Mochi</span><span style="height:36px;padding:0 16px;display:flex;align-items:center;border-radius:10px;background:var(--color-surface-muted);color:var(--color-text-subtle);font-weight:500;cursor:not-allowed" title="Chỉ bác sĩ được chỉnh sửa">Thêm dòng bệnh án</span></div>
+      <div style="font-size:12px;color:var(--color-text-muted)">Tooltip khi rê vào nút: "Chỉ bác sĩ được chỉnh sửa"</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;background:var(--color-surface-muted)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+        <span style="color:var(--color-text-muted)">16/10/2026 · CN Quận 3 · Khám tổng quát</span>
+      </div>
+    </div>
+  </div></div>
+
+<div id="4f" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">4f</span>K4 Trạng thái / vượt hạn mức gói</div>
+  <div style="{{ frameC }}">
+    <div style="padding:10px 16px;border-radius:10px;border:1px solid color-mix(in srgb,var(--color-warning) 50%,transparent);background:color-mix(in srgb,var(--color-warning) 12%,transparent)">Lịch tháng 10: 412/500, đã dùng 82%. Liên hệ PawBook để nâng gói.</div>
+    <div style="padding:10px 16px;border-radius:10px;border:1px solid color-mix(in srgb,var(--color-danger) 50%,transparent);background:color-mix(in srgb,var(--color-danger) 12%,transparent)">Lịch tháng 10: 500/500. Đã đạt hạn mức của gói Pro.</div>
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);display:flex;flex-direction:column;gap:12px">
+      <sc-for list="{{ quotas }}" as="q" hint-placeholder-count="3">
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{{ q.label }}</span><span style="font-variant-numeric:tabular-nums;color:var(--color-text-muted)">{{ q.val }}</span></div><div style="height:8px;border-radius:9999px;background:var(--color-surface-muted)"><div style="{{ q.bar }}"></div></div></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px"><span style="height:36px;padding:0 16px;display:flex;align-items:center;border-radius:10px;background:var(--color-surface-muted);color:var(--color-text-subtle);font-weight:500;cursor:not-allowed">Đã đạt 500/500 lịch tháng này</span><span style="font-size:12px;color:var(--color-text-muted)">nút Đặt lịch bị vô hiệu</span></div>
+  </div></div>
+</div>
+
+<div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap;width:2300px">
+<sc-for list="{{ pages }}" as="p" hint-placeholder-count="5">
+<div id="{{ p.id }}" style="flex:none"><div style="{{ tag }}"><span style="{{ chip }}">{{ p.id }}</span>{{ p.name }}</div>
+  <div style="{{ p.frame }}">
+    <div style="max-width:400px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+      <div style="{{ p.icon }}"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ p.d }}"></path></svg></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--color-text-muted)">{{ p.code }}</div>
+      <h1 style="font-size:{{ p.fs }}px;line-height:{{ p.lh }}px;font-weight:700;margin:0">{{ p.title }}</h1>
+      <p style="font-size:{{ p.body }}px;line-height:{{ p.bl }}px;color:var(--color-text-muted);margin:0 0 8px">{{ p.desc }}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <div style="{{ p.b1 }}">{{ p.a1 }}</div>
+        <sc-if value="{{ p.has2 }}" hint-placeholder-val="{{ false }}"><div style="{{ p.b2 }}">{{ p.a2 }}</div></sc-if>
+      </div>
+      <sc-if value="{{ p.note }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;line-height:16px;color:var(--color-text-muted);margin-top:8px">{{ p.note }}</div></sc-if>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = {'--color-bg':'#FAFAF9','--color-surface':'#FFFFFF','--color-surface-muted':'#F5F5F4','--color-border':'#E7E5E4','--color-text':'#1C1917','--color-text-muted':'#57534E','--color-text-subtle':'#A8A29E','--color-primary':'#0D9488','--color-primary-hover':'#0F766E','--color-primary-soft':'#CCFBF1','--color-on-primary':'#FFFFFF','--color-accent':'#F97362','--color-accent-soft':'#FFE4DF','--color-warning':'#D97706','--color-danger':'#DC2626','--color-success':'#16A34A','--shadow-md':'0 4px 12px rgb(28 25 23 / .10)'};
+    const font = { fontFamily:"'Be Vietnam Pro', sans-serif", fontSize:14, lineHeight:'20px', color:'var(--color-text)', boxSizing:'border-box' };
+    const sk = (w,h,r) => ({ width:w, maxWidth:'100%', height:h, borderRadius:r||6, background:'var(--color-surface-muted)', animation:'pb-pulse 1.5s ease-in-out infinite' });
+    const skS = (w,h,r) => Object.assign({}, sk(w,h,r));
+    const skF = (w,h,r) => (typeof w==='number'?skS(w,h,r):w);
+    const bp = { height:36, padding:'0 16px', display:'flex', alignItems:'center', borderRadius:10, background:'var(--color-primary)', color:'var(--color-on-primary)', fontSize:14, fontWeight:500 };
+    const bs = { height:36, padding:'0 16px', display:'flex', alignItems:'center', borderRadius:10, border:'1px solid var(--color-border)', background:'var(--color-surface)', fontSize:14, fontWeight:500, whiteSpace:'nowrap' };
+    const frame = Object.assign({}, L, font, { width:560, height:420, padding:24, border:'1px solid var(--color-border)', borderRadius:16, background:'var(--color-bg)', overflow:'hidden' });
+    const quota = (label, val, pct, c) => ({ label, val, bar:{ width:pct+'%', height:'100%', borderRadius:9999, background:c } });
+    const pageFrame = (kind) => Object.assign({}, L, font, kind==='site'
+      ? { width:390, height:700, borderRadius:32, padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--color-border)', background:'var(--color-bg)', fontSize:16, lineHeight:'24px' }
+      : { width:640, height:420, borderRadius:16, padding:24, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--color-border)', background:'var(--color-bg)' });
+    const ic = (c) => ({ width:56, height:56, borderRadius:9999, background:`color-mix(in srgb, var(${c}) 14%, transparent)`, color:`var(${c})`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:4 });
+    const pg = (id, name, code, title, desc, a1, a2, d, c, note, site) => ({ id, name:'K4 Trang lỗi / '+name, code, title, desc, a1, a2, has2:!!a2, d, note, frame:pageFrame(site?'site':'cms'),
+      icon:ic(c), fs:site?24:24, lh:32, body:site?16:14, bl:site?24:20,
+      b1:Object.assign({}, bp, site?{height:44,background:'var(--color-accent)',color:'#1C1917',fontWeight:600}:{}), b2:Object.assign({}, bs, site?{height:44}:{}) });
+    const D = { lock:'M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4', search:'M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3 M8 11h6', clock:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', warn:'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01', ban:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M4.9 4.9l14.2 14.2', cal:'M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M10 14l4 4 M14 14l-4 4' };
+    return {
+      root:Object.assign({}, { display:'flex', flexDirection:'column', gap:64, padding:48, background:'#E7E5E4' }),
+      tag:{ display:'flex', gap:12, alignItems:'center', marginBottom:8, fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'#57534E' },
+      chip:{ padding:'4px 8px', borderRadius:6, background:'#CCFBF1', color:'#1C1917' },
+      frame, frameC:Object.assign({}, frame, {display:'flex', flexDirection:'column', gap:16}), btnP:bp, btnS:bs,
+      skA:sk(200,36), skB:sk(120,36), skC:sk(90,12), skD:sk(80,32), skE:sk(160,20),
+      skRows:[0,1,2,3,4].map(i => ({ a:sk(36,36,9999), b:sk(i%2?'70%':'90%',14), c:sk('80%',14), d:sk('60%',14), e:sk('70%',20) })),
+      skCards:[0,1],
+      skGrid:Array.from({length:24},(_,i)=>Object.assign(sk('100%',44,6),{opacity:i%5===0?.5:1})),
+      quotas:[quota('Lịch tháng 10','412/500',82,'var(--color-warning)'), quota('Nhân viên','4/5',80,'var(--color-warning)'), quota('Cơ sở','2/3',66,'var(--color-primary)')],
+      pages:[
+        pg('4g','403','403','Bạn không có quyền xem trang này','Tài khoản của bạn chưa được cấp quyền. Liên hệ chủ shop nếu cần truy cập.','Về Tổng quan','Liên hệ chủ shop',D.lock,'--color-warning'),
+        pg('4h','404','404','Không tìm thấy trang','Đường dẫn không đúng hoặc nội dung đã bị xóa.','Về trang chủ','Quay lại',D.search,'--color-primary'),
+        pg('4i','419','419','Phiên làm việc đã hết hạn','Vì lý do bảo mật, hãy tải lại trang. Dữ liệu chưa lưu có thể cần nhập lại.','Tải lại trang','Đăng nhập lại',D.clock,'--color-warning'),
+        pg('4j','500','500','Có lỗi xảy ra phía PawBook','Chúng tôi đã ghi nhận lỗi. Thử lại sau ít phút.','Thử lại','Về trang chủ',D.warn,'--color-danger','Mã lỗi: ERR-20261021-7F3A'),
+        pg('4k','423 shop tạm khóa','423','Shop đang tạm khóa','Paw House Spa & Vet chưa thanh toán gói dịch vụ. Bạn vẫn xem và xuất dữ liệu được, mọi thao tác tạo, sửa bị vô hiệu.','Xuất dữ liệu','Liên hệ PawBook',D.ban,'--color-danger','Chủ shop: 0903 123 456 · hotro@pawbook.vn'),
+        pg('4l','Site tạm ngưng nhận lịch','','Shop tạm ngưng nhận lịch','Paw House Spa & Vet hiện chưa nhận đặt lịch online. Bạn có thể gọi cho shop để được hỗ trợ.','Gọi 0903 123 456','Xem dịch vụ & giá',D.cal,'--color-accent','Đặt lịch bởi PawBook',true)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

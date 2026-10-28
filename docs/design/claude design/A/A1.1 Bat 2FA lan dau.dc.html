@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E5E4}a{color:#0D9488}a:hover{color:#0F766E}@keyframes a1-caret{0%,100%{opacity:1}50%{opacity:0}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+</helmet>
+<section style="display:flex;gap:48px;padding:48px;align-items:flex-start;flex-wrap:wrap;width:3000px">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+<div id="{{ f.id }}" style="flex:none">
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">{{ f.id }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">{{ f.name }}</span></div>
+  <div style="{{ f.style }}">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:10px;background:#14201F;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="4" cy="8" r="2"></circle><path d="M9 10a5 5 0 0 1 5 3.06c1.26-.2 2.5.17 3.1 1.1a2.8 2.8 0 0 1-.7 3.7c-1.2.9-2.7.5-4.2.5s-3 .4-4.2-.5a2.8 2.8 0 0 1-.7-3.7C7 13.4 8 10 9 10z"></path></svg></div>
+        <span style="font-size:20px;font-weight:700">PawBook Admin</span>
+      </div>
+      <div style="width:560px;box-sizing:border-box;padding:32px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:16px;box-shadow:0 4px 12px rgb(28 25 23 / .10)">
+        <h1 style="font-size:24px;line-height:32px;font-weight:600;margin:0">{{ f.title }}</h1>
+        <p style="font-size:14px;line-height:20px;color:var(--color-text-muted);margin:4px 0 24px">{{ f.sub }}</p>
+        <sc-if value="{{ f.alert }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;background:#FEE2E2;color:#7F1D1D;font-size:14px;line-height:20px;margin-bottom:20px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4 M12 16h.01"></path></svg>
+            <span>{{ f.alert }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ f.isSetup }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;gap:20px;align-items:center">
+              <div style="width:168px;height:168px;flex:none;border:1px dashed var(--color-border);border-radius:10px;background:repeating-linear-gradient(135deg,transparent 0 8px,var(--color-surface-muted) 8px 9px);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">mã QR</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:600;margin-bottom:4px">1. Quét mã bằng ứng dụng xác thực</div>
+                <div style="font-size:13px;line-height:18px;color:var(--color-text-muted);margin-bottom:12px">Không quét được? Nhập khóa này vào ứng dụng.</div>
+                <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:14px;padding:8px 10px;background:var(--color-surface-muted);border-radius:6px">JBSW Y3DP EHPK 3PXP</span><span style="font-size:13px;font-weight:500;color:#0F766E;padding:8px">Sao chép</span></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:10px">2. Nhập mã 6 số hiện trong ứng dụng</div>
+              <div style="display:flex;gap:10px">
+                <sc-for list="{{ f.digits }}" as="d" hint-placeholder-count="6">
+                  <div style="{{ d.style }}">{{ d.ch }}<sc-if value="{{ d.caret }}" hint-placeholder-val="{{ false }}"><span style="width:2px;height:24px;background:var(--color-primary);animation:a1-caret 1s steps(1) infinite"></span></sc-if></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="{{ f.btn }}">Bật xác thực 2 lớp</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ f.isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;background:#CCFBF1;color:#134E4A;font-size:14px;line-height:20px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Đã bật xác thực 2 lớp. Từ lần đăng nhập sau, bạn cần nhập mã 6 số sau mật khẩu.</span>
+            </div>
+            <div style="{{ f.btn }}">Vào trang quản trị</div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="font-size:13px;color:var(--color-text-muted)">Đăng nhập với a.nguyen@pawbook.vn</div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = {'--color-bg':'#FAFAF9','--color-surface':'#FFFFFF','--color-surface-muted':'#F5F5F4','--color-border':'#E7E5E4','--color-text':'#1C1917','--color-text-muted':'#57534E','--color-primary':'#0D9488','--color-danger':'#DC2626'};
+    const base = { fontFamily:"'Be Vietnam Pro', sans-serif", fontSize:14, lineHeight:'20px', background:'var(--color-bg)', color:'var(--color-text)', boxSizing:'border-box', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', width:1440, height:900, border:'1px solid var(--color-border)', borderRadius:16 };
+    const btn = off => ({ height:44, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:600, background:off ? '#E7E5E4' : '#0F766E', color:off ? '#78716C' : '#FFFFFF' });
+    const digits = (s, bad, active) => [0,1,2,3,4,5].map(i => ({ ch:s[i] || '', caret:!bad && active && i === s.length, style:{ width:48, height:56, boxSizing:'border-box', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono', monospace", fontSize:24, fontWeight:500, background:'var(--color-surface)', border:(bad ? '2px solid var(--color-danger)' : (active && i === s.length ? '2px solid var(--color-primary)' : '1px solid var(--color-border)')) } }));
+    const sub = 'Bắt buộc với mọi tài khoản admin trước khi vào hệ thống.';
+    const mk = (id, name, o) => Object.assign({ id, name, style:Object.assign({}, L, base), alert:'', isSetup:true, isDone:false, digits:[], btn:btn(false), title:'Bật xác thực 2 lớp', sub }, o);
+    return { frames:[
+      mk('1.1a','A1.1 mặc định',{ digits:digits('',false,true), btn:btn(true) }),
+      mk('1.1b','A1.1 đang nhập',{ digits:digits('4821',false,true), btn:btn(true) }),
+      mk('1.1c','A1.1 đủ 6 số',{ digits:digits('482190',false,false) }),
+      mk('1.1d','A1.1 mã sai',{ digits:digits('482190',true,false), alert:'Mã không đúng hoặc đã hết hạn. Nhập mã mới trong ứng dụng.' }),
+      mk('1.1e','A1.1 thành công',{ isSetup:false, isDone:true, title:'Xác thực 2 lớp đã bật', sub:'Tài khoản a.nguyen@pawbook.vn được bảo vệ bằng mã 6 số.' })
+    ] };
+  }
+}
+</script>
+</body>
+</html>

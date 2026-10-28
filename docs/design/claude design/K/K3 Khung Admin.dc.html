@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E5E4}a{color:#0D9488}a:hover{color:#0F766E}</style>
+</helmet>
+<section style="display:flex;gap:48px;padding:48px;align-items:flex-start;flex-wrap:wrap;width:3000px">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+<div id="{{ f.id }}" style="flex:none">
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">{{ f.id }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">{{ f.name }}</span></div>
+  <div style="{{ f.style }}">
+    <div style="width:248px;flex:none;background:#14201F;color:#ECF1F0;display:flex;flex-direction:column;padding:12px 8px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 8px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#2DD4BF;flex:none;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#042F2E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="4" cy="8" r="2"></circle><path d="M9 10a5 5 0 0 1 5 3.06c1.26-.2 2.5.17 3.1 1.1a2.8 2.8 0 0 1-.7 3.7c-1.2.9-2.7.5-4.2.5s-3 .4-4.2-.5a2.8 2.8 0 0 1-.7-3.7C7 13.4 8 10 9 10z"></path></svg></div>
+        <span style="font-size:16px;font-weight:700;white-space:nowrap">PawBook Admin</span>
+      </div>
+      <div style="margin:0 8px 16px"><span style="{{ f.badge }}"><span style="width:6px;height:6px;border-radius:9999px;background:currentColor"></span>{{ f.env }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3">
+          <div style="{{ n.style }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ n.d }}"></path></svg><span style="flex:1">{{ n.label }}</span></div>
+        </sc-for>
+      </div>
+      <div style="padding:10px 8px;border-top:1px solid #2A3735;display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:9999px;background:#1D2826;border:2px solid #2DD4BF;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">NA</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13px;line-height:18px;font-weight:500">Nguyễn Văn A</div><div style="font-size:12px;line-height:16px;color:#9DB0AD">Super-admin · 2FA bật</div></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
+      <div style="height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--color-surface);border-bottom:1px solid var(--color-border)">
+        <div style="width:360px;height:36px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface-muted);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--color-text-subtle);font-size:14px;box-sizing:border-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span style="flex:1;white-space:nowrap">Tìm shop, slug, SĐT chủ shop</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">pawbook.vn/admin</span>
+        <div style="width:36px;height:36px;border-radius:9999px;background:var(--color-surface-muted);border:2px solid var(--color-primary);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">NA</div>
+      </div>
+      <sc-if value="{{ f.menu }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:50px;right:24px;width:220px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;box-shadow:var(--shadow-md);padding:6px;z-index:5;font-size:14px;box-sizing:border-box">
+          <div style="padding:6px 8px"><div style="font-weight:600">Nguyễn Văn A</div><div style="font-size:12px;color:var(--color-text-muted)">a.nguyen@pawbook.vn</div></div>
+          <div style="height:1px;background:var(--color-border);margin:4px 0"></div>
+          <div style="padding:8px;border-radius:6px">Bảo mật 2FA</div>
+          <div style="padding:8px;border-radius:6px;color:var(--color-danger)">Đăng xuất</div>
+        </div>
+      </sc-if>
+      <div style="flex:1;padding:24px;overflow:hidden">
+        <h1 style="font-size:24px;line-height:32px;font-weight:600;margin:0 0 16px">Danh sách shop</h1>
+        <div style="height:640px;border:1px dashed var(--color-border);border-radius:10px;background:repeating-linear-gradient(135deg,transparent 0 10px,var(--color-surface-muted) 10px 11px);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">vùng nội dung · max-width 1280px</div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = {'--color-bg':'#FAFAF9','--color-surface':'#FFFFFF','--color-surface-muted':'#F5F5F4','--color-border':'#E7E5E4','--color-text':'#1C1917','--color-text-muted':'#57534E','--color-text-subtle':'#A8A29E','--color-primary':'#0D9488','--color-danger':'#DC2626','--shadow-md':'0 4px 12px rgb(28 25 23 / .10)'};
+    const base = { fontFamily:"'Be Vietnam Pro', sans-serif", fontSize:14, lineHeight:'20px', background:'var(--color-bg)', color:'var(--color-text)', boxSizing:'border-box', overflow:'hidden', display:'flex', width:1440, height:900, border:'1px solid var(--color-border)', borderRadius:16 };
+    const bd = (bg, fg) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'2px 10px', borderRadius:9999, fontSize:12, lineHeight:'16px', fontWeight:600, background:bg, color:fg });
+    const P = { shop:'M3 9l1-5h16l1 5 M3 9v11h18V9 M10 20v-5h4v5', plus:'M12 5v14 M5 12h14', log:'M9 2h6v4H9z M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3 M9 12h6 M9 16h6', users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', set:'M4 6h10 M18 6h2 M4 12h4 M12 12h8 M4 18h12' };
+    const nav = [['Danh sách shop',P.shop,1],['Tạo shop',P.plus],['Nhật ký hoạt động',P.log],['Quản lý admin',P.users]].map(n => ({ label:n[0], d:n[1], style:{ display:'flex', alignItems:'center', gap:10, height:36, padding:'0 10px', borderRadius:10, fontSize:14, fontWeight:n[2]?600:500, color:n[2]?'#ECF1F0':'#9DB0AD', background:n[2]?'#1F3331':'transparent', boxShadow:n[2]?'inset 3px 0 0 #2DD4BF':'none' } }));
+    const f = (id, name, env, badge, menu) => ({ id, name, env, badge:bd(badge[0],badge[1]), menu, style:Object.assign({}, L, base) });
+    return { nav, frames:[
+      f('3a','K3 Khung Admin / Production','Production',['#DC2626','#FFFFFF'],false),
+      f('3b','K3 Khung Admin / Demo','Demo',['#57534E','#FFFFFF'],false),
+      f('3c','K3 Khung Admin / menu tài khoản','Production',['#DC2626','#FFFFFF'],true)
+    ] };
+  }
+}
+</script>
+</body>
+</html>

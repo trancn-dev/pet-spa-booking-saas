@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E5E4}a{color:#0D9488}a:hover{color:#0F766E}</style>
+</helmet>
+<section style="display:flex;gap:48px;padding:48px;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div id="{{ t.id }}" style="{{ t.style }}">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:var(--color-primary-soft);color:var(--color-text)">{{ t.id }}</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">{{ t.frame }}</span>
+  </div>
+  <h1 style="font-size:32px;line-height:40px;font-weight:700;margin:0">K0 Design system</h1>
+  <p style="font-size:14px;line-height:20px;color:var(--color-text-muted);margin:4px 0 40px">PawBook · token, typography, spacing và component theo design.md mục 3 · {{ t.label }}</p>
+
+  <h2 style="font-size:20px;line-height:28px;font-weight:600;margin:0 0 4px">3.1 Màu</h2>
+  <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 16px">Primary teal (sạch, y tế) · accent coral (thân thiện, spa) · neutral stone</p>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:40px">
+    <sc-for list="{{ t.tokens }}" as="k" hint-placeholder-count="18">
+    <div style="display:flex;gap:12px;align-items:center;padding:8px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <div style="{{ k.sw }}"></div>
+      <div style="min-width:0">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:16px">{{ k.name }}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:16px;color:var(--color-text-muted)">{{ k.value }}</div>
+        <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">{{ k.use }}</div>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+
+  <h2 style="font-size:20px;line-height:28px;font-weight:600;margin:0 0 16px">Trạng thái</h2>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px">
+    <sc-for list="{{ t.statusGroups }}" as="g" hint-placeholder-count="4">
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">{{ g.title }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ g.items }}" as="b" hint-placeholder-count="4">
+          <span style="{{ b.style }}">{{ b.text }}</span>
+        </sc-for>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:40px">
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">Màu nhân viên (viền trái block, avatar ring)</div>
+      <div style="display:flex;gap:12px">
+        <sc-for list="{{ t.staff }}" as="s" hint-placeholder-count="8">
+          <div style="{{ s.style }}">{{ s.ini }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">Màu nhóm dịch vụ</div>
+      <div style="display:flex;gap:12px">
+        <span style="padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;background:var(--color-accent-soft);color:var(--color-text);border:1px solid var(--color-accent)">Spa · accent</span>
+        <span style="padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;background:var(--color-primary-soft);color:var(--color-text);border:1px solid var(--color-primary)">Khám · primary</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="font-size:20px;line-height:28px;font-weight:600;margin:0 0 4px">3.2 Typography</h2>
+  <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 16px">Be Vietnam Pro cho UI · JetBrains Mono cho mã · số dùng tabular-nums</p>
+  <div style="border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);padding:8px 24px;margin-bottom:40px">
+    <sc-for list="{{ typeScale }}" as="y" hint-placeholder-count="8">
+      <div style="display:grid;grid-template-columns:120px 150px 1fr;gap:16px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--color-border)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px">{{ y.name }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">{{ y.spec }}</span>
+        <span style="{{ y.style }}">{{ y.sample }}</span>
+      </div>
+    </sc-for>
+    <div style="display:grid;grid-template-columns:120px 150px 1fr;gap:16px;align-items:baseline;padding:12px 0">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px">mono</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">JetBrains Mono</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:14px">Q3-20261016-0042 · HS-000101 · AMX2409</span>
+    </div>
+  </div>
+
+  <h2 style="font-size:20px;line-height:28px;font-weight:600;margin:0 0 16px">3.3 Spacing, radius, shadow</h2>
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">Spacing (nền 4px)</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{ spacing }}" as="p" hint-placeholder-count="11">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;width:28px;color:var(--color-text-muted)">{{ p.n }}</span>
+            <div style="{{ p.style }}"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">Radius</div>
+        <div style="display:flex;gap:12px">
+          <sc-for list="{{ radii }}" as="r" hint-placeholder-count="4">
+            <div style="text-align:center">
+              <div style="{{ r.style }}"></div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--color-text-muted);margin-top:6px">{{ r.name }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:12px">Shadow ({{ t.shadowNote }})</div>
+        <div style="display:flex;gap:16px">
+          <sc-for list="{{ t.shadows }}" as="s" hint-placeholder-count="3">
+            <div style="{{ s.style }}">{{ s.name }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);font-size:13px;line-height:20px;color:var(--color-text-muted)">
+        Control 36px (CMS) · 44px (Site) · Card padding 16 / 24 · Gap field 16 · Gap section 32<br>
+        Motion 150ms hover/press · 200ms drawer/modal · tôn trọng prefers-reduced-motion
+      </div>
+    </div>
+  </div>
+  <div style="margin-bottom:40px"></div>
+
+  <h2 style="font-size:20px;line-height:28px;font-weight:600;margin:0 0 4px">3.5 Component</h2>
+  <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 16px">Icon Lucide, nét 1.5px, cỡ 16 / 20 / 24</p>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Button</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-hover="background:var(--color-primary-hover)">Xác nhận đặt lịch</button>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font:500 14px 'Be Vietnam Pro',sans-serif;cursor:pointer">Dời lịch</button>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:transparent;color:var(--color-text);font:500 14px 'Be Vietnam Pro',sans-serif;cursor:pointer">Bỏ qua</button>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-danger);color:#fff;font:500 14px 'Be Vietnam Pro',sans-serif;cursor:pointer">Hủy lịch</button>
+        <button style="height:36px;padding:0;border:0;background:transparent;color:var(--color-primary);font:500 14px 'Be Vietnam Pro',sans-serif;text-decoration:underline;cursor:pointer">Gửi nhắc lại</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px">
+        <button style="height:28px;padding:0 12px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 13px 'Be Vietnam Pro',sans-serif">sm</button>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro',sans-serif">md</button>
+        <button style="height:44px;padding:0 24px;border-radius:10px;border:0;background:var(--color-accent);color:#1C1917;font:600 16px 'Be Vietnam Pro',sans-serif">CTA Site (accent)</button>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro',sans-serif;box-shadow:var(--focus-ring)">focus</button>
+        <button disabled style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-surface-muted);color:var(--color-text-subtle);font:500 14px 'Be Vietnam Pro',sans-serif;cursor:not-allowed">Hoàn thành &amp; thu tiền</button>
+      </div>
+      <div style="font-size:12px;color:var(--color-text-muted)">Disabled kèm tooltip lý do: "Mochi đang làm spa"</div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Input · Select · Textarea</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Số điện thoại</div>
+          <div style="display:flex;height:36px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface);overflow:hidden">
+            <span style="padding:0 10px;display:flex;align-items:center;font-size:14px;color:var(--color-text-muted);background:var(--color-surface-muted);border-right:1px solid var(--color-border)">+84</span>
+            <span style="padding:0 10px;display:flex;align-items:center;font-size:14px;font-variant-numeric:tabular-nums">903 123 456</span>
+          </div>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:4px">Dùng để gửi nhắc lịch</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Cân nặng</div>
+          <div style="display:flex;height:36px;border:1px solid var(--color-primary);box-shadow:var(--focus-ring);border-radius:6px;background:var(--color-surface);overflow:hidden">
+            <span style="flex:1;padding:0 10px;display:flex;align-items:center;font-size:14px">5,2</span>
+            <span style="padding:0 10px;display:flex;align-items:center;font-size:14px;color:var(--color-text-muted)">kg</span>
+          </div>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:4px">Focus</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Họ tên</div>
+          <div style="height:36px;border:1px solid var(--color-danger);border-radius:6px;background:var(--color-surface);display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--color-text-subtle)">Nhập họ tên</div>
+          <div style="font-size:12px;color:var(--color-danger);margin-top:4px;display:flex;gap:4px;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>Vui lòng nhập họ tên</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Loài</div>
+          <div style="height:36px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface);display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px">Chó<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+        </div>
+        <div style="grid-column:1 / -1">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Ghi chú</div>
+          <div style="height:56px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface);padding:8px 10px;font-size:14px;color:var(--color-text-subtle)">Khách muốn cắt tỉa kiểu teddy</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Badge</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <sc-for list="{{ t.badges }}" as="b" hint-placeholder-count="10">
+          <span style="{{ b.style }}">{{ b.text }}</span>
+        </sc-for>
+      </div>
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 12px">Avatar</h3>
+      <div style="display:flex;gap:12px;align-items:center">
+        <sc-for list="{{ t.avatars }}" as="a" hint-placeholder-count="5">
+          <div style="{{ a.style }}">{{ a.ini }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Pet chip + badge an toàn</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface-muted)">
+          <div style="width:36px;height:36px;border-radius:9999px;background:var(--color-accent-soft);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">Mo</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;line-height:20px">Mochi</div>
+            <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Chó · Poodle · cỡ S · 5,2 kg</div>
+          </div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--color-danger);border:1px solid var(--color-danger);background:color-mix(in srgb,var(--color-danger) 12%,transparent)">Dị ứng dầu gội</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface-muted)">
+          <div style="width:36px;height:36px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">Lu</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;line-height:20px">Lu</div>
+            <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Chó · Golden Retriever · cỡ L · 32 kg</div>
+          </div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--color-warning);border:1px solid var(--color-warning);background:color-mix(in srgb,var(--color-warning) 12%,transparent)">Sợ máy sấy</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Card · KPI</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="padding:16px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-sm)">
+          <div style="font-size:13px;color:var(--color-text-muted)">Lịch hôm nay</div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:32px;line-height:40px;font-weight:700;font-variant-numeric:tabular-nums">9<span style="font-size:16px;color:var(--color-text-muted);font-weight:400">/14</span></span><span style="font-size:12px;color:var(--color-success)">+2 so với T4</span></div>
+          <svg width="100%" height="24" viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,18 20,14 40,16 60,8 80,10 100,4 120,6" fill="none" stroke="var(--color-primary)" stroke-width="1.5"></polyline></svg>
+        </div>
+        <div style="padding:16px;border:1px solid var(--color-warning);border-radius:10px;background:color-mix(in srgb,var(--color-warning) 10%,var(--color-surface))">
+          <div style="font-size:13px;font-weight:500;color:var(--color-text)">Cần xử lý</div>
+          <div style="font-size:14px;line-height:20px;margin:4px 0 8px">Hóa đơn chưa hoàn thành từ ngày trước: 2</div>
+          <span style="font-size:13px;font-weight:500;color:var(--color-primary)">Mở Thu ngân</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Calendar block · Capacity bar</h3>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <span style="padding:2px 8px;border-radius:6px;font-size:12px;border:1px solid var(--color-border);background:var(--color-surface-muted);font-variant-numeric:tabular-nums">14:00 · Khám 2/3 · Spa 1/2</span>
+        <span style="padding:2px 8px;border-radius:6px;font-size:12px;border:1px solid var(--color-warning);background:color-mix(in srgb,var(--color-warning) 12%,transparent);font-variant-numeric:tabular-nums">15:00 · Khám 3/3 · Spa 2/2</span>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="flex:1;border-left:4px solid #F97362;background:var(--color-accent-soft);border-radius:6px;padding:6px 8px;height:84px;position:relative;overflow:hidden;box-sizing:border-box">
+          <div style="font-size:12px;line-height:16px;font-weight:600;font-variant-numeric:tabular-nums">14:00 · Mochi, Bơ</div>
+          <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Tắm + sấy</div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:16px;background:repeating-linear-gradient(135deg,transparent 0 4px,color-mix(in srgb,var(--color-text) 15%,transparent) 4px 5px)"></div>
+        </div>
+        <div style="flex:1;border-left:4px solid #8B5CF6;background:var(--color-primary-soft);border-radius:6px;padding:6px 8px;height:84px;box-sizing:border-box">
+          <div style="font-size:12px;line-height:16px;font-weight:600;font-variant-numeric:tabular-nums">14:00 · Bơ</div>
+          <div style="font-size:12px;line-height:16px;color:var(--color-text-muted)">Khám tổng quát</div>
+        </div>
+        <div style="flex:1;border-left:4px solid #0EA5E9;background:color-mix(in srgb,var(--color-primary-soft) 40%,transparent);border-radius:6px;padding:6px 8px;height:84px;box-sizing:border-box">
+          <div style="font-size:12px;line-height:16px;font-weight:600;font-variant-numeric:tabular-nums">14:30 · Sushi</div>
+          <div style="font-size:12px;line-height:16px;color:var(--color-info)">Đã đến</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Slot picker · Stepper</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <sc-for list="{{ t.slots }}" as="s" hint-placeholder-count="6">
+          <div style="{{ s.style }}"><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ s.time }}</span><span style="font-size:11px">{{ s.note }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <sc-for list="{{ t.steps }}" as="s" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <div style="{{ s.dot }}">{{ s.n }}</div>
+            <div style="font-size:12px;color:var(--color-text-muted);flex:1;height:2px;background:var(--color-border)"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Tabs · Segmented</h3>
+      <div style="display:inline-flex;padding:2px;border-radius:10px;background:var(--color-surface-muted);border:1px solid var(--color-border);margin-bottom:16px">
+        <span style="padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--color-text-muted)">Ngày</span>
+        <span style="padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--color-text-muted)">Tuần</span>
+        <span style="padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-sm)">Theo nhân viên</span>
+      </div>
+      <div style="display:flex;gap:24px;border-bottom:1px solid var(--color-border)">
+        <span style="padding:8px 0;font-size:14px;font-weight:500;color:var(--color-primary);border-bottom:2px solid var(--color-primary);margin-bottom:-1px">Tổng quan</span>
+        <span style="padding:8px 0;font-size:14px;color:var(--color-text-muted)">Lịch sử dịch vụ</span>
+        <span style="padding:8px 0;font-size:14px;color:var(--color-text-muted)">Bệnh án</span>
+        <span style="padding:8px 0;font-size:14px;color:var(--color-text-muted)">Tiêm phòng</span>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);grid-column:1 / -1">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Table</h3>
+      <div style="border:1px solid var(--color-border);border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr 1fr 1fr 32px;gap:12px;padding:8px 16px;background:var(--color-surface-muted);font-size:13px;font-weight:500;color:var(--color-text-muted)">
+          <span>Thú cưng</span><span>Khách</span><span>Vaccine</span><span>Đến hạn</span><span>Trạng thái</span><span></span>
+        </div>
+        <sc-for list="{{ t.rows }}" as="r" hint-placeholder-count="3">
+          <div style="{{ r.style }}">
+            <span style="font-weight:500">{{ r.pet }}</span><span>{{ r.cust }}</span><span>{{ r.vac }}</span><span style="font-variant-numeric:tabular-nums">{{ r.due }}</span>
+            <span><span style="{{ r.badge }}">{{ r.status }}</span></span><span style="color:var(--color-text-muted)">…</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Banner</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ t.banners }}" as="b" hint-placeholder-count="3">
+          <div style="{{ b.style }}">{{ b.text }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Toast · Modal</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border-radius:10px;background:var(--color-text);color:var(--color-bg);font-size:14px;box-shadow:var(--shadow-md);margin-bottom:16px">
+        <span>Đã hủy lịch của Mochi, Bơ</span><span style="font-weight:600;text-decoration:underline">Hoàn tác</span>
+      </div>
+      <div style="padding:24px;border-radius:16px;border:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-lg)">
+        <div style="font-size:20px;line-height:28px;font-weight:600">Hủy lịch hẹn?</div>
+        <div style="font-size:14px;line-height:20px;color:var(--color-text-muted);margin:4px 0 16px">Chọn lý do hủy. Shop sẽ báo khách qua Zalo.</div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <span style="height:36px;padding:0 16px;display:flex;align-items:center;border-radius:10px;border:1px solid var(--color-border);font-size:14px;font-weight:500">Giữ lịch</span>
+          <span style="height:36px;padding:0 16px;display:flex;align-items:center;border-radius:10px;background:var(--color-danger);color:#fff;font-size:14px;font-weight:500">Hủy lịch</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Empty state · Skeleton</h3>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border:1px dashed var(--color-border);border-radius:10px;margin-bottom:16px;text-align:center">
+        <div style="width:48px;height:48px;border-radius:9999px;background:var(--color-primary-soft);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="4" cy="8" r="2"></circle><path d="M9 10a5 5 0 0 1 5 3.06c1.26-.2 2.5.17 3.1 1.1a2.8 2.8 0 0 1-.7 3.7c-1.2.9-2.7.5-4.2.5s-3 .4-4.2-.5a2.8 2.8 0 0 1-.7-3.7C7 13.4 8 10 9 10z"></path></svg></div>
+        <div style="font-size:14px;color:var(--color-text-muted)">Chưa có lịch hẹn nào hôm nay</div>
+        <button style="height:36px;padding:0 16px;border-radius:10px;border:0;background:var(--color-primary);color:var(--color-on-primary);font:500 14px 'Be Vietnam Pro',sans-serif">Đặt lịch</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:16px;width:60%;border-radius:6px;background:var(--color-surface-muted)"></div>
+        <div style="height:16px;width:90%;border-radius:6px;background:var(--color-surface-muted)"></div>
+        <div style="height:16px;width:75%;border-radius:6px;background:var(--color-surface-muted)"></div>
+      </div>
+    </div>
+
+    <div style="padding:24px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface)">
+      <h3 style="font-size:16px;line-height:24px;font-weight:600;margin:0 0 16px">Timeline · Drawer phải</h3>
+      <div style="display:flex;flex-direction:column;gap:16px;border-left:2px solid var(--color-border);margin-left:6px;padding-left:16px">
+        <sc-for list="{{ timeline }}" as="e" hint-placeholder-count="3">
+          <div style="position:relative">
+            <div style="position:absolute;left:-23px;top:4px;width:10px;height:10px;border-radius:9999px;background:var(--color-primary);border:2px solid var(--color-surface)"></div>
+            <div style="font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums">{{ e.date }} · {{ e.branch }}</div>
+            <div style="font-size:14px;line-height:20px;font-weight:500">{{ e.title }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--color-text-muted)">Drawer phải rộng 480px · Modal có thoát + Esc</div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const T = [
+      ['--color-bg','#FAFAF9','#0F1514','nền trang'],
+      ['--color-surface','#FFFFFF','#161E1D','card, panel, modal'],
+      ['--color-surface-muted','#F5F5F4','#1D2826','nền phụ, sidebar'],
+      ['--color-border','#E7E5E4','#2A3735','viền, divider'],
+      ['--color-text','#1C1917','#ECF1F0','chữ chính'],
+      ['--color-text-muted','#57534E','#9DB0AD','chữ phụ, label'],
+      ['--color-text-subtle','#A8A29E','#6B7F7C','placeholder, disabled'],
+      ['--color-primary','#0D9488','#2DD4BF','nút chính, link, focus'],
+      ['--color-primary-hover','#0F766E','#5EEAD4','hover'],
+      ['--color-primary-soft','#CCFBF1','#123A36','chip, ô lịch chọn'],
+      ['--color-on-primary','#FFFFFF','#042F2E','chữ trên primary'],
+      ['--color-accent','#F97362','#FB8A7B','điểm nhấn, CTA Site'],
+      ['--color-accent-soft','#FFE4DF','#3B201C','nền accent'],
+      ['--color-success','#16A34A','#4ADE80','hoàn tất, đã gửi'],
+      ['--color-warning','#D97706','#FBBF24','sắp đến hạn'],
+      ['--color-danger','#DC2626','#F87171','hủy, lỗi, cấp cứu'],
+      ['--color-info','#2563EB','#60A5FA','thông tin, đã đến'],
+      ['--focus-ring','0 0 0 3px rgb(13 148 136 / .35)','0 0 0 3px rgb(45 212 191 / .4)','focus mọi phần tử']
+    ];
+    const mix = (c, p) => `color-mix(in srgb, var(${c}) ${p}%, transparent)`;
+    const badge = (text, c, extra = {}) => ({ text, style: Object.assign({ display:'inline-flex', alignItems:'center', padding:'2px 8px', borderRadius:6, fontSize:12, lineHeight:'16px', fontWeight:500, color:`var(${c})`, background:mix(c,12), border:`1px solid ${mix(c,40)}` }, extra) });
+    const mk = (dark) => {
+      const i = dark ? 2 : 1;
+      const vars = {};
+      T.forEach(r => vars[r[0]] = r[i]);
+      vars['--shadow-sm'] = dark ? 'none' : '0 1px 2px rgb(28 25 23 / .06)';
+      vars['--shadow-md'] = dark ? '0 0 0 1px #2A3735' : '0 4px 12px rgb(28 25 23 / .10)';
+      vars['--shadow-lg'] = dark ? '0 0 0 1px #2A3735' : '0 12px 32px rgb(28 25 23 / .16)';
+      const staff = ['#0D9488','#F97362','#8B5CF6','#0EA5E9','#EAB308','#EC4899','#22C55E','#64748B'];
+      const ini = ['KH','NA','TH','QB','VM','DH','LK','TT'];
+      const ring = (c, n) => ({ width:n, height:n, borderRadius:9999, boxSizing:'border-box', border:`2px solid ${c}`, background:'var(--color-surface-muted)', color:'var(--color-text)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:n>40?14:12, fontWeight:600 });
+      const rowS = { display:'grid', gridTemplateColumns:'1.2fr 1.2fr 1.4fr 1fr 1fr 32px', gap:12, padding:'10px 16px', fontSize:14, alignItems:'center', borderTop:'1px solid var(--color-border)', fontVariantNumeric:'tabular-nums' };
+      const slot = (bg, bd, col, extra={}) => Object.assign({ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:0, width:84, height:44, borderRadius:10, boxSizing:'border-box', fontSize:14, background:bg, border:`1px solid ${bd}`, color:col }, extra);
+      const dot = (state) => ({ width:28, height:28, borderRadius:9999, flex:'none', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:600, boxSizing:'border-box',
+        background: state==='done' ? 'var(--color-primary)' : state==='cur' ? 'var(--color-primary-soft)' : 'var(--color-surface-muted)',
+        color: state==='done' ? 'var(--color-on-primary)' : state==='cur' ? 'var(--color-text)' : 'var(--color-text-muted)',
+        border: state==='cur' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)' });
+      const banner = (c, text) => ({ text, style:{ padding:'10px 12px', borderRadius:10, fontSize:14, lineHeight:'20px', color:'var(--color-text)', background:mix(c,12), border:`1px solid ${mix(c,50)}` } });
+      return {
+        id: dark ? '1b' : '1a',
+        frame: dark ? 'K0 Design system / dark' : 'K0 Design system / default',
+        label: dark ? 'Dark mode' : 'Light mode',
+        shadowNote: dark ? 'dark: thay bằng viền' : 'sm card · md dropdown · lg modal',
+        style: Object.assign({}, vars, { width:1200, flex:'none', padding:40, boxSizing:'border-box', background:'var(--color-bg)', color:'var(--color-text)', fontFamily:"'Be Vietnam Pro', sans-serif", fontSize:14, lineHeight:'20px', borderRadius:16, border:'1px solid var(--color-border)' }),
+        tokens: T.map(r => ({ name:r[0], value:r[i], use:r[3], sw: r[0]==='--focus-ring' ? { width:40, height:40, borderRadius:10, flex:'none', background:'var(--color-surface)', border:'1px solid var(--color-primary)', boxShadow:'var(--focus-ring)', boxSizing:'border-box' } : { width:40, height:40, borderRadius:10, flex:'none', background:`var(${r[0]})`, border:'1px solid var(--color-border)', boxSizing:'border-box' } })),
+        statusGroups: [
+          { title:'Lịch hẹn', items:[badge('Đã xác nhận','--color-primary'), badge('Đã đến','--color-info'), badge('Đã hủy','--color-text-subtle',{textDecoration:'line-through'}), badge('Không đến','--color-danger')] },
+          { title:'Visit', items:[badge('Đang chờ','--color-text-muted'), badge('Đang thực hiện','--color-info'), badge('Hoàn tất','--color-success'), badge('Đã hủy','--color-text-subtle'), badge('Cấp cứu','--color-danger',{fontWeight:700})] },
+          { title:'Hóa đơn', items:[badge('Chưa hoàn thành','--color-warning'), badge('Hoàn thành','--color-success'), badge('Đã hủy','--color-text-subtle',{textDecoration:'line-through'})] },
+          { title:'Tiêm phòng', items:[badge('Đúng hạn','--color-success'), badge('Sắp đến hạn','--color-warning'), badge('Quá hạn','--color-danger')] }
+        ],
+        staff: staff.map((c,k) => ({ ini:ini[k], style: ring(c,40) })),
+        shadows: [['sm','--shadow-sm'],['md','--shadow-md'],['lg','--shadow-lg']].map(s => ({ name:s[0], style:{ width:80, height:56, borderRadius:10, background:'var(--color-surface)', border:'1px solid var(--color-border)', boxShadow:`var(${s[1]})`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'var(--color-text-muted)' } })),
+        badges: [badge('Online','--color-primary'), badge('Cấp cứu','--color-danger'), badge('Cận date','--color-warning'), badge('Khám','--color-primary'), badge('Spa','--color-accent'), badge('Bác sĩ','--color-info'), badge('Đúng hạn','--color-success'), badge('Sắp đến hạn','--color-warning'), badge('Quá hạn','--color-danger')],
+        avatars: [ring('#F97362',36), ring('#8B5CF6',36), ring('#0EA5E9',36), ring('#0D9488',48), Object.assign(ring('transparent',36),{border:'0',background:'var(--color-accent-soft)'})].map((s,k)=>({ style:s, ini:['NA','TH','QB','KH','Mo'][k] })),
+        slots: [
+          { time:'13:45', note:'còn 2 chỗ', style: slot('var(--color-surface)','var(--color-border)','var(--color-text)') },
+          { time:'14:00', note:'còn 1 chỗ', style: slot('var(--color-primary-soft)','var(--color-primary)','var(--color-text)',{boxShadow:'var(--focus-ring)'}) },
+          { time:'14:15', note:'còn 2 chỗ', style: slot('var(--color-surface)','var(--color-border)','var(--color-text)') },
+          { time:'14:30', note:'hết chỗ', style: slot('var(--color-surface-muted)','var(--color-border)','var(--color-text-subtle)',{textDecoration:'line-through'}) },
+          { time:'14:45', note:'còn 3 chỗ', style: slot('var(--color-surface)','var(--color-border)','var(--color-text)') },
+          { time:'15:00', note:'còn 1 chỗ', style: slot('var(--color-surface)','var(--color-border)','var(--color-text)') }
+        ],
+        steps: [dot('done'),dot('done'),dot('cur'),dot('todo'),dot('todo')].map((d,k)=>({ n:k<2?'✓':String(k+1), dot:d })),
+        rows: [
+          { pet:'Sushi', cust:'Đặng Mỹ Linh', vac:'Vaccine 7 bệnh · mũi 3', due:'06/11/2026', status:'Sắp đến hạn', b:'--color-warning' },
+          { pet:'Tôm', cust:'Bùi Gia Huy', vac:'Tẩy giun', due:'04/10/2026', status:'Quá hạn', b:'--color-danger' },
+          { pet:'Mochi', cust:'Nguyễn Thị Lan', vac:'Vaccine 7 bệnh · nhắc lại', due:'20/03/2027', status:'Đúng hạn', b:'--color-success' }
+        ].map((r,k) => ({ pet:r.pet, cust:r.cust, vac:r.vac, due:r.due, status:r.status, badge: badge('',r.b).style, style: Object.assign({}, rowS, k%2 ? { background:'var(--color-surface-muted)' } : {}) })),
+        banners: [
+          banner('--color-warning','Gói Pro hết hạn ngày 24/10/2026, liên hệ PawBook để gia hạn'),
+          banner('--color-danger','Đã quá hạn 3 ngày. Tài khoản sẽ tạm khóa sau 4 ngày nữa'),
+          banner('--color-info','Lịch tháng 10: 412/500. Còn 88 lịch trong gói')
+        ]
+      };
+    };
+    const ty = (name, spec, size, lh, w, sample) => ({ name, spec, sample, style:{ fontSize:size, lineHeight:lh+'px', fontWeight:w, fontVariantNumeric:'tabular-nums' } });
+    return {
+      themes: [mk(false), mk(true)],
+      typeScale: [
+        ty('display','32 / 40 · 700',32,40,700,'Đặt lịch cho Mochi'),
+        ty('h1','24 / 32 · 600',24,32,600,'Lịch hẹn hôm nay'),
+        ty('h2','20 / 28 · 600',20,28,600,'Hàng đợi Khám'),
+        ty('h3','16 / 24 · 600',16,24,600,'Tiêm phòng đến hạn'),
+        ty('body','14 / 20 · 400',14,20,400,'Mochi (Poodle, cỡ S) đã check-in lúc 14:02, 350.000 ₫'),
+        ty('body-lg','16 / 24 · 400',16,24,400,'Chọn giờ phù hợp, shop sẽ nhắc lịch qua Zalo'),
+        ty('label','13 / 18 · 500',13,18,500,'Số điện thoại'),
+        ty('caption','12 / 16 · 400',12,16,400,'Cập nhật 14:30 · Giờ theo shop (GMT+7)')
+      ],
+      spacing: [2,4,8,12,16,20,24,32,40,48,64].map(n => ({ n:String(n), style:{ height:12, width:n*3, borderRadius:2, background:'var(--color-primary)' } })),
+      radii: [['sm 6',6],['md 10',10],['lg 16',16],['full',9999]].map(r => ({ name:r[0], style:{ width:56, height:56, borderRadius:r[1], background:'var(--color-primary-soft)', border:'1px solid var(--color-primary)', boxSizing:'border-box' } })),
+      timeline: [
+        { date:'16/10/2026', branch:'CN Quận 3', title:'Khám tổng quát · BS. Lê Thu Hà' },
+        { date:'02/09/2026', branch:'CN Quận 3', title:'Tiêm vaccine 7 bệnh, mũi 2' },
+        { date:'12/08/2026', branch:'CN Quận 7', title:'Tắm + sấy · Nguyễn Ngọc Anh' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

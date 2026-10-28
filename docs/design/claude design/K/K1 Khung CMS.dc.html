@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E5E4}a{color:#0D9488}a:hover{color:#0F766E}</style>
+</helmet>
+<section style="display:flex;flex-direction:column;gap:48px;padding:48px;align-items:flex-start">
+
+<div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap;width:3000px">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="4">
+<div id="{{ f.id }}" style="flex:none">
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">{{ f.id }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">{{ f.name }}</span></div>
+  <div style="{{ f.style }}">
+    <div style="width:var(--sbw);flex:none;background:var(--color-surface-muted);border-right:1px solid var(--color-border);display:flex;flex-direction:column;padding:12px 8px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 8px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--color-primary);flex:none;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-on-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="4" cy="8" r="2"></circle><path d="M9 10a5 5 0 0 1 5 3.06c1.26-.2 2.5.17 3.1 1.1a2.8 2.8 0 0 1-.7 3.7c-1.2.9-2.7.5-4.2.5s-3 .4-4.2-.5a2.8 2.8 0 0 1-.7-3.7C7 13.4 8 10 9 10z"></path></svg></div>
+        <sc-if value="{{ f.labels }}" hint-placeholder-val="{{ true }}"><span style="font-size:16px;font-weight:700">PawBook</span></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <sc-for list="{{ f.nav }}" as="n" hint-placeholder-count="12">
+          <div style="{{ n.style }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ n.d }}"></path></svg>
+            <sc-if value="{{ f.labels }}" hint-placeholder-val="{{ true }}"><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.label }}</span></sc-if>
+            <sc-if value="{{ n.tagOn }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;font-weight:500;padding:1px 6px;border-radius:9999px;background:var(--color-border);color:var(--color-text-muted)">{{ n.tag }}</span></sc-if>
+            <sc-if value="{{ n.countOn }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;font-weight:600;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9999px;background:var(--color-primary);color:var(--color-on-primary);display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums">{{ n.count }}</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:10px;color:var(--color-text-muted);font-size:14px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z M9 3v18 M16 9l-3 3 3 3"></path></svg>
+        <sc-if value="{{ f.labels }}" hint-placeholder-val="{{ true }}"><span>Thu gọn</span></sc-if>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 24px;background:var(--color-surface);border-bottom:1px solid var(--color-border);position:relative">
+        <div style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap">
+          <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 8px;border-radius:10px;border:1px solid transparent;font-weight:600;background:var(--ws-bg)">
+            <div style="width:24px;height:24px;border-radius:6px;background:var(--color-accent-soft);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">PH</div>
+            Paw House Spa &amp; Vet
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+          <div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--color-border);background:var(--br-bg);font-weight:500">
+            CN Quận 3
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+        </div>
+        <div style="width:220px;flex:none;height:36px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface-muted);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--color-text-subtle);font-size:14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <span style="flex:1;white-space:nowrap">Tìm khách, SĐT, tên pet</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:0 6px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-surface);color:var(--color-text-muted)">/</span>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-text);font-size:12px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;border-radius:9999px;background:var(--color-success)"></span>Ca thu ngân · Két 1 · mở 07:58</div>
+        <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:10px;background:var(--color-primary);color:var(--color-on-primary);font-size:14px;font-weight:500;white-space:nowrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5v14"></path></svg>Đặt lịch
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:0 5px;border-radius:4px;background:rgb(255 255 255 / .22)">N</span>
+        </div>
+        <div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+          <span style="position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:9999px;background:var(--color-danger);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">3</span>
+        </div>
+        <div style="width:36px;height:36px;border-radius:9999px;box-sizing:border-box;border:2px solid #EAB308;background:var(--color-surface-muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">VM</div>
+
+        <sc-if value="{{ f.branchOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:50px;left:{{ f.brLeft }}px;width:240px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;box-shadow:var(--shadow-md);padding:6px;z-index:5;font-size:14px;box-sizing:border-box">
+            <div style="padding:6px 8px;font-size:12px;color:var(--color-text-muted)">Cơ sở đang làm việc</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;background:var(--color-primary-soft);font-weight:500"><span style="flex:1">CN Quận 3 <span style="font-size:12px;color:var(--color-text-muted);font-weight:400">· chính</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>
+            <div style="padding:8px;border-radius:6px">CN Quận 7</div>
+            <div style="height:1px;background:var(--color-border);margin:4px 0"></div>
+            <div style="padding:8px;border-radius:6px;color:var(--color-text-muted)">Tất cả cơ sở <span style="font-size:12px">(chỉ Chủ shop)</span></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ f.wsOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:50px;left:24px;width:300px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;box-shadow:var(--shadow-md);padding:6px;z-index:5;font-size:14px;box-sizing:border-box">
+            <div style="padding:6px 8px;font-size:12px;color:var(--color-text-muted)">Shop của bạn</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:6px;background:var(--color-primary-soft)">
+              <div style="width:28px;height:28px;border-radius:6px;background:var(--color-accent-soft);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">PH</div>
+              <div style="flex:1"><div style="font-weight:600">Paw House Spa &amp; Vet</div><div style="font-size:12px;color:var(--color-text-muted)">Chủ shop + Bác sĩ · 2 cơ sở</div></div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:6px">
+              <div style="width:28px;height:28px;border-radius:6px;background:var(--color-surface-muted);border:1px solid var(--color-border);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">MC</div>
+              <div style="flex:1"><div style="font-weight:600">Meow Clinic</div><div style="font-size:12px;color:var(--color-text-muted)">Bác sĩ · 1 cơ sở</div></div>
+            </div>
+            <div style="height:1px;background:var(--color-border);margin:4px 0"></div>
+            <div style="padding:8px;font-size:12px;color:var(--color-text-muted)">Đổi shop sẽ mở màn chuyển tiếp. Dữ liệu 2 shop không hiện chung một màn.</div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="flex:1;padding:24px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <h1 style="font-size:24px;line-height:32px;font-weight:600;margin:0">Lịch hẹn</h1>
+          <span style="display:inline-flex;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid var(--color-border);background:var(--color-surface-muted);color:var(--color-text-muted)">CN Quận 3</span>
+        </div>
+        <div style="height:640px;border:1px dashed var(--color-border);border-radius:10px;background:repeating-linear-gradient(135deg,transparent 0 10px,var(--color-surface-muted) 10px 11px);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">vùng nội dung · max-width 1280px (Lịch: full width)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap">
+  <div id="1e" style="flex:none">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">1e</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">K1 Khung CMS / banner / hạn dùng · tạm khóa · đăng nhập thay</span></div>
+    <div style="{{ bannerFrame }}">
+      <sc-for list="{{ banners }}" as="b" hint-placeholder-count="4">
+        <div style="border-bottom:1px solid var(--color-border)">
+          <div style="{{ b.style }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ b.icon }}"></path></svg>
+            <span style="flex:1">{{ b.text }}</span>
+            <span style="{{ b.btn }}">{{ b.action }}</span>
+          </div>
+          <div style="height:56px;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--color-surface);font-size:14px"><span style="font-weight:600">Paw House Spa &amp; Vet</span><span style="color:var(--color-text-subtle)">›</span><span>CN Quận 3</span><span style="flex:1"></span><span style="{{ b.cta }}">+ Đặt lịch</span></div>
+          <div style="padding:8px 24px 12px;font-size:12px;color:var(--color-text-muted);background:var(--color-bg)">{{ b.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="1f" style="flex:none">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">1f</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">K1 Khung CMS / tablet / drawer mở</span></div>
+    <div style="{{ tabletFrame }}">
+      <div style="height:56px;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--color-surface);border-bottom:1px solid var(--color-border);font-size:14px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16 M4 12h16 M4 18h16"></path></svg>
+        <span style="font-weight:600">Paw House</span><span style="color:var(--color-text-subtle)">›</span><span>CN Quận 3</span>
+        <span style="flex:1"></span>
+        <span style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:10px;background:var(--color-primary);color:var(--color-on-primary);font-weight:500">+ Đặt lịch</span>
+        <div style="width:36px;height:36px;border-radius:9999px;box-sizing:border-box;border:2px solid #EAB308;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">VM</div>
+      </div>
+      <div style="padding:16px"><h1 style="font-size:24px;line-height:32px;font-weight:600;margin:0">Lịch hẹn</h1></div>
+      <div style="position:absolute;inset:0;background:rgb(0 0 0 / .35)"></div>
+      <div style="position:absolute;left:0;top:0;bottom:0;width:248px;background:var(--color-surface-muted);border-right:1px solid var(--color-border);box-shadow:var(--shadow-lg);padding:12px 8px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 8px;margin-bottom:8px"><div style="width:28px;height:28px;border-radius:8px;background:var(--color-primary)"></div><span style="font-size:16px;font-weight:700">PawBook</span></div>
+        <sc-for list="{{ tabletNav }}" as="n" hint-placeholder-count="8">
+          <div style="{{ n.style }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ n.d }}"></path></svg><span>{{ n.label }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div id="1g" style="flex:none">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px;background:#CCFBF1;color:#1C1917">1g</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#57534E">K1 Khung CMS / mobile / bottom nav</span></div>
+    <div style="{{ mobileFrame }}">
+      <div style="height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--color-surface);border-bottom:1px solid var(--color-border);font-size:14px">
+        <div style="width:24px;height:24px;border-radius:6px;background:var(--color-accent-soft);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">PH</div>
+        <span style="font-weight:600">Paw House</span><span style="color:var(--color-text-subtle)">›</span><span style="padding:2px 8px;border-radius:6px;border:1px solid var(--color-border);font-size:13px">Q3 ▾</span>
+        <span style="flex:1"></span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+      </div>
+      <div style="flex:1;padding:16px"><h1 style="font-size:24px;line-height:32px;font-weight:600;margin:0 0 12px">Hôm nay</h1><div style="height:420px;border:1px dashed var(--color-border);border-radius:10px;background:repeating-linear-gradient(135deg,transparent 0 10px,var(--color-surface-muted) 10px 11px);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-text-muted)">nội dung</div></div>
+      <div style="height:72px;flex:none;display:grid;grid-template-columns:repeat(4,1fr);background:var(--color-surface);border-top:1px solid var(--color-border);padding:6px 0 18px;box-sizing:border-box">
+        <sc-for list="{{ mobileNav }}" as="n" hint-placeholder-count="4">
+          <div style="{{ n.style }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.d }}"></path></svg><span>{{ n.label }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = {'--color-bg':'#FAFAF9','--color-surface':'#FFFFFF','--color-surface-muted':'#F5F5F4','--color-border':'#E7E5E4','--color-text':'#1C1917','--color-text-muted':'#57534E','--color-text-subtle':'#A8A29E','--color-primary':'#0D9488','--color-primary-hover':'#0F766E','--color-primary-soft':'#CCFBF1','--color-on-primary':'#FFFFFF','--color-accent':'#F97362','--color-accent-soft':'#FFE4DF','--color-success':'#16A34A','--color-warning':'#D97706','--color-danger':'#DC2626','--color-info':'#2563EB','--focus-ring':'0 0 0 3px rgb(13 148 136 / .35)','--shadow-sm':'0 1px 2px rgb(28 25 23 / .06)','--shadow-md':'0 4px 12px rgb(28 25 23 / .10)','--shadow-lg':'0 12px 32px rgb(28 25 23 / .16)'};
+    const D = {'--color-bg':'#0F1514','--color-surface':'#161E1D','--color-surface-muted':'#1D2826','--color-border':'#2A3735','--color-text':'#ECF1F0','--color-text-muted':'#9DB0AD','--color-text-subtle':'#6B7F7C','--color-primary':'#2DD4BF','--color-primary-hover':'#5EEAD4','--color-primary-soft':'#123A36','--color-on-primary':'#042F2E','--color-accent':'#FB8A7B','--color-accent-soft':'#3B201C','--color-success':'#4ADE80','--color-warning':'#FBBF24','--color-danger':'#F87171','--color-info':'#60A5FA','--focus-ring':'0 0 0 3px rgb(45 212 191 / .4)','--shadow-sm':'none','--shadow-md':'0 0 0 1px #2A3735','--shadow-lg':'0 0 0 1px #2A3735'};
+    const base = { fontFamily:"'Be Vietnam Pro', sans-serif", fontSize:14, lineHeight:'20px', background:'var(--color-bg)', color:'var(--color-text)', boxSizing:'border-box', overflow:'hidden', position:'relative' };
+    const P = {
+      dash:'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z',
+      queue:'M9 2h6v4H9z M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3 M9 12h6 M9 16h6',
+      cal:'M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+      cash:'M2 6h20v12H2z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+      users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M22 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8',
+      syr:'m18 2 4 4 M17 7l3-3 M19 9 8.7 19.3a1 1 0 0 1-.7.3H5v-3a1 1 0 0 1 .3-.7L15.5 5.5 M9 11l4 4 M5 19l-3 3 M14 4l6 6',
+      svc:'M2 7h20v14H2z M16 7V3H8v4',
+      box:'M16.5 9.4 7.5 4.2 M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z M3.3 7 12 12l8.7-5 M12 22V12',
+      staff:'M3 5h18v14H3z M8 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M14 9h4 M14 13h4 M5 17c0-2 1.5-3 3-3s3 1 3 3',
+      lock:'M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4',
+      chart:'M3 3v18h18 M8 17V9 M13 17V5 M18 17v-6',
+      set:'M4 6h10 M18 6h2 M4 12h4 M12 12h8 M4 18h12 M14 4v4 M8 10v4 M16 16v4',
+      more:'M5 12h.01 M12 12h.01 M19 12h.01',
+      warn:'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01',
+      eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+      clock:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2'
+    };
+    const navDef = [['Tổng quan',P.dash],['Tiếp nhận & Hàng đợi',P.queue,'9'],['Lịch hẹn',P.cal],['Thu ngân',P.cash,'2'],['Khách & Thú cưng',P.users],['Tiêm phòng',P.syr],['Dịch vụ',P.svc],['Kho',P.box,null,'GĐ2'],['Nhân viên',P.staff],['Lương',P.lock,null,'GĐ3'],['Báo cáo',P.chart],['Cài đặt',P.set]];
+    const mkNav = (collapsed, pad) => navDef.map(n => {
+      const act = n[0]==='Lịch hẹn';
+      return { label:n[0], d:n[1], count:n[2]||'', countOn: !!n[2] && !collapsed, tag:n[3]||'', tagOn: !!n[3] && !collapsed,
+        style:{ display:'flex', alignItems:'center', gap:10, height:36, padding:'0 10px', borderRadius:10, fontSize:14, fontWeight: act?600:500, justifyContent: collapsed?'center':'flex-start',
+          background: act?'var(--color-primary-soft)':'transparent', color: act?'var(--color-text)':'var(--color-text-muted)', boxShadow: act?'inset 3px 0 0 var(--color-primary)':'none' } };
+    });
+    const fr = (id, name, theme, o) => ({ id, name, labels: !o.collapsed, branchOpen: !!o.br, wsOpen: !!o.ws, brLeft: 24 + 232, nav: mkNav(!!o.collapsed),
+      style: Object.assign({}, theme, base, { width:1440, height:900, display:'flex', border:'1px solid var(--color-border)', borderRadius:16, '--sbw': o.collapsed?'64px':'248px', '--ws-bg': o.ws?'var(--color-surface-muted)':'transparent', '--br-bg': o.br?'var(--color-surface-muted)':'var(--color-surface)' }) });
+    const bn = (c, text, action, btnS, note, icon, cta) => ({ text, action, icon, note, cta,
+      style:{ height:40, display:'flex', alignItems:'center', gap:10, padding:'0 24px', fontSize:14, fontWeight:500, color: c.fg, background: c.bg },
+      btn:{ height:28, padding:'0 12px', display:'flex', alignItems:'center', borderRadius:6, fontSize:13, fontWeight:600, background:'rgb(255 255 255 / .18)', border:'1px solid rgb(255 255 255 / .6)', color:'#fff', visibility: action?'visible':'hidden' } });
+    const ctaOn = { height:36, padding:'0 14px', display:'flex', alignItems:'center', borderRadius:10, background:'var(--color-primary)', color:'var(--color-on-primary)', fontWeight:500 };
+    const ctaOff = { height:36, padding:'0 14px', display:'flex', alignItems:'center', borderRadius:10, background:'var(--color-surface-muted)', color:'var(--color-text-subtle)', fontWeight:500, cursor:'not-allowed' };
+    const tabletNav = navDef.slice(0,9).map((n,i)=>mkNav(false)[i]);
+    const mob = [['Hôm nay',P.cal,true],['Hàng đợi',P.queue],['Khách',P.users],['Thêm',P.more]].map(m => ({ label:m[0], d:m[1], style:{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, fontSize:12, fontWeight: m[2]?600:500, color: m[2]?'var(--color-primary)':'var(--color-text-muted)', minHeight:44 } }));
+    return {
+      frames: [
+        fr('1a','K1 Khung CMS / desktop / default',L,{}),
+        fr('1b','K1 Khung CMS / desktop / dark',D,{}),
+        fr('1c','K1 Khung CMS / desktop / thu gọn + branch switcher',L,{collapsed:true,br:true}),
+        fr('1d','K1 Khung CMS / desktop / workspace switcher',L,{ws:true})
+      ],
+      bannerFrame: Object.assign({}, L, base, { width:1440, border:'1px solid var(--color-border)', borderRadius:16 }),
+      banners: [
+        Object.assign(bn({bg:'#B91C1C'}, 'Admin Nguyễn Văn A đang xem với tư cách Trần Minh Khoa · còn 24:10', 'Thoát', 0, 'Đăng nhập thay: đỏ, cố định trên cùng. Nút bị chặn trong phiên disabled + tooltip. Trang Tài khoản (S39) chặn đổi mật khẩu.', P.eye, ctaOff)),
+        bn({bg:'#92400E'}, 'Gói Pro hết hạn ngày 24/10/2026, liên hệ PawBook để gia hạn', 'Liên hệ', 0, 'Hạn dùng: vàng khi còn ≤ 7 ngày; đỏ khi quá hạn "Đã quá hạn 3 ngày. Tài khoản sẽ tạm khóa sau 4 ngày nữa".', P.clock, ctaOn),
+        bn({bg:'#B91C1C'}, 'Shop tạm khóa: chưa thanh toán. Bạn vẫn xem và xuất dữ liệu được, mọi nút tạo/sửa bị vô hiệu', 'Liên hệ', 0, 'Tạm khóa: đỏ toàn app, nút tạo/sửa disabled kèm tooltip lý do.', P.warn, ctaOff)
+      ],
+      tabletFrame: Object.assign({}, L, base, { width:1024, height:768, border:'1px solid var(--color-border)', borderRadius:16 }),
+      tabletNav,
+      mobileFrame: Object.assign({}, L, base, { width:390, height:844, display:'flex', flexDirection:'column', border:'1px solid var(--color-border)', borderRadius:32 }),
+      mobileNav: mob
+    };
+  }
+}
+</script>
+</body>
+</html>
