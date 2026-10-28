@@ -3,6 +3,7 @@ import InputError from '@/components/InputError.vue';
 import BackLink from '@/components/pb/BackLink.vue';
 import FormField from '@/components/pb/FormField.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
+import SettingsLayout from '@/components/shell/SettingsLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,85 +73,93 @@ const submit = () => {
     <Head :title="editing ? `Sửa ${branch?.name}` : 'Thêm cơ sở'" />
 
     <AppLayout>
-        <form class="flex max-w-3xl flex-col gap-8 p-4 md:p-6" @submit.prevent="submit">
-            <PageHeader :title="editing ? (branch?.name ?? '') : 'Thêm cơ sở'">
-                <template #before><BackLink :href="route('app.settings.branches')">Cơ sở</BackLink></template>
-                <template v-if="branch && canRates" #subtitle>
-                    <Link :href="route('app.settings.online-rates', branch.id)" class="text-primary hover:underline"
-                        >Tỉ lệ đặt online của cơ sở →</Link
-                    >
-                </template>
-            </PageHeader>
+        <SettingsLayout>
+            <form class="flex max-w-3xl flex-col gap-8" @submit.prevent="submit">
+                <PageHeader :title="editing ? (branch?.name ?? '') : 'Thêm cơ sở'">
+                    <template #before><BackLink :href="route('app.settings.branches')">Cơ sở</BackLink></template>
+                    <template v-if="branch && canRates" #subtitle>
+                        <Link :href="route('app.settings.online-rates', branch.id)" class="text-primary hover:underline"
+                            >Tỉ lệ đặt online của cơ sở →</Link
+                        >
+                    </template>
+                </PageHeader>
 
-            <section class="grid gap-4 rounded-[10px] border bg-card p-6">
-                <div class="grid gap-4 sm:grid-cols-[140px_1fr]">
-                    <div class="grid gap-2">
-                        <Label for="code">Mã cơ sở</Label>
-                        <Input id="code" v-model="form.code" class="font-mono uppercase" maxlength="20" :disabled="editing" required />
-                        <p class="text-xs text-muted-foreground">{{ editing ? 'Không đổi được (đầu số chứng từ).' : 'Đầu số chứng từ, vd Q3.' }}</p>
-                        <InputError :message="form.errors.code" />
-                    </div>
-                    <FormField label="Tên cơ sở" input-id="name" :error="form.errors.name"
-                        ><Input id="name" v-model="form.name" required
-                    /></FormField>
-                </div>
-                <FormField label="Địa chỉ" input-id="address" :error="form.errors.address"><Input id="address" v-model="form.address" /></FormField>
-                <div class="grid gap-2 sm:max-w-xs">
-                    <Label for="phone">Điện thoại</Label>
-                    <Input id="phone" v-model="form.phone" type="tel" placeholder="+842839300001" />
-                    <InputError :message="form.errors.phone" />
-                </div>
-                <label v-if="editing" class="flex items-center gap-2 text-sm">
-                    <input v-model="form.is_active" type="checkbox" class="size-4 accent-primary" />
-                    Đang hoạt động
-                </label>
-                <InputError :message="errors.is_active" />
-            </section>
-
-            <section class="rounded-[10px] border bg-card p-6">
-                <h2 class="mb-4 text-xl font-semibold">Giờ mở cửa</h2>
-                <div class="grid gap-3">
-                    <div v-for="day in weekdays" :key="day.key" class="grid items-start gap-2 sm:grid-cols-[120px_1fr]">
-                        <label class="flex h-9 items-center gap-2 text-sm font-medium">
-                            <input
-                                type="checkbox"
-                                class="size-4 accent-primary"
-                                :checked="form.opening_hours[day.key].length > 0"
-                                @change="toggleDay(day.key, ($event.target as HTMLInputElement).checked)"
-                            />
-                            {{ day.label }}
-                        </label>
+                <section class="grid gap-4 rounded-[10px] border bg-card p-6">
+                    <div class="grid gap-4 sm:grid-cols-[140px_1fr]">
                         <div class="grid gap-2">
-                            <span v-if="!form.opening_hours[day.key].length" class="flex h-9 items-center text-sm text-muted-foreground">Nghỉ</span>
-                            <div v-for="(range, index) in form.opening_hours[day.key]" :key="index" class="flex items-center gap-2">
-                                <Input v-model="range[0]" type="time" class="w-32" :aria-label="`${day.label} mở cửa`" />
-                                <span class="text-muted-foreground">–</span>
-                                <Input v-model="range[1]" type="time" class="w-32" :aria-label="`${day.label} đóng cửa`" />
-                                <Button v-if="index > 0" type="button" variant="ghost" size="sm" @click="removeRange(day.key, index)">Bỏ</Button>
-                                <Button
-                                    v-else-if="form.opening_hours[day.key].length < 3"
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="addRange(day.key)"
-                                    >+ Ca</Button
+                            <Label for="code">Mã cơ sở</Label>
+                            <Input id="code" v-model="form.code" class="font-mono uppercase" maxlength="20" :disabled="editing" required />
+                            <p class="text-xs text-muted-foreground">
+                                {{ editing ? 'Không đổi được (đầu số chứng từ).' : 'Đầu số chứng từ, vd Q3.' }}
+                            </p>
+                            <InputError :message="form.errors.code" />
+                        </div>
+                        <FormField label="Tên cơ sở" input-id="name" :error="form.errors.name"
+                            ><Input id="name" v-model="form.name" required
+                        /></FormField>
+                    </div>
+                    <FormField label="Địa chỉ" input-id="address" :error="form.errors.address"
+                        ><Input id="address" v-model="form.address"
+                    /></FormField>
+                    <div class="grid gap-2 sm:max-w-xs">
+                        <Label for="phone">Điện thoại</Label>
+                        <Input id="phone" v-model="form.phone" type="tel" placeholder="+842839300001" />
+                        <InputError :message="form.errors.phone" />
+                    </div>
+                    <label v-if="editing" class="flex items-center gap-2 text-sm">
+                        <input v-model="form.is_active" type="checkbox" class="size-4 accent-primary" />
+                        Đang hoạt động
+                    </label>
+                    <InputError :message="errors.is_active" />
+                </section>
+
+                <section class="rounded-[10px] border bg-card p-6">
+                    <h2 class="mb-4 text-xl font-semibold">Giờ mở cửa</h2>
+                    <div class="grid gap-3">
+                        <div v-for="day in weekdays" :key="day.key" class="grid items-start gap-2 sm:grid-cols-[120px_1fr]">
+                            <label class="flex h-9 items-center gap-2 text-sm font-medium">
+                                <input
+                                    type="checkbox"
+                                    class="size-4 accent-primary"
+                                    :checked="form.opening_hours[day.key].length > 0"
+                                    @change="toggleDay(day.key, ($event.target as HTMLInputElement).checked)"
+                                />
+                                {{ day.label }}
+                            </label>
+                            <div class="grid gap-2">
+                                <span v-if="!form.opening_hours[day.key].length" class="flex h-9 items-center text-sm text-muted-foreground"
+                                    >Nghỉ</span
                                 >
+                                <div v-for="(range, index) in form.opening_hours[day.key]" :key="index" class="flex items-center gap-2">
+                                    <Input v-model="range[0]" type="time" class="w-32" :aria-label="`${day.label} mở cửa`" />
+                                    <span class="text-muted-foreground">–</span>
+                                    <Input v-model="range[1]" type="time" class="w-32" :aria-label="`${day.label} đóng cửa`" />
+                                    <Button v-if="index > 0" type="button" variant="ghost" size="sm" @click="removeRange(day.key, index)">Bỏ</Button>
+                                    <Button
+                                        v-else-if="form.opening_hours[day.key].length < 3"
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        @click="addRange(day.key)"
+                                        >+ Ca</Button
+                                    >
+                                </div>
+                                <InputError :message="dayError(day.key)" />
                             </div>
-                            <InputError :message="dayError(day.key)" />
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <div class="flex gap-3">
-                <Button type="submit" :disabled="form.processing">
-                    <LoaderCircle v-if="form.processing" class="size-4 animate-spin" />
-                    {{ editing ? 'Lưu' : 'Thêm cơ sở' }}
-                </Button>
-                <Button variant="outline" as-child>
-                    <Link :href="route('app.settings.branches')">Hủy</Link>
-                </Button>
-            </div>
-        </form>
+                <div class="flex gap-3">
+                    <Button type="submit" :disabled="form.processing">
+                        <LoaderCircle v-if="form.processing" class="size-4 animate-spin" />
+                        {{ editing ? 'Lưu' : 'Thêm cơ sở' }}
+                    </Button>
+                    <Button variant="outline" as-child>
+                        <Link :href="route('app.settings.branches')">Hủy</Link>
+                    </Button>
+                </div>
+            </form>
+        </SettingsLayout>
     </AppLayout>
 </template>
