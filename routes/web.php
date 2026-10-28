@@ -6,6 +6,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\RoleController;
+use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\WorkspaceRedirectController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -36,6 +37,17 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
 
         // Topbar branch switcher
         Route::post('branch/{branch}', [BranchController::class, 'switch'])->name('app.branch.switch');
+
+        // S11 Nhân viên & lời mời, S11.1 hồ sơ
+        Route::get('staff', [StaffController::class, 'index'])->name('app.staff.index');
+        Route::get('staff/create', [StaffController::class, 'create'])->name('app.staff.create');
+        Route::post('staff', [StaffController::class, 'store'])->name('app.staff.store');
+        Route::post('staff/invitations', [StaffController::class, 'invite'])->name('app.staff.invite');
+        Route::post('staff/invitations/{invitation}/resend', [StaffController::class, 'resendInvitation'])->name('app.staff.invitations.resend');
+        Route::delete('staff/invitations/{invitation}', [StaffController::class, 'revokeInvitation'])->name('app.staff.invitations.revoke');
+        Route::get('staff/{staff}/edit', [StaffController::class, 'edit'])->name('app.staff.edit');
+        Route::put('staff/{staff}', [StaffController::class, 'update'])->name('app.staff.update');
+        Route::patch('staff/{staff}/status', [StaffController::class, 'setStatus'])->name('app.staff.status');
 
         // S12.2 Cài đặt › Cơ sở
         Route::get('settings/branches', [BranchController::class, 'index'])->name('app.settings.branches');

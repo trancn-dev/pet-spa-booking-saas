@@ -47,7 +47,7 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): staff invitations (4.4), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- Still to do (see plan): plan expiry / read-only suspended shops (4.5), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
 
 ## Shops, invitations, sign-in (task 4.3)
 
@@ -55,6 +55,7 @@ Rules when adding features:
 - Invitations: `IssueInvitation` (token 32 bytes, DB keeps sha256, 7 days, `rotate()` = resend), `AcceptInvitation` (locked row, idempotent, owner gets every branch; `owner` only from an admin invitation). `/invite/{token}` is central; the token lookup crosses tenants in `App\Tenancy\InvitationLookup`. Mails carry plain values (`ShopInvitationMail`), never tenant models.
 - CMS shell: design tokens (design 3.1) are HSL CSS variables in `resources/css/app.css` with the shadcn variables mapped onto them; extra Tailwind colours `primary-soft`, `coral`, `success`, `warning`, `danger`, `info`, `subtle`. Inertia also shares `workspaces`, `branches`, `currentBranch`. The topbar branch is `CurrentBranch::get()` (session per shop, only `available()` branches); filter branch data by it.
 - Permission checks in app code use `checkPermissionTo()` (false for an unknown code), not `hasPermissionTo()` (throws).
+- Staff (task 4.4, `app/Actions/Staff`): `InviteStaff`, `ManageInvitation` (resend / revoke), `SaveStaff` (profile, roles except `owner`, branches; people without an account), `SetStaffStatus` (never delete). `StaffQuota` = active staff with an account + pending invitations vs `plans.max_staff`; every check runs after `lockTenant()`, and the lock order is tenant row → invitation / staff row.
 - No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
 
 ## Roles & permissions (ADR 0009, `app/Authorization/`)

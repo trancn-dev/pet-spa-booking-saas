@@ -50,7 +50,7 @@ class DashboardController extends Controller
                 'key' => 'staff',
                 'label' => 'Mời nhân viên',
                 'done' => Staff::query()->count() > 1 || Invitation::query()->whereNull('accepted_at')->exists(),
-                'href' => null,
+                'href' => route('app.staff.index'),
             ],
             ['key' => 'site', 'label' => 'Chia sẻ link Site: '.config('platform.site_host').'/'.$tenant->slug, 'done' => null, 'href' => null],
         ];

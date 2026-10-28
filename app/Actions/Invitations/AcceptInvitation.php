@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Invitations;
 
+use App\Actions\Staff\StaffQuota;
 use App\Enums\InvitationState;
 use App\Enums\StaffStatus;
 use App\Models\Branch;
@@ -22,18 +23,21 @@ use Spatie\Permission\PermissionRegistrar;
  * S13 / db-schema 2.2: the invited user joins the shop. One transaction on the locked invitation
  * row: staff (+ roles, staff_branches), accepted_at. Idempotent: accepting again as the same user
  * returns the same staff row. Roles or branches deleted since the invitation are skipped and
- * logged for the inviter. The owner works at every branch.
+ * logged for the inviter. The owner works at every branch. Checks `plans.max_staff` (task 4.4).
  */
 class AcceptInvitation
 {
     public function __construct(
         private readonly TenantContext $context,
         private readonly PermissionRegistrar $permissions,
+        private readonly StaffQuota $quota,
     ) {}
 
     public function handle(Tenant $tenant, Invitation $found, User $user): Staff
     {
         return $this->context->runAs($tenant, fn (): Staff => DB::transaction(function () use ($tenant, $found, $user): Staff {
+            // Lock order everywhere: tenant row (staff quota) → invitation row.
+            $this->quota->lockTenant($tenant);
             $invitation = Invitation::query()->lockForUpdate()->findOrFail($found->getKey());
 
             if (strtolower($user->email) !== $invitation->email) {
@@ -50,6 +54,11 @@ class AcceptInvitation
 
             if ($invitation->state() !== InvitationState::Pending) {
                 throw ValidationException::withMessages(['invitation' => self::message($invitation->state())]);
+            }
+
+            // A new active account takes the seat this invitation was holding (plans.max_staff).
+            if ($existing?->status !== StaffStatus::Active) {
+                $this->quota->ensureRoomForOne($tenant, $invitation, 'invitation');
             }
 
             [$primaryId, $branchIds, $skippedBranches] = $this->branches($invitation);
