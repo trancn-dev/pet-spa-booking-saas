@@ -5,6 +5,7 @@ import DataTable, { type Column } from '@/components/pb/DataTable.vue';
 import EmptyState from '@/components/pb/EmptyState.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import StatusBadge from '@/components/pb/StatusBadge.vue';
+import TabsBar from '@/components/pb/TabsBar.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -12,7 +13,7 @@ import { formatDateTime, formatDay, formatMoney } from '@/lib/format';
 import type { PetSummary } from '@/types/pets';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Lock, Pencil, Plus, Trash2 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     customer: {
@@ -52,6 +53,13 @@ const invoiceColumns: Column[] = [
     { key: 'status', label: 'Trạng thái', width: '11rem' },
     { key: 'total', label: 'Tổng', width: '9rem', align: 'right' },
 ];
+
+const tab = ref<'pets' | 'appointments' | 'invoices'>(props.can.viewPets ? 'pets' : props.can.viewAppointments ? 'appointments' : 'invoices');
+const tabItems = computed(() => [
+    ...(props.can.viewPets ? [{ value: 'pets', label: 'Thú cưng', count: props.pets.length }] : []),
+    ...(props.can.viewAppointments ? [{ value: 'appointments', label: 'Lịch hẹn', count: props.appointments.length }] : []),
+    ...(props.can.viewInvoices ? [{ value: 'invoices', label: 'Hóa đơn', count: props.invoices.length }] : []),
+]);
 </script>
 
 <template>
@@ -92,7 +100,9 @@ const invoiceColumns: Column[] = [
                 </div>
             </section>
 
-            <section v-if="can.viewPets" class="grid gap-3">
+            <TabsBar v-model="tab" label="Hồ sơ khách" :items="tabItems" />
+
+            <section v-if="can.viewPets && tab === 'pets'" class="grid gap-3">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-semibold">Thú cưng</h2>
                     <Button v-if="can.createPet && !customer.is_system" size="sm" as-child>
@@ -112,8 +122,7 @@ const invoiceColumns: Column[] = [
                 </ul>
             </section>
 
-            <section v-if="can.viewAppointments" class="grid gap-3">
-                <h2 class="text-xl font-semibold">Lịch hẹn</h2>
+            <section v-if="can.viewAppointments && tab === 'appointments'" class="grid gap-3">
                 <DataTable :columns="appointmentColumns" :rows="appointments" row-key="id">
                     <template #cell-starts_at="{ row }"
                         ><span class="tabular-nums">{{ formatDateTime(row.starts_at, timezone) }}</span></template
@@ -123,8 +132,7 @@ const invoiceColumns: Column[] = [
                 </DataTable>
             </section>
 
-            <section v-if="can.viewInvoices" class="grid gap-3">
-                <h2 class="text-xl font-semibold">Hóa đơn</h2>
+            <section v-if="can.viewInvoices && tab === 'invoices'" class="grid gap-3">
                 <DataTable :columns="invoiceColumns" :rows="invoices" row-key="id">
                     <template #cell-code="{ row }"
                         ><span class="font-mono text-[13px]">{{ row.code ?? 'Nháp' }}</span></template
