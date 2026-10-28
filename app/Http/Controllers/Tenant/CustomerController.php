@@ -126,11 +126,15 @@ class CustomerController extends Controller
         return Inertia::render('App/Customers/Form', ['customer' => null]);
     }
 
-    public function store(Request $request, SaveCustomer $save): RedirectResponse
+    public function store(Request $request, SaveCustomer $save): RedirectResponse|JsonResponse
     {
         Gate::authorize('create', Customer::class);
 
         [$customer, $restored] = $save->handle(null, $this->validated($request));
+
+        if ($request->expectsJson()) { // quick create from S2
+            return response()->json(['data' => ['id' => $customer->public_id, 'name' => $customer->name, 'phone' => Phone::format($customer->phone), 'pets_count' => 0, 'pets' => [], 'restored' => $restored]], 201);
+        }
 
         return to_route('app.customers.show', $customer)
             ->with('status', $restored ? 'SĐT này từng có hồ sơ đã xóa: đã khôi phục và cập nhật hồ sơ đó.' : 'Đã thêm khách '.$customer->name.'.');

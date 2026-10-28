@@ -45,11 +45,17 @@ class PetController extends Controller
         return $this->form($customer, null);
     }
 
-    public function store(Request $request, Customer $customer, SavePet $save): RedirectResponse
+    public function store(Request $request, Customer $customer, SavePet $save): RedirectResponse|JsonResponse
     {
         Gate::authorize('create', Pet::class);
 
         $pet = $save->handle($customer, null, $this->validated($request));
+
+        if ($request->expectsJson()) { // quick add from S2
+            $pet->load('species:id,name');
+
+            return response()->json(['data' => ['id' => $pet->public_id, 'name' => $pet->name, 'species' => $pet->species->name, 'size' => $pet->size->value, 'alerts' => PetSummary::alerts($pet)]], 201);
+        }
 
         return to_route('app.pets.show', $pet)->with('status', 'Đã thêm '.$pet->name.'.');
     }

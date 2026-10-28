@@ -86,6 +86,12 @@ Rules when adding features:
 - `INSERT IGNORE booking_capacity_locks` happens outside the transaction; lock order inside: customer → capacity rows (medical before grooming) → `tenant_usage`. Idempotency is checked after the customer lock.
 - Real races live in `tests/Concurrency` (suite `Concurrency`, `DatabaseTruncation`, one PHP process per attempt via `tests/Concurrency/Support/book.php`). CI runs it 10 times in a row. Do not run other test suites against the `testing` DB at the same time. `CONCURRENCY_REPORT=1` prints timings.
 
+## Calendar UI (task 5.7)
+
+- S1/S2/S3 live in `resources/js/pages/App/Appointments/Index.vue` + `components/appointments/{CalendarGrid,BookingDrawer,DetailDrawer}.vue`; data from `App\Queries\CalendarDay` (fixed query count per day/week, relations `withTrashed()`) and `Tenant\AppointmentController` (`index`, JSON `day`, `store`, `quotes`, `on-duty`, `show`). Literal `appointments/...` routes must stay before `{appointment}`.
+- Staff booking goes through `BookAppointment` (never refused by capacity, returns `warnings`); the drawer sends an idempotency key generated per open. `resources/js/lib/api.ts` is the fetch wrapper (XSRF cookie); customer / pet `store` return JSON when `expectsJson` for quick create.
+- Not done: drag-and-drop reschedule, browser tests.
+
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 
 - A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\AppointmentActionController;
+use App\Http\Controllers\Tenant\AppointmentController;
 use App\Http\Controllers\Tenant\AvailabilityController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\CustomerController;
@@ -86,6 +87,14 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
 
         // Free start times by capacity (task 5.4), JSON for S2.
         Route::get('availability', AvailabilityController::class)->name('app.availability');
+
+        // Calendar S1, booking S2, detail S3 (task 5.7).
+        Route::get('appointments', [AppointmentController::class, 'index'])->name('app.appointments.index');
+        Route::get('appointments/day', [AppointmentController::class, 'day'])->name('app.appointments.day');
+        Route::get('appointments/quotes', [AppointmentController::class, 'quotes'])->name('app.appointments.quotes');
+        Route::get('appointments/on-duty', [AppointmentController::class, 'onDuty'])->name('app.appointments.on-duty');
+        Route::post('appointments', [AppointmentController::class, 'store'])->name('app.appointments.store');
+        Route::get('appointments/{appointment}', [AppointmentController::class, 'show'])->name('app.appointments.show');
 
         // Appointment lifecycle (task 5.6); `{appointment}` binds by public id.
         Route::post('appointments/{appointment}/check-in', [AppointmentActionController::class, 'checkIn'])->name('app.appointments.check-in');
