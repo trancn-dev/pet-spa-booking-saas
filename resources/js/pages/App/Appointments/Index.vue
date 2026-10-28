@@ -153,7 +153,7 @@ const views: { value: View; label: string }[] = [
     <Head title="Lịch hẹn" />
 
     <AppLayout>
-        <div class="flex flex-col gap-4 p-4 md:p-6">
+        <div class="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-4 md:p-6">
             <div class="flex flex-wrap items-center gap-2">
                 <h1 class="mr-2 text-2xl font-semibold">Lịch hẹn · {{ branch.name }}</h1>
                 <div class="flex items-center gap-1">
