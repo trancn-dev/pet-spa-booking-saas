@@ -65,6 +65,12 @@ Rules when adding features:
 - `SaveCustomer` restores a soft-deleted profile when its phone is added again; `DeleteCustomer` / `DeletePet` refuse while upcoming appointments exist. `CreateStrayPet` numbers "Thú hoang #n" per branch profile (deleted ones count).
 - Every pet payload carries its safety alerts (`App\Http\Resources\PetSummary::alerts`), rendered with `PetAlertBadges.vue` wherever a pet appears. Size hints: `PetSizeSuggester` (weight first, then breed default), endpoint `app.pets.size-suggestion`.
 
+## Services & pricing (task 5.2)
+
+- Duration / reference price for a pet: `App\Pricing\ServiceQuoteResolver::resolve($service, Pet|PetProfile)` → `Quote` (one query; most specific rule per value: breed > species + size > species > size > service default). Never compute prices elsewhere. Booking holds `Quote::blockedMin()` (duration + buffer).
+- Combos are spa only and never nested (`SaveService`); a service inside a combo cannot turn medical or into a combo. `Service::availableAt($branch)`: no `branch_services` rows = every branch.
+- Uniques with nullable columns (e.g. price rules) do not stop duplicates in MySQL: check them in the Action under a row lock.
+
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 
 - A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.

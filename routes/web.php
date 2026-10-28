@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\PetController;
 use App\Http\Controllers\Tenant\RoleController;
+use App\Http\Controllers\Tenant\ServiceController;
 use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\SupportAccessController;
 use App\Http\Controllers\WorkspaceRedirectController;
@@ -65,6 +66,19 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::get('pets/{pet}/edit', [PetController::class, 'edit'])->name('app.pets.edit');
         Route::put('pets/{pet}', [PetController::class, 'update'])->name('app.pets.update');
         Route::delete('pets/{pet}', [PetController::class, 'destroy'])->name('app.pets.destroy');
+
+        // Services, spa combos, duration / price rules (task 5.2).
+        Route::get('services', [ServiceController::class, 'index'])->name('app.services.index');
+        Route::get('services/create', [ServiceController::class, 'create'])->name('app.services.create');
+        Route::post('services', [ServiceController::class, 'store'])->name('app.services.store');
+        Route::get('services/{service}', [ServiceController::class, 'show'])->name('app.services.show');
+        Route::get('services/{service}/edit', [ServiceController::class, 'edit'])->name('app.services.edit');
+        Route::put('services/{service}', [ServiceController::class, 'update'])->name('app.services.update');
+        Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('app.services.destroy');
+        Route::get('services/{service}/quote', [ServiceController::class, 'quote'])->name('app.services.quote');
+        Route::post('services/{service}/rules', [ServiceController::class, 'storeRule'])->name('app.services.rules.store');
+        Route::put('services/{service}/rules/{rule}', [ServiceController::class, 'updateRule'])->name('app.services.rules.update');
+        Route::delete('services/{service}/rules/{rule}', [ServiceController::class, 'destroyRule'])->name('app.services.rules.destroy');
 
         Route::get('staff', [StaffController::class, 'index'])->name('app.staff.index');
         Route::get('staff/create', [StaffController::class, 'create'])->name('app.staff.create');
