@@ -5,7 +5,7 @@ import { router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronDown, MapPin } from 'lucide-vue-next';
 import { computed } from 'vue';
 
-// Topbar "Tên shop › Cơ sở ▾" (design 3.4): only branches the person works at.
+// Topbar branch ▾ (design 3.4, after the shop chip): only branches the person works at.
 const page = usePage<ShopSharedData>();
 const tenant = computed(() => page.props.tenant);
 const branches = computed(() => page.props.branches ?? []);
@@ -18,8 +18,6 @@ const choose = (id: string) => {
 
 <template>
     <div v-if="tenant" class="flex min-w-0 items-center gap-1 text-sm">
-        <span class="truncate font-medium">{{ tenant.name }}</span>
-        <span class="text-subtle">›</span>
         <DropdownMenu v-if="branches.length > 1">
             <DropdownMenuTrigger class="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-accent">
                 <MapPin class="size-4 text-primary" />

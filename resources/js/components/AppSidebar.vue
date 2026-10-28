@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
-import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import SidebarBrand from '@/components/shell/SidebarBrand.vue';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import type { NavGroup, NavItem, ShopSharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
-import { Building2, CalendarClock, CalendarDays, LayoutGrid, LifeBuoy, PawPrint, Scissors, ShieldCheck, Users } from 'lucide-vue-next';
+import { Building2, CalendarClock, CalendarDays, LayoutGrid, LifeBuoy, PanelLeftClose, PawPrint, Scissors, ShieldCheck, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage<ShopSharedData>();
+const { toggleSidebar } = useSidebar();
 const can = (permission: string) => page.props.permissions?.includes(permission) ?? false;
 const isRoute = (name: string) => route().current(name) || route().current(`${name}.*`);
 
@@ -50,7 +50,7 @@ const groups = computed<NavGroup[]>(() => {
 <template>
     <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
-            <WorkspaceSwitcher />
+            <SidebarBrand :href="page.props.tenant ? route('app.dashboard') : '/'" />
         </SidebarHeader>
 
         <SidebarContent>
@@ -58,7 +58,11 @@ const groups = computed<NavGroup[]>(() => {
         </SidebarContent>
 
         <SidebarFooter>
-            <NavUser />
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Thu gọn" @click="toggleSidebar"><PanelLeftClose /><span>Thu gọn</span></SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </SidebarFooter>
     </Sidebar>
     <slot />

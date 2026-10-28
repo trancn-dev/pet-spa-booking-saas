@@ -3,6 +3,7 @@ import BookingDrawer from '@/components/appointments/BookingDrawer.vue';
 import CalendarGrid, { type GridColumn } from '@/components/appointments/CalendarGrid.vue';
 import DetailDrawer from '@/components/appointments/DetailDrawer.vue';
 import Banner from '@/components/pb/Banner.vue';
+import PageHeader from '@/components/pb/PageHeader.vue';
 import Segmented from '@/components/pb/Segmented.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import Toaster from '@/components/Toaster.vue';
@@ -142,7 +143,14 @@ const onKey = (e: KeyboardEvent) => {
         (search.value?.$el as HTMLInputElement | undefined)?.focus();
     }
 };
+const bookEvent = () => openBooking();
 onMounted(() => {
+    window.addEventListener('pb:book', bookEvent);
+    // arrived from the topbar button on another page (?book=1)
+    if (new URLSearchParams(window.location.search).get('book') === '1') {
+        openBooking();
+        router.replace({ url: route('app.appointments.index', { date: props.date, view: props.view }), preserveScroll: true, preserveState: true });
+    }
     tick();
     clock = setInterval(tick, 60_000);
     window.addEventListener('keydown', onKey);
@@ -150,6 +158,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     clearInterval(clock);
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('pb:book', bookEvent);
 });
 
 const title = computed(() => {
@@ -169,7 +178,7 @@ const views: { value: View; label: string }[] = [
     <AppLayout>
         <div class="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-4 md:p-6">
             <div class="flex flex-wrap items-center gap-2">
-                <h1 class="mr-2 text-2xl font-semibold">Lịch hẹn · {{ branch.name }}</h1>
+                <PageHeader title="Lịch hẹn" branch class="mr-2 w-auto flex-none" />
                 <div class="flex items-center gap-1">
                     <Button variant="outline" size="icon" aria-label="Trước" @click="shift(-1)"><ChevronLeft class="size-4" /></Button>
                     <Button variant="outline" size="sm" @click="go({ date: today })">Hôm nay</Button>

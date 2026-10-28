@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
@@ -58,4 +59,20 @@ it('keeps the profile email unique across all users', function () {
     $this->actingAs($this->userA)
         ->patch('/settings/profile', ['name' => 'A', 'email' => $this->userB->email])
         ->assertSessionHasErrors('email');
+});
+
+it('turns an Inertia visit into a full page load when it enters or switches shops', function () {
+    $inertia = ['X-Inertia' => 'true', 'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request())];
+
+    // coming from the login page (no shop in the URL): full load so Ziggy gets the shop slug
+    $this->actingAs($this->userA)->withHeaders($inertia + ['Referer' => 'http://localhost/login'])->get('/app/a/dashboard')
+        ->assertStatus(409)->assertHeader('X-Inertia-Location');
+
+    // from another shop
+    $this->actingAs($this->userA)->withHeaders($inertia + ['Referer' => 'http://localhost/app/b/dashboard'])->get('/app/a/dashboard')
+        ->assertStatus(409);
+
+    // inside the same shop: a normal Inertia response
+    $this->actingAs($this->userA)->withHeaders($inertia + ['Referer' => 'http://localhost/app/a/customers'])->get('/app/a/dashboard')
+        ->assertOk();
 });

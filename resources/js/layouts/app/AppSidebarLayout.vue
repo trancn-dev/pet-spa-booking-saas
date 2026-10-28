@@ -3,6 +3,8 @@ import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
+import CmsBottomNav from '@/components/shell/CmsBottomNav.vue';
+import CmsTopbar from '@/components/shell/CmsTopbar.vue';
 import Banner from '@/components/pb/Banner.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import type { BreadcrumbItemType, ShopSharedData } from '@/types';
@@ -18,6 +20,7 @@ withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage<ShopSharedData>();
+const inShop = computed(() => !!page.props.tenant);
 const status = computed(() => page.props.flash?.status);
 const notice = computed(() => page.props.planNotice);
 </script>
@@ -27,12 +30,14 @@ const notice = computed(() => page.props.planNotice);
         <AppSidebar />
         <AppContent variant="sidebar">
             <ImpersonationBanner />
-            <AppSidebarHeader :breadcrumbs="breadcrumbs" />
+            <CmsTopbar v-if="inShop" />
+            <AppSidebarHeader v-else :breadcrumbs="breadcrumbs" />
             <Banner v-if="notice" :tone="notice.level === 'danger' ? 'danger' : 'warning'" class="mx-4 mt-4">{{ notice.text }}</Banner>
             <Banner v-if="status" tone="success" class="mx-4 mt-4">{{ status }}</Banner>
-            <div class="mx-auto w-full max-w-[1280px]">
+            <div class="mx-auto w-full max-w-[1280px] pb-16 sm:pb-0">
                 <slot />
             </div>
         </AppContent>
+        <CmsBottomNav v-if="inShop" />
     </AppShell>
 </template>

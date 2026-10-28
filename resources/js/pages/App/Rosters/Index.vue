@@ -124,7 +124,7 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
 
     <AppLayout>
         <div class="flex flex-col gap-6 p-4 md:p-6">
-            <PageHeader :title="`Lịch trực · ${branch.name}`">
+            <PageHeader title="Lịch trực" branch>
                 <template #subtitle>
                     Mỗi khung chọn trực nhóm nào. Người có cả role bác sĩ và spa vẫn là một người trực trong khung đó.
                     <template v-if="!can.seeAll"> Bạn đang xem lịch của chính mình.</template>

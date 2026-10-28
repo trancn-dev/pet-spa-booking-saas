@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ReloadWhenShopChanges;
 use App\Http\Middleware\ResolveTenant;
 use App\Platform\Http\Middleware\AuthenticatePlatformAdmin;
 use App\Platform\Http\Middleware\HandleAdminInertiaRequests;
@@ -41,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // `tenant`: resolve the shop (and check membership), then block writes to a suspended shop.
-        $middleware->group('tenant', [ResolveTenant::class, EnsureTenantActive::class]);
+        $middleware->group('tenant', [ResolveTenant::class, EnsureTenantActive::class, ReloadWhenShopChanges::class]);
         // Both run before auth/route-binding, in this order.
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: ResolveTenant::class);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: EnsureTenantActive::class);
