@@ -8,4 +8,7 @@ return [
     | online_lead_minutes: the Site offers starts from now + this many minutes.
     */
     'online_lead_minutes' => (int) env('BOOKING_ONLINE_LEAD_MINUTES', 60),
+
+    // "Hoàn tác" after a cancellation (S3 toast), task 5.6.
+    'undo_seconds' => (int) env('BOOKING_UNDO_SECONDS', 5),
 ];

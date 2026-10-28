@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\Tenant\AppointmentActionController;
 use App\Http\Controllers\Tenant\AvailabilityController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\CustomerController;
@@ -85,6 +86,14 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
 
         // Free start times by capacity (task 5.4), JSON for S2.
         Route::get('availability', AvailabilityController::class)->name('app.availability');
+
+        // Appointment lifecycle (task 5.6); `{appointment}` binds by public id.
+        Route::post('appointments/{appointment}/check-in', [AppointmentActionController::class, 'checkIn'])->name('app.appointments.check-in');
+        Route::post('appointments/{appointment}/cancel', [AppointmentActionController::class, 'cancel'])->name('app.appointments.cancel');
+        Route::post('appointments/{appointment}/restore', [AppointmentActionController::class, 'restore'])->name('app.appointments.restore');
+        Route::post('appointments/{appointment}/no-show', [AppointmentActionController::class, 'noShow'])->name('app.appointments.no-show');
+        Route::post('appointments/{appointment}/reschedule', [AppointmentActionController::class, 'reschedule'])->name('app.appointments.reschedule');
+        Route::post('appointments/{appointment}/items', [AppointmentActionController::class, 'addItems'])->name('app.appointments.items.store');
 
         // Rosters, time off, closed days (task 5.3), for the branch picked in the topbar.
         Route::get('rosters', [RosterController::class, 'index'])->name('app.rosters.index');

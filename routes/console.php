@@ -12,3 +12,6 @@ Artisan::command('inspire', function () {
 
 // Plan lifecycle (task 4.5): 00:05 in Viet Nam (UTC+7), every shop.
 Schedule::command('tenants:check-expiry')->dailyAt('17:05')->withoutOverlapping()->onOneServer();
+
+// End of day per shop timezone (task 5.6): booked lines of past days → no_show. Idempotent.
+Schedule::command('appointments:mark-no-show')->hourlyAt(10)->withoutOverlapping()->onOneServer();

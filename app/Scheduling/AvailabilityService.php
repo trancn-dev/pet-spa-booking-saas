@@ -159,12 +159,13 @@ class AvailabilityService
      * nobody on duty, per group.
      *
      * @param  array{groups: array<string, array<int, int>>, span: int}  $plan
+     * @param  int|null  $exclude  an appointment whose own lines are not counted (it is being moved)
      * @return array{open: bool, groups: array<string, array{fits_online: bool, over_duty: bool, no_duty: bool}>}
      */
-    public function assess(Branch $branch, array $plan, CarbonImmutable $start): array
+    public function assess(Branch $branch, array $plan, CarbonImmutable $start, ?int $exclude = null): array
     {
         $date = $this->clock->toLocal($start)->format('Y-m-d');
-        $grid = $this->grid($branch, array_keys($plan['groups']), $date, $date);
+        $grid = $this->grid($branch, array_keys($plan['groups']), $date, $date, $exclude);
         $day = $grid['days'][$date];
         $offset = $start->getTimestamp() - $day['start'];
         $k = intdiv($offset, self::CELL);
@@ -202,7 +203,7 @@ class AvailabilityService
      *     online: array<string, array<string, array<int, int>>>
      * }
      */
-    private function grid(Branch $branch, array $groups, string $from, string $to): array
+    private function grid(Branch $branch, array $groups, string $from, string $to, ?int $exclude = null): array
     {
         $dates = $this->dates($from, $to);
         $closed = BranchClosure::query()->where(fn ($q) => $q->whereNull('branch_id')->orWhere('branch_id', $branch->id))
@@ -250,7 +251,7 @@ class AvailabilityService
             }
         }
 
-        $this->countTaken($branch, $groups, $grid);
+        $this->countTaken($branch, $groups, $grid, $exclude);
 
         return $grid;
     }
@@ -261,7 +262,7 @@ class AvailabilityService
      * @param  list<string>  $groups
      * @param  array{days: array<string, array{start: int, cells: int, open: array<int, bool>}>, duty: array<string, array<string, array<int, int>>>, capacity: array<string, array<string, array<int, int>>>, taken: array<string, array<string, array<int, int>>>, online: array<string, array<string, array<int, int>>>}  $grid
      */
-    private function countTaken(Branch $branch, array $groups, array &$grid): void
+    private function countTaken(Branch $branch, array $groups, array &$grid, ?int $exclude = null): void
     {
         if ($grid['days'] === [] || $groups === []) {
             return;
@@ -277,6 +278,7 @@ class AvailabilityService
             ->whereIn('appointment_items.service_group', $groups)
             ->whereIn('appointment_items.status', array_map(fn (AppointmentItemStatus $s) => $s->value, AppointmentItemStatus::occupying()))
             ->whereNotIn('appointments.status', [AppointmentStatus::Cancelled->value, AppointmentStatus::NoShow->value])
+            ->when($exclude !== null, fn ($q) => $q->where('appointments.id', '!=', $exclude))
             ->where('appointment_items.starts_at', '<', $rangeEnd)
             ->where('appointment_items.ends_at', '>', $rangeStart)
             ->toBase()

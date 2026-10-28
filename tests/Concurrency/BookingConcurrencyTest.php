@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Actions\Appointments\BookAppointment;
 use App\Actions\Rosters\SaveWorkingHour;
+use App\Booking\BookingItem;
+use App\Booking\BookingRequest;
+use App\Enums\AppointmentSource;
 use App\Enums\ServiceGroup;
 use App\Models\Appointment;
 use App\Models\AppointmentItem;
@@ -204,4 +208,25 @@ it('keeps one pet out of two overlapping front-desk bookings sent together', fun
 
     expect(outcomes($results))->toBe(['invalid' => 1, 'ok' => 1])
         ->and(collect($results)->firstWhere('ok', false)['message'] ?? null)->toContain('đã có lịch khác chồng giờ');
+})->group('mysql', 'concurrency');
+
+it('does not deadlock reschedules crossing two days in opposite directions', function () {
+    // 10 appointments on each day, exam + spa (two lock rows per day), booked by the front desk.
+    $next = '2027-03-08'; // also a Monday
+    $book = fn (Customer $c, string $day) => inTenant($this->tenant, fn () => app(BookAppointment::class)->handle(new BookingRequest(
+        branchId: $this->q1->id, customerId: $c->id,
+        items: [new BookingItem($c->pets[0]->id, $this->exam->id), new BookingItem($c->pets[1]->id, $this->spa->id)],
+        startsAt: $this->clock->toUtc($day, '10:00'), source: AppointmentSource::Staff,
+    ))->appointment);
+    $there = $this->customers->take(10)->map(fn (Customer $c) => $book($c, BOOKING_DAY))->all();
+    $back = $this->customers->slice(10)->map(fn (Customer $c) => $book($c, $next))->all();
+
+    $results = race([
+        ...array_map(fn ($a) => ['action' => 'reschedule', 'tenant_id' => $this->tenant->id, 'appointment_id' => $a->id, 'starts_at' => $this->clock->toUtc($next, '14:00')->toIso8601String(), 'source' => 'staff'], $there),
+        ...array_map(fn ($a) => ['action' => 'reschedule', 'tenant_id' => $this->tenant->id, 'appointment_id' => $a->id, 'starts_at' => $this->clock->toUtc(BOOKING_DAY, '14:00')->toIso8601String(), 'source' => 'staff'], $back),
+    ]);
+
+    expect(outcomes($results))->toBe(['ok' => 20])
+        ->and(inTenant($this->tenant, fn () => Appointment::query()->get()->map(fn ($a) => $this->clock->toLocal($a->starts_at)->format('Y-m-d H:i'))->countBy()->sortKeys()->all()))
+        ->toBe([BOOKING_DAY.' 14:00' => 10, $next.' 14:00' => 10]);
 })->group('mysql', 'concurrency');

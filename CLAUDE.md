@@ -80,6 +80,7 @@ Rules when adding features:
 
 ## Booking (task 5.5, ADR 0002)
 
+- Anything that puts lines on the calendar (book, `RescheduleAppointment`, `AddAppointmentItems`, `RestoreCancellation`) goes through `App\Booking\BookingGate` (prepare → lockCustomer → lockCapacity → checkCapacity → ensurePetsFree); never copy those steps. Line moves go through `AppointmentState::move()` and the appointment status only through `AppointmentState::sync()`; history via `AppointmentState::log()`. Visits are opened by `App\Actions\Visits\CreateVisit` (queue number from `App\Support\DailyCounter`).
 - Every appointment is created by `App\Actions\Appointments\BookAppointment` (input `App\Booking\BookingRequest`, result `BookingResult` with front-desk `warnings`). Online over capacity → `SlotTakenException` (409, 3 nearest free starts); plan quota → `QuotaExceededException`. Reschedule / add line / restore must reuse the same locking path.
 - The MySQL connection runs **READ COMMITTED** (`config/database.php`): reads after a lock see everything committed. Do not rely on re-reading the same rows inside a transaction; lock them if you must.
 - `INSERT IGNORE booking_capacity_locks` happens outside the transaction; lock order inside: customer → capacity rows (medical before grooming) → `tenant_usage`. Idempotency is checked after the customer lock.

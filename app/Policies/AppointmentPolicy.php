@@ -37,4 +37,10 @@ class AppointmentPolicy
     {
         return $this->update($user, $appointment);
     }
+
+    /** Check-in opens Visits: front-desk intake, at the appointment's branch. */
+    public function checkIn(User $user, Appointment $appointment): bool
+    {
+        return $this->allowed($user, 'visits.intake') && $this->atBranch($appointment->branch_id);
+    }
 }
