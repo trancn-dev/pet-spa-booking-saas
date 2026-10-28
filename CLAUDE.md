@@ -78,6 +78,13 @@ Rules when adding features:
 - Capacity (task 5.4): `AvailabilityService::slotsForOnline / slotsForStaff($branch, list<BookingLine>, $from, $to)` on 15-minute cells of the shop day. A person counts in a cell only if their duty time (`DutySource::dutySets`: slots of that group minus time off) covers the whole cell, inside opening hours; taken = booked / checked-in lines of live appointments (online only for the Site). Lines of one pet run back to back, different pets in parallel. Fixed query count per range: never query per cell or per person. Intervals: `Interval` / `IntervalSet` (UTC epoch seconds, half-open).
 - Roster edits: `SaveWorkingHour` (staff row lock, no overlapping slots across branches), `AddTimeOff` (reports affected booked lines, never cancels), `SaveBranchClosure`, `SaveOnlineBookingRate`. Policy: `Gate::allows('manage', [StaffWorkingHour::class, $branch])`.
 
+## Booking (task 5.5, ADR 0002)
+
+- Every appointment is created by `App\Actions\Appointments\BookAppointment` (input `App\Booking\BookingRequest`, result `BookingResult` with front-desk `warnings`). Online over capacity → `SlotTakenException` (409, 3 nearest free starts); plan quota → `QuotaExceededException`. Reschedule / add line / restore must reuse the same locking path.
+- The MySQL connection runs **READ COMMITTED** (`config/database.php`): reads after a lock see everything committed. Do not rely on re-reading the same rows inside a transaction; lock them if you must.
+- `INSERT IGNORE booking_capacity_locks` happens outside the transaction; lock order inside: customer → capacity rows (medical before grooming) → `tenant_usage`. Idempotency is checked after the customer lock.
+- Real races live in `tests/Concurrency` (suite `Concurrency`, `DatabaseTruncation`, one PHP process per attempt via `tests/Concurrency/Support/book.php`). CI runs it 10 times in a row. Do not run other test suites against the `testing` DB at the same time. `CONCURRENCY_REPORT=1` prints timings.
+
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 
 - A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.

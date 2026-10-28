@@ -17,7 +17,35 @@ Laravel 12 + Inertia 2 + Vue 3, một DB MySQL 8 dùng chung, Redis cho cache / 
 
 ## Đặt lịch & hạn mức
 
-_Task 5.4–5.6._
+- **Giờ shop:** `App\Scheduling\ShopClock` là chỗ duy nhất đổi giờ shop ↔ UTC, theo từng ngày (DST). Ngày shop query bằng khoảng UTC `[đầu ngày, đầu ngày kế)`.
+- **Người trực** (task 5.3): `Roster` biến `staff_working_hours` (khung tuần, TIME local) thành khoảng UTC từng ngày; mỗi khung chỉ tính cho `service_group` của nó (người 2 role = 1 người). `dutySets()` = khung trừ nghỉ (kể cả nghỉ một phần), bỏ ngày đóng cửa. Interface `DutySource` để GĐ3 cắm ca xếp.
+- **Chỗ trống** (task 5.4): `AvailabilityService` chia ngày shop thành ô 15 phút. Ô có người trực nếu thời gian trực của người đó phủ kín ô và ô nằm trong giờ mở cửa. Hạn mức online = `OnlineRates::maxOnline(người trực, tỉ lệ thứ/giờ)` = floor(người trực × tỉ lệ). Chiếm chỗ = dòng `booked`/`checked_in` của lịch chưa hủy chồng ô; Site chỉ so dòng `online`. Mọi dòng của một lịch bắt đầu cùng lúc; mỗi dòng chiếm một chỗ của nhóm nó suốt thời lượng + buffer. Cả khoảng ngày tải bằng số query cố định, phần còn lại là số học trên ô (`Interval`, `IntervalSet`).
+- **Đặt lịch** (task 5.5, ADR 0002): `BookAppointment`, dùng chung Site và lễ tân. Kết nối MySQL chạy `READ COMMITTED`.
+
+```mermaid
+sequenceDiagram
+    participant C as Request
+    participant DB as MySQL (READ COMMITTED)
+    C->>DB: INSERT IGNORE booking_capacity_locks (nhóm × ngày), autocommit
+    C->>DB: BEGIN
+    C->>DB: SELECT customers … FOR UPDATE
+    C->>DB: idempotency_key đã có? → trả lịch cũ, COMMIT
+    C->>DB: kiểm pet của khách, dịch vụ có ở cơ sở
+    C->>DB: SELECT booking_capacity_locks … FOR UPDATE (medical → grooming)
+    C->>DB: đọc lịch trực, nghỉ, tỉ lệ, dòng đang chiếm (thấy mọi lịch đã commit)
+    alt online và một nhóm hết chỗ ở một ô
+        C->>DB: ROLLBACK → 409 SlotTaken + 3 giờ gần nhất
+    else
+        C->>DB: pet không có lịch khác chồng giờ
+        C->>DB: INSERT … ON DUPLICATE KEY / UPDATE tenant_usage … WHERE count < max
+        C->>DB: INSERT appointment, items, appointment_changes
+        C->>DB: COMMIT → AppointmentBooked
+    end
+```
+
+- Thứ tự khóa toàn cục: `customers` → `booking_capacity_locks` ((ngày, nhóm) tăng dần, medical trước grooming) → `tenant_usage`. Deadlock / lock wait timeout: `DB::transaction(…, 3)`.
+- Lễ tân không bị chặn theo hạn mức: lưu kèm cảnh báo khi vượt số người trực, không có ai trực, hoặc người được gán đang bận.
+- Test đua thật: `tests/Concurrency` (mỗi lần đặt là một tiến trình PHP, một kết nối MySQL, chạy cùng lúc), CI chạy 10 lần liền.
 
 ## Hàng đợi & Visit
 

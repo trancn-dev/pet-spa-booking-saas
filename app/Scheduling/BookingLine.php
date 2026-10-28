@@ -9,16 +9,14 @@ use App\Models\Service;
 use App\Pricing\PetProfile;
 
 /**
- * One line of a booking being planned: a pet and a service. Lines of the same pet run one after
- * the other in the given order (an exam, then the spa); different pets run at the same time
- * (two dogs examined together need two seats).
+ * One line of a booking being planned: a pet (saved, or a profile on the Site) and a service.
+ * Every line of a booking starts at the booking's start (db-schema 5.1): two dogs examined together
+ * need two seats, an exam + spa needs a seat in each group.
  */
 final readonly class BookingLine
 {
     public function __construct(
         public Service $service,
         public Pet|PetProfile $pet,
-        /** Groups lines by pet: a pet id, or any key for pets not saved yet. */
-        public int|string $petKey,
     ) {}
 }

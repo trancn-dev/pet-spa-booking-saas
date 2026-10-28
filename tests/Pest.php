@@ -14,6 +14,7 @@ use App\Platform\Actions\ProvisionTenant;
 use App\Platform\Data\NewShop;
 use App\Platform\Data\ProvisionedShop;
 use App\Tenancy\TenantContext;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\ActsOnTenant;
@@ -21,6 +22,8 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature', 'Arch');
 pest()->extend(TestCase::class)->in('Unit');
+// Real races (task 5.5): data must be committed so other processes see it, so no wrapping transaction.
+pest()->extend(TestCase::class)->use(DatabaseTruncation::class)->in('Concurrency');
 pest()->use(ActsOnTenant::class)->in('Feature/ExampleTest.php');
 
 /**

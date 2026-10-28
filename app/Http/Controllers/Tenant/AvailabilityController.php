@@ -43,7 +43,6 @@ class AvailabilityController extends Controller
             'lines.*.species_id' => ['nullable', 'integer'],
             'lines.*.breed_id' => ['nullable', 'integer'],
             'lines.*.size' => ['nullable', Rule::enum(PetSize::class)],
-            'lines.*.pet_key' => ['nullable', 'string', 'max:40'],
         ]);
 
         $branch = isset($data['branch'])
@@ -75,11 +74,11 @@ class AvailabilityController extends Controller
         $pets = Pet::query()->whereIn('public_id', $petIds)->get()->keyBy('public_id');
 
         $lines = [];
-        foreach ($input as $i => $line) {
+        foreach ($input as $line) {
             $service = $services->get((int) $line['service_id']) ?? abort(422, 'Dịch vụ không hợp lệ.');
             if (isset($line['pet'])) {
                 $pet = $pets->get((string) $line['pet']) ?? abort(422, 'Thú cưng không hợp lệ.');
-                $lines[] = new BookingLine($service, $pet, 'pet:'.$pet->id);
+                $lines[] = new BookingLine($service, $pet);
 
                 continue;
             }
@@ -88,7 +87,7 @@ class AvailabilityController extends Controller
                 isset($line['breed_id']) ? (int) $line['breed_id'] : null,
                 isset($line['size']) ? PetSize::from((string) $line['size']) : null,
             );
-            $lines[] = new BookingLine($service, $profile, (string) ($line['pet_key'] ?? 'line:'.$i));
+            $lines[] = new BookingLine($service, $profile);
         }
 
         return $lines;

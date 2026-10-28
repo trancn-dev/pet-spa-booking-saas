@@ -72,7 +72,7 @@ beforeEach(function () {
             }
         });
     };
-    $this->line = fn (?Service $service = null, int|string $pet = 1) => new BookingLine($service ?? $this->exam, new PetProfile($this->dog->id, null, PetSize::M), $pet);
+    $this->line = fn (?Service $service = null) => new BookingLine($service ?? $this->exam, new PetProfile($this->dog->id, null, PetSize::M));
     $this->free = fn (array $lines, ?string $day = null) => inTenant($this->tenant, fn () => array_column(
         app(AvailabilityService::class)->slotsForOnline($this->q1->refresh(), $lines, $day ?? $this->day, $day ?? $this->day, $this->now)[$day ?? $this->day], 'time',
     ));
@@ -126,11 +126,11 @@ it('needs two seats for two pets examined together', function () {
     ($this->rate)('0.667'); // 2 seats
     ($this->book)('10:00');
 
-    expect(($this->free)([($this->line)(pet: 1)]))->toContain('10:00')
-        ->and(($this->free)([($this->line)(pet: 1), ($this->line)(pet: 2)]))->not->toContain('10:00')->toContain('10:30');
+    expect(($this->free)([($this->line)()]))->toContain('10:00')
+        ->and(($this->free)([($this->line)(), ($this->line)()]))->not->toContain('10:00')->toContain('10:30');
 });
 
-it('checks both groups for an exam then a spa, one after the other', function () {
+it('checks both groups for an exam and a spa starting together', function () {
     ($this->vets)(1);
     ($this->rate)('1');
     $groomer = ($this->person)(['groomer']);
@@ -140,9 +140,9 @@ it('checks both groups for an exam then a spa, one after the other', function ()
     expect(($this->free)([($this->line)(), ($this->line)($this->spa)]))->toBe([]);
 
     ($this->rate)('1', 'grooming');
-    $free = ($this->free)([($this->line)(), ($this->line)($this->spa)]); // 30' exam, then 60' spa until 12:00 at the latest
+    $free = ($this->free)([($this->line)(), ($this->line)($this->spa)]); // both lines start together; the 60' spa must end by 12:00
 
-    expect($free)->toContain('08:00', '10:30')->not->toContain('10:45', '11:00');
+    expect($free)->toContain('08:00', '11:00')->not->toContain('11:15', '12:00');
 });
 
 it('counts a person with the vet and groomer roles once, in the group of the slot', function () {

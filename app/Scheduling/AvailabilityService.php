@@ -10,6 +10,7 @@ use App\Enums\AppointmentStatus;
 use App\Enums\ServiceGroup;
 use App\Models\AppointmentItem;
 use App\Models\Branch;
+use App\Models\BranchClosure;
 use App\Pricing\ServiceQuoteResolver;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -19,7 +20,7 @@ use InvalidArgumentException;
  * of the shop's local day.
  *
  * - On duty in a cell = people whose duty time (roster slots of that group, minus time off and
- *   closed days) covers the whole cell, and only inside opening hours.
+ *   closed days) covers the whole cell, and only inside opening hours (a closed day has none).
  * - Online capacity of a cell = floor(on duty × ratio of that weekday / hour).
  * - Taken = booked / checked-in lines of live appointments overlapping the cell. The Site compares
  *   only online lines with the online capacity; the front desk sees every line against the
@@ -117,37 +118,75 @@ class AvailabilityService
     }
 
     /**
-     * Lines laid out relative to the start: per group, how many seats each cell needs.
+     * Seats each cell of a booking needs, per group. Every line starts at the booking's start
+     * (db-schema 5.1 / task 5.5) and lasts its duration plus buffer; a partly covered cell counts.
      *
      * @param  list<BookingLine>  $lines
      * @return array{groups: array<string, array<int, int>>, span: int} span in cells
      */
-    private function plan(array $lines): array
+    public function plan(array $lines): array
     {
-        $offsets = [];
+        return self::demand(array_map(function (BookingLine $line): array {
+            $quote = $this->quotes->resolve($line->service, $line->pet);
+
+            return [$line->service->service_group, $quote->blockedMin() * 60];
+        }, $lines));
+    }
+
+    /**
+     * @param  list<array{0: ServiceGroup, 1: int}>  $lines  group and length in seconds
+     * @return array{groups: array<string, array<int, int>>, span: int}
+     */
+    public static function demand(array $lines): array
+    {
         $groups = [];
         $span = 0;
-        foreach ($lines as $line) {
-            $quote = $this->quotes->resolve($line->service, $line->pet);
-            $offset = $offsets[$line->petKey] ?? 0;
-            $length = $quote->blockedMin() * 60;
-            $offsets[$line->petKey] = $offset + $length;
-
-            $g = $line->service->service_group->value;
-            $first = intdiv($offset, self::CELL);
-            $last = intdiv($offset + $length + self::CELL - 1, self::CELL) - 1; // partly covered cells count
-            for ($j = $first; $j <= $last; $j++) {
-                $groups[$g][$j] = ($groups[$g][$j] ?? 0) + 1;
+        foreach ($lines as [$group, $length]) {
+            $cells = max(1, intdiv($length + self::CELL - 1, self::CELL));
+            for ($j = 0; $j < $cells; $j++) {
+                $groups[$group->value][$j] = ($groups[$group->value][$j] ?? 0) + 1;
             }
-            $span = max($span, $last + 1);
+            $span = max($span, $cells);
         }
-
-        foreach ($groups as $g => $cells) {
-            ksort($cells);
-            $groups[$g] = $cells;
-        }
+        ksort($groups);
 
         return ['groups' => $groups, 'span' => $span];
+    }
+
+    /**
+     * One start, checked for a booking being saved (task 5.5, under the capacity locks): whether
+     * it is inside opening hours, fits the online capacity, goes over the people on duty, or has
+     * nobody on duty, per group.
+     *
+     * @param  array{groups: array<string, array<int, int>>, span: int}  $plan
+     * @return array{open: bool, groups: array<string, array{fits_online: bool, over_duty: bool, no_duty: bool}>}
+     */
+    public function assess(Branch $branch, array $plan, CarbonImmutable $start): array
+    {
+        $date = $this->clock->toLocal($start)->format('Y-m-d');
+        $grid = $this->grid($branch, array_keys($plan['groups']), $date, $date);
+        $day = $grid['days'][$date];
+        $offset = $start->getTimestamp() - $day['start'];
+        $k = intdiv($offset, self::CELL);
+
+        $open = $offset % self::CELL === 0 && $k >= 0 && in_array($k, $this->starts($day, $plan['span']), true);
+
+        $groups = [];
+        foreach ($plan['groups'] as $g => $demand) {
+            $fits = true;
+            $over = false;
+            $none = false;
+            foreach ($demand as $j => $need) {
+                $cell = $k + $j;
+                $duty = $grid['duty'][$g][$date][$cell] ?? 0;
+                $fits = $fits && ($grid['online'][$g][$date][$cell] ?? 0) + $need <= ($grid['capacity'][$g][$date][$cell] ?? 0);
+                $over = $over || ($grid['taken'][$g][$date][$cell] ?? 0) + $need > $duty;
+                $none = $none || $duty === 0;
+            }
+            $groups[$g] = ['fits_online' => $fits, 'over_duty' => $over, 'no_duty' => $none];
+        }
+
+        return ['open' => $open, 'groups' => $groups];
     }
 
     /**
@@ -166,11 +205,13 @@ class AvailabilityService
     private function grid(Branch $branch, array $groups, string $from, string $to): array
     {
         $dates = $this->dates($from, $to);
+        $closed = BranchClosure::query()->where(fn ($q) => $q->whereNull('branch_id')->orWhere('branch_id', $branch->id))
+            ->whereBetween('date', [$from, $to])->get()->mapWithKeys(fn (BranchClosure $c) => [$c->date->format('Y-m-d') => true]);
         $days = [];
         foreach ($dates as $date) {
             [$start, $end] = $this->clock->localDayRangeUtc($date);
             $cells = intdiv($end->getTimestamp() - $start->getTimestamp(), self::CELL);
-            $open = $this->openCells($branch, $date, $start->getTimestamp(), $cells);
+            $open = $closed->has($date) ? array_fill(0, $cells, false) : $this->openCells($branch, $date, $start->getTimestamp(), $cells);
             $days[$date] = ['start' => $start->getTimestamp(), 'cells' => $cells, 'open' => $open];
         }
 
