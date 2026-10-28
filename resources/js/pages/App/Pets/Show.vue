@@ -3,6 +3,7 @@ import InputError from '@/components/InputError.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import EmptyState from '@/components/pb/EmptyState.vue';
 import GroupBadge from '@/components/pb/GroupBadge.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
 import TabsBar from '@/components/pb/TabsBar.vue';
 import Timeline from '@/components/pb/Timeline.vue';
 import TimelineItem from '@/components/pb/TimelineItem.vue';
@@ -12,7 +13,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDateTime, formatDay } from '@/lib/format';
 import type { PetSummary } from '@/types/pets';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { Lock, PawPrint, Pencil, Trash2 } from 'lucide-vue-next';
+import { Lock, Pencil, Trash2 } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 type Tab = 'overview' | 'history' | 'medical' | 'vaccinations';
@@ -62,32 +63,34 @@ const destroy = () => {
 
     <AppLayout>
         <div class="flex max-w-5xl flex-col gap-6 p-4 md:p-6">
-            <div>
+            <nav class="flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Điều hướng">
+                <Link :href="route('app.customers.index')" class="hover:underline">Khách & Thú cưng</Link>
+                <span aria-hidden="true">›</span>
                 <Link
                     :href="pet.customer.is_system ? route('app.customers.index', { tab: 'strays' }) : route('app.customers.show', pet.customer.id)"
-                    class="text-sm text-muted-foreground hover:underline"
-                    >← {{ pet.customer.is_system ? 'Thú hoang' : pet.customer.name }}</Link
+                    class="hover:underline"
+                    >{{ pet.customer.is_system ? 'Thú hoang' : pet.customer.name }}</Link
                 >
-            </div>
+                <span aria-hidden="true">›</span>
+                <span class="text-foreground">{{ pet.name }}</span>
+            </nav>
 
-            <header class="flex flex-wrap items-start gap-4 rounded-[10px] border bg-card p-6">
-                <div class="grid size-16 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
-                    <PawPrint class="size-8" />
-                </div>
-                <div class="grid min-w-0 flex-1 gap-2">
-                    <h1 class="text-2xl font-semibold">{{ pet.name }}</h1>
+            <header class="flex flex-wrap items-start gap-5">
+                <RingAvatar :initials="pet.name.slice(0, 2)" color="hsl(var(--color-accent))" :size="64" />
+                <div class="grid min-w-[14rem] flex-1 gap-1">
+                    <h1 class="text-[28px] font-semibold leading-9">{{ pet.name }}</h1>
                     <p class="text-sm text-muted-foreground">{{ facts.join(' · ') }}</p>
-                    <p class="text-sm">
-                        <template v-if="pet.customer.is_system">Thú hoang / vô chủ</template>
-                        <template v-else>
-                            Khách:
-                            <Link :href="route('app.customers.show', pet.customer.id)" class="font-medium hover:underline">{{
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+                        <span v-if="pet.customer.is_system" class="text-muted-foreground">Thú hoang / vô chủ</span>
+                        <span v-else>
+                            <span class="text-muted-foreground">Chủ nuôi</span>
+                            <Link :href="route('app.customers.show', pet.customer.id)" class="ml-1.5 font-semibold text-primary hover:underline">{{
                                 pet.customer.name
                             }}</Link>
-                            <span class="tabular-nums text-muted-foreground"> · {{ pet.customer.phone }}</span>
-                        </template>
-                    </p>
-                    <PetAlertBadges :alerts="pet.alerts" />
+                            <span class="font-mono text-xs text-muted-foreground"> · {{ pet.customer.phone }}</span>
+                        </span>
+                        <PetAlertBadges :alerts="pet.alerts" />
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <Button v-if="can.update" variant="outline" as-child>
