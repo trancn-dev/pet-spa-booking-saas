@@ -21,7 +21,10 @@ const initials = computed(() =>
 
 <template>
     <DropdownMenu>
-        <DropdownMenuTrigger class="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :aria-label="`Tài khoản: ${user.name}`">
+        <DropdownMenuTrigger
+            class="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="`Tài khoản: ${user.name}`"
+        >
             <RingAvatar :initials="initials" :size="32" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="min-w-56"><UserMenuContent :user="user" /></DropdownMenuContent>

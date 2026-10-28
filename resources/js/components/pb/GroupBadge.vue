@@ -7,5 +7,5 @@ defineProps<{ group: Group; label?: string }>();
 </script>
 
 <template>
-    <Badge :tone="group === 'medical' ? 'info' : 'coral'">{{ label ?? groupLabel[group] }}</Badge>
+    <Badge :tone="group === 'medical' ? 'primary' : 'coral'">{{ label ?? groupLabel[group] }}</Badge>
 </template>

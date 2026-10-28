@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { ShopSharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { Check, ChevronDown } from 'lucide-vue-next';
@@ -21,8 +28,13 @@ const initials = computed(() =>
 
 <template>
     <DropdownMenu v-if="tenant">
-        <DropdownMenuTrigger class="flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :disabled="workspaces.length < 2">
-            <span class="grid size-6 shrink-0 place-items-center rounded-md bg-coral/20 text-[10px] font-bold text-orange-900 dark:text-coral">{{ initials }}</span>
+        <DropdownMenuTrigger
+            class="flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-sm font-semibold hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :disabled="workspaces.length < 2"
+        >
+            <span class="grid size-6 shrink-0 place-items-center rounded-md bg-coral/20 text-[10px] font-bold text-orange-900 dark:text-coral">{{
+                initials
+            }}</span>
             <span class="truncate">{{ tenant.name }}</span>
             <ChevronDown v-if="workspaces.length > 1" class="size-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>

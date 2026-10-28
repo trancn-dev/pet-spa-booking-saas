@@ -10,7 +10,7 @@ import { computed } from 'vue';
  */
 const props = defineProps<{ block: CalendarBlock; color?: string | null; bufferPx: number; draggable?: boolean }>();
 
-const tone: Record<Group, string> = { medical: 'bg-info/10 border-info/40', grooming: 'bg-coral/10 border-coral/40' };
+const tone: Record<Group, string> = { medical: 'bg-primary-soft border-primary/30', grooming: 'bg-coral/15 border-coral/40' };
 const done = computed(() => props.block.line_status === 'cancelled' || props.block.line_status === 'no_show');
 const alerts = computed(() => props.block.pets.filter((p) => p.alerts.length));
 </script>

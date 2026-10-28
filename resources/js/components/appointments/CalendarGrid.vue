@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CalendarBlock from '@/components/appointments/CalendarBlock.vue';
 import CapacityBar from '@/components/appointments/CapacityBar.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
 import { type CalendarBlock as BlockData, type CapacityCell, hhmm, minutes } from '@/types/calendar';
 import { computed, ref } from 'vue';
 
@@ -139,6 +140,15 @@ const ghost = (column: GridColumn) => {
     const length = minutes(b.end) - minutes(b.start);
     return span(hover.value.time, hhmm(Math.min(minutes(hover.value.time) + length, end.value)));
 };
+const initialsOf = (name: string) =>
+    name
+        .replace(/^BS\.?\s*/i, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 const keyCell = (column: GridColumn, time: string) => emit('cell', column, time);
 </script>
 
@@ -146,18 +156,25 @@ const keyCell = (column: GridColumn, time: string) => emit('cell', column, time)
     <div class="relative overflow-auto rounded-[10px] border bg-card" role="grid" aria-label="Lịch hẹn">
         <div class="grid min-w-max" :style="{ gridTemplateColumns: `6.5rem repeat(${columns.length}, minmax(9.5rem, 1fr))` }">
             <!-- header -->
-            <div class="sticky top-0 z-20 border-b bg-surface-muted" />
-            <div v-for="c in columns" :key="`h-${c.key}`" class="sticky top-0 z-20 border-b border-l bg-surface-muted px-2 py-2" role="columnheader">
-                <div class="flex items-center gap-1.5 text-sm font-medium">
-                    <span v-if="c.color !== undefined" class="size-2.5 shrink-0 rounded-full" :style="{ backgroundColor: c.color ?? '#94a3b8' }" />
-                    <span class="truncate">{{ c.label }}</span>
+            <div class="sticky top-0 z-20 border-b bg-card" />
+            <div v-for="c in columns" :key="`h-${c.key}`" class="sticky top-0 z-20 border-b border-l bg-card px-3 py-2.5" role="columnheader">
+                <div class="flex items-center gap-2.5">
+                    <span
+                        v-if="c.key === 'none'"
+                        class="grid size-9 shrink-0 place-items-center rounded-full border-2 border-dashed text-muted-foreground"
+                        aria-hidden="true"
+                    />
+                    <RingAvatar v-else :initials="initialsOf(c.label)" :color="c.color ?? null" :size="36" />
+                    <div class="min-w-0">
+                        <div class="truncate text-sm font-semibold leading-5">{{ c.label }}</div>
+                        <div v-if="c.sub" class="truncate text-xs leading-4 text-muted-foreground">{{ c.sub }}</div>
+                    </div>
                 </div>
-                <div v-if="c.sub" class="truncate text-xs text-muted-foreground">{{ c.sub }}</div>
             </div>
 
             <!-- time axis + capacity per hour -->
             <div class="relative border-r" :style="{ height: `${height}px` }">
-                <div v-for="h in hours" :key="h" class="absolute inset-x-0 px-1 text-[11px] leading-tight" :style="{ top: `${y(h)}px` }">
+                <div v-for="h in hours" :key="h" class="absolute inset-x-0 pr-2 text-right text-[11px] leading-tight" :style="{ top: `${y(h)}px` }">
                     <div class="font-medium tabular-nums">{{ h }}</div>
                     <CapacityBar v-if="capacityAt.get(h)" :cell="capacityAt.get(h)!" />
                 </div>
@@ -191,7 +208,7 @@ const keyCell = (column: GridColumn, time: string) => emit('cell', column, time)
                 <div
                     v-for="(o, i) in c.off ?? []"
                     :key="`o${i}`"
-                    class="pointer-events-none absolute inset-x-1 rounded border border-dashed border-muted-foreground/40 bg-muted/70 px-1.5 py-0.5 text-xs text-muted-foreground"
+                    class="striped pointer-events-none absolute inset-x-0 grid place-items-center bg-muted/70 px-1.5 py-0.5 text-sm font-medium text-muted-foreground"
                     :style="span(o.start, o.end)"
                 >
                     Nghỉ<template v-if="o.reason">: {{ o.reason }}</template>

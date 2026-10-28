@@ -18,7 +18,7 @@ const submit = () => {
 const onKey = (e: KeyboardEvent) => {
     const el = e.target as HTMLElement | null;
     const typing = !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
-    if (e.key !== '/' || typing || e.metaKey || e.ctrlKey || e.altKey || route().current('app.appointments.index')) return;
+    if (e.key !== '/' || typing || e.metaKey || e.ctrlKey || e.altKey) return;
     e.preventDefault();
     input.value?.focus();
 };
@@ -37,6 +37,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
             placeholder="Tìm khách, SĐT, tên pet"
             class="h-9 w-full rounded-[10px] border bg-surface-muted pl-9 pr-9 text-sm placeholder:text-muted-foreground focus-visible:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
-        <kbd class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border bg-background px-1.5 font-mono text-[11px] text-muted-foreground">/</kbd>
+        <kbd
+            class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border bg-background px-1.5 font-mono text-[11px] text-muted-foreground"
+            >/</kbd
+        >
     </form>
 </template>

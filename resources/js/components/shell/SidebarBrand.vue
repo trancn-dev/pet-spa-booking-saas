@@ -12,7 +12,9 @@ defineProps<{ href: string }>();
         <SidebarMenuItem>
             <SidebarMenuButton size="lg" as-child>
                 <Link :href="href" aria-label="PawBook: về trang tổng quan">
-                    <span class="grid size-7 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><PawPrint class="size-4" /></span>
+                    <span class="grid size-7 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"
+                        ><PawPrint class="size-4"
+                    /></span>
                     <span class="text-base font-bold">PawBook</span>
                 </Link>
             </SidebarMenuButton>

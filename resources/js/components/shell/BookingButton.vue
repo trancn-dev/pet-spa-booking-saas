@@ -10,7 +10,10 @@ import { computed, onBeforeUnmount, onMounted } from 'vue';
 | goes to the calendar with `?book=1`, which opens the drawer on arrival. "N" works from any page.
 */
 const page = usePage<ShopSharedData>();
-const visible = computed(() => page.props.permissions?.includes('appointments.manage') && !page.props.readOnly);
+// the calendar carries its own button in the toolbar (design S1)
+const visible = computed(
+    () => page.props.permissions?.includes('appointments.manage') && !page.props.readOnly && !route().current('app.appointments.index'),
+);
 
 const open = () => {
     if (route().current('app.appointments.index')) window.dispatchEvent(new CustomEvent('pb:book'));
@@ -20,7 +23,16 @@ const onKey = (e: KeyboardEvent) => {
     const el = e.target as HTMLElement | null;
     const typing = !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
     // the calendar page handles N itself
-    if ((e.key !== 'n' && e.key !== 'N') || typing || e.metaKey || e.ctrlKey || e.altKey || !visible.value || route().current('app.appointments.index')) return;
+    if (
+        (e.key !== 'n' && e.key !== 'N') ||
+        typing ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        !visible.value ||
+        route().current('app.appointments.index')
+    )
+        return;
     e.preventDefault();
     open();
 };

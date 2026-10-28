@@ -3,19 +3,19 @@ import BookingDrawer from '@/components/appointments/BookingDrawer.vue';
 import CalendarGrid, { type GridColumn } from '@/components/appointments/CalendarGrid.vue';
 import DetailDrawer from '@/components/appointments/DetailDrawer.vue';
 import Banner from '@/components/pb/Banner.vue';
+import FilterSelect from '@/components/pb/FilterSelect.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
 import Segmented from '@/components/pb/Segmented.vue';
 import PetAlertBadges from '@/components/PetAlertBadges.vue';
 import Toaster from '@/components/Toaster.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { api, errorMessage } from '@/lib/api';
 import { type CalendarBlock, type CalendarDayData, type Group, groupLabel, hhmm, minutes, type ServiceOption } from '@/types/calendar';
 import type { SpeciesOption } from '@/types/pets';
 import { Head, router } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-vue-next';
+import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 type View = 'staff' | 'day' | 'week';
@@ -38,9 +38,7 @@ const props = defineProps<{
 const { show } = useToast();
 const toast = { success: (m: string) => show(m, 'success'), error: (m: string) => show(m, 'danger') };
 const groupFilter = ref<Group | 'all'>('all');
-const q = ref('');
 const staffFilter = ref<number | 'all'>('all');
-const search = ref<InstanceType<typeof Input> | null>(null);
 
 const go = (params: { date?: string; view?: View }) =>
     router.get(route('app.appointments.index'), { date: params.date ?? props.date, view: params.view ?? props.view }, { preserveScroll: true });
@@ -60,10 +58,9 @@ const tick = () =>
 let clock: ReturnType<typeof setInterval> | undefined;
 
 const matches = (b: CalendarBlock) => {
-    const term = q.value.trim().toLowerCase();
     const groupOk = groupFilter.value === 'all' || b.group === groupFilter.value;
     const staffOk = staffFilter.value === 'all' || b.staff_id === staffFilter.value;
-    return groupOk && staffOk && (!term || b.customer.toLowerCase().includes(term) || b.pets.some((p) => p.name.toLowerCase().includes(term)));
+    return groupOk && staffOk;
 };
 
 const staffColors = computed(() => Object.fromEntries((props.day?.staff ?? []).map((s) => [s.id, s.color])));
@@ -131,16 +128,13 @@ const move = async (block: CalendarBlock, _column: GridColumn, time: string) => 
     }
 };
 
-// Shortcuts: N = new booking, / = search (not while typing).
+// Shortcut: N = new booking (not while typing). "/" is the global search in the topbar.
 const onKey = (e: KeyboardEvent) => {
     const typing = e.target instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable);
     if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         openBooking();
-    } else if (e.key === '/') {
-        e.preventDefault();
-        (search.value?.$el as HTMLInputElement | undefined)?.focus();
     }
 };
 const bookEvent = () => openBooking();
@@ -177,45 +171,55 @@ const views: { value: View; label: string }[] = [
 
     <AppLayout>
         <div class="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-4 md:p-6">
+            <PageHeader title="Lịch hẹn" branch />
+
             <div class="flex flex-wrap items-center gap-2">
-                <PageHeader title="Lịch hẹn" branch class="mr-2 w-auto flex-none" />
-                <div class="flex items-center gap-1">
-                    <Button variant="outline" size="icon" aria-label="Trước" @click="shift(-1)"><ChevronLeft class="size-4" /></Button>
-                    <Button variant="outline" size="sm" @click="go({ date: today })">Hôm nay</Button>
-                    <Button variant="outline" size="icon" aria-label="Sau" @click="shift(1)"><ChevronRight class="size-4" /></Button>
+                <div class="flex h-10 items-center overflow-hidden rounded-[10px] border bg-card">
+                    <button type="button" class="grid h-full w-9 place-items-center hover:bg-surface-muted" aria-label="Trước" @click="shift(-1)">
+                        <ChevronLeft class="size-4" />
+                    </button>
+                    <button type="button" class="h-full border-x px-3 text-sm font-semibold hover:bg-surface-muted" @click="go({ date: today })">
+                        Hôm nay
+                    </button>
+                    <button type="button" class="grid h-full w-9 place-items-center hover:bg-surface-muted" aria-label="Sau" @click="shift(1)">
+                        <ChevronRight class="size-4" />
+                    </button>
                 </div>
-                <Input
-                    :model-value="date"
-                    type="date"
-                    class="w-40"
-                    aria-label="Chọn ngày"
-                    @update:model-value="(v) => v && go({ date: String(v) })"
-                />
-                <span class="text-sm text-muted-foreground">{{ title }}</span>
+                <label
+                    class="relative flex h-10 cursor-pointer items-center gap-2 rounded-[10px] border bg-card px-3 text-sm font-semibold focus-within:ring-2 focus-within:ring-primary"
+                >
+                    <CalendarDays class="size-4 text-muted-foreground" aria-hidden="true" />
+                    {{ title }}
+                    <input
+                        type="date"
+                        :value="date"
+                        class="absolute inset-0 cursor-pointer opacity-0"
+                        aria-label="Chọn ngày"
+                        @change="(e) => (e.target as HTMLInputElement).value && go({ date: (e.target as HTMLInputElement).value })"
+                    />
+                </label>
+                <Segmented :model-value="view" :options="views" label="Chế độ xem" @update:model-value="(v) => go({ view: v as View })" />
                 <div class="ml-auto flex flex-wrap items-center gap-2">
-                    <Segmented :model-value="view" :options="views" label="Chế độ xem" @update:model-value="(v) => go({ view: v as View })" />
-                    <select
+                    <FilterSelect
                         v-if="day"
                         v-model="staffFilter"
-                        class="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                        aria-label="Lọc nhân viên"
-                    >
-                        <option value="all">Mọi nhân viên</option>
-                        <option v-for="s in day.staff" :key="s.id" :value="s.id">{{ s.name }}</option>
-                    </select>
-                    <select v-model="groupFilter" class="h-9 rounded-md border border-input bg-background px-2 text-sm" aria-label="Lọc nhóm">
-                        <option value="all">Khám + Spa</option>
-                        <option value="medical">Khám</option>
-                        <option value="grooming">Spa</option>
-                    </select>
-                    <div class="relative">
-                        <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input ref="search" v-model="q" class="w-48 pl-8" placeholder="Tìm khách, bé ( / )" aria-label="Tìm trong lịch" />
-                    </div>
+                        label="Nhân viên"
+                        :options="[{ value: 'all', label: 'Tất cả' }, ...day.staff.map((s) => ({ value: s.id, label: s.name }))]"
+                    />
+                    <FilterSelect
+                        v-model="groupFilter"
+                        label="Nhóm"
+                        :options="[
+                            { value: 'all', label: 'Tất cả' },
+                            { value: 'medical', label: 'Khám' },
+                            { value: 'grooming', label: 'Spa' },
+                        ]"
+                    />
                     <Button
                         v-if="can.book"
                         :disabled="quota.full"
-                        :title="quota.full ? `Đã đạt ${quota.used}/${quota.max} lịch tháng này` : 'Phím tắt N'"
+                        :disabled-reason="quota.full ? `Đã đạt ${quota.used}/${quota.max} lịch tháng này` : 'Phím tắt N'"
+                        class="h-10"
                         @click="openBooking()"
                     >
                         <Plus class="size-4" /> Đặt lịch

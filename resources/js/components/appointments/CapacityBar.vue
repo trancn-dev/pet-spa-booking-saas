@@ -9,10 +9,10 @@ const over = computed(() => props.cell.medical.taken > props.cell.medical.on_dut
 
 <template>
     <div
-        class="mt-0.5 rounded border px-1 tabular-nums"
+        class="mt-px whitespace-nowrap rounded border px-1 text-right text-[10px] tabular-nums leading-[14px]"
         :class="over ? 'border-warning bg-warning/10 font-semibold text-warning' : 'border-transparent text-muted-foreground'"
         :title="over ? 'Vượt số người trực' : 'Lịch đang chiếm chỗ / người trực'"
     >
-        Khám {{ cell.medical.taken }}/{{ cell.medical.on_duty }}<br />Spa {{ cell.grooming.taken }}/{{ cell.grooming.on_duty }}
+        K {{ cell.medical.taken }}/{{ cell.medical.on_duty }} · S {{ cell.grooming.taken }}/{{ cell.grooming.on_duty }}
     </div>
 </template>
