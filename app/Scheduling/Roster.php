@@ -19,17 +19,59 @@ use Carbon\CarbonImmutable;
  * the vet and the groomer role is one person on duty, never two. A slot fully covered by time off
  * does not count; a closed branch (or shop) day has nobody on duty.
  */
-final class Roster
+final class Roster implements DutySource
 {
     public function __construct(private readonly ShopClock $clock) {}
 
+    /** @var array<string, array{0: list<array{date: string, slot: StaffWorkingHour, starts_at: CarbonImmutable, ends_at: CarbonImmutable, off: bool}>, 1: array<int, list<StaffTimeOff>>}> */
+    private array $loaded = [];
+
     /**
-     * Slots happening on each day, with their UTC interval.
+     * Slots happening on each day, with their UTC interval. `off` = fully covered by time off.
      *
      * @return list<array{date: string, slot: StaffWorkingHour, starts_at: CarbonImmutable, ends_at: CarbonImmutable, off: bool}>
      */
     public function occurrences(int $branchId, string $from, string $to): array
     {
+        return $this->load($branchId, $from, $to)[0];
+    }
+
+    /**
+     * Time on duty per person for one group: their slots of that group minus any time off (even
+     * part of a slot), closed days removed. Three queries for the whole range.
+     *
+     * @return array<int, IntervalSet> staff id => time on duty
+     */
+    public function dutySets(int $branchId, ServiceGroup $group, string $from, string $to): array
+    {
+        [$occurrences, $timeOff] = $this->load($branchId, $from, $to);
+
+        $pieces = [];
+        foreach ($occurrences as $o) {
+            if ($o['slot']->service_group === $group) {
+                $pieces[$o['slot']->staff_id][] = Interval::of($o['starts_at'], $o['ends_at']);
+            }
+        }
+
+        $sets = [];
+        foreach ($pieces as $staffId => $intervals) {
+            $off = new IntervalSet(array_map(fn (StaffTimeOff $t) => Interval::of($t->starts_at, $t->ends_at), $timeOff[$staffId] ?? []));
+            $sets[$staffId] = (new IntervalSet($intervals))->subtract($off);
+        }
+
+        return $sets;
+    }
+
+    /**
+     * @return array{0: list<array{date: string, slot: StaffWorkingHour, starts_at: CarbonImmutable, ends_at: CarbonImmutable, off: bool}>, 1: array<int, list<StaffTimeOff>>}
+     */
+    private function load(int $branchId, string $from, string $to): array
+    {
+        $key = "{$branchId}:{$from}:{$to}";
+        if (isset($this->loaded[$key])) {
+            return $this->loaded[$key];
+        }
+
         $days = $this->days($from, $to);
         $slots = StaffWorkingHour::query()->where('branch_id', $branchId)
             ->whereHas('staff', fn ($q) => $q->where('status', StaffStatus::Active->value))
@@ -41,7 +83,8 @@ final class Roster
         [$rangeStart] = $this->clock->localDayRangeUtc($from);
         [, $rangeEnd] = $this->clock->localDayRangeUtc($to);
         $timeOff = StaffTimeOff::query()->whereIn('staff_id', $slots->pluck('staff_id')->unique())
-            ->where('starts_at', '<', $rangeEnd)->where('ends_at', '>', $rangeStart)->get()->groupBy('staff_id');
+            ->where('starts_at', '<', $rangeEnd)->where('ends_at', '>', $rangeStart)->orderBy('starts_at')->get()
+            ->groupBy('staff_id')->map(fn ($rows) => $rows->values()->all())->all();
 
         $out = [];
         foreach ($days as $date) {
@@ -57,14 +100,14 @@ final class Roster
                 }
                 $start = $this->clock->toUtc($date, $slot->start_time);
                 $end = $this->clock->toUtc($date, $slot->end_time);
-                $off = ($timeOff[$slot->staff_id] ?? collect())
+                $off = collect($timeOff[$slot->staff_id] ?? [])
                     ->contains(fn (StaffTimeOff $t) => $t->starts_at->lte($start) && $t->ends_at->gte($end));
 
                 $out[] = ['date' => $date, 'slot' => $slot, 'starts_at' => $start, 'ends_at' => $end, 'off' => $off];
             }
         }
 
-        return $out;
+        return $this->loaded[$key] = [$out, $timeOff];
     }
 
     /**

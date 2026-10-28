@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Scheduling\DutySource;
+use App\Scheduling\Roster;
+use App\Scheduling\ShopClock;
 use App\Tenancy\CurrentStaff;
 use App\Tenancy\StaffMembership;
 use App\Tenancy\TenantContext;
@@ -22,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(CurrentStaff::class);
         $this->app->bind(TenantMembership::class, StaffMembership::class);
+        // Per resolution, never singletons: the shop in context changes between jobs and tests.
+        $this->app->bind(ShopClock::class, fn (): ShopClock => ShopClock::current());
+        $this->app->bind(DutySource::class, Roster::class);
     }
 
     /**

@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A location of the shop. Not an isolation boundary: no global scope (ADR 0004).
+ *
+ * @property array<int, list<array{0: string, 1: string}>>|null $opening_hours ISO weekday => [[start, end], …] local
  */
 class Branch extends Model
 {

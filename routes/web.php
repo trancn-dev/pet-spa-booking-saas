@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\Tenant\AvailabilityController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
@@ -81,6 +82,9 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::post('services/{service}/rules', [ServiceController::class, 'storeRule'])->name('app.services.rules.store');
         Route::put('services/{service}/rules/{rule}', [ServiceController::class, 'updateRule'])->name('app.services.rules.update');
         Route::delete('services/{service}/rules/{rule}', [ServiceController::class, 'destroyRule'])->name('app.services.rules.destroy');
+
+        // Free start times by capacity (task 5.4), JSON for S2.
+        Route::get('availability', AvailabilityController::class)->name('app.availability');
 
         // Rosters, time off, closed days (task 5.3), for the branch picked in the topbar.
         Route::get('rosters', [RosterController::class, 'index'])->name('app.rosters.index');

@@ -75,6 +75,7 @@ Rules when adding features:
 
 - Convert shop time ↔ UTC only with `ShopClock` (`for($tenant)` / `current()`: `toUtc($date, $time)`, `localDayRangeUtc($date)`, `today()`, `toLocal()`, `weekday()` = ISO 1–7). Query a shop day by its UTC range, never `DATE(col)`.
 - `Roster` turns weekly `staff_working_hours` into dated UTC occurrences (`occurrences`, `onDutyPerDay`, `onDutyAt`): a slot counts only for its own `service_group`, time off covering it or a closed day removes it. `OnlineRates` resolves the ratio (weekday + hours > weekday > hours > default; none = no online booking) and `OnlineRates::maxOnline()` is the floor used for capacity.
+- Capacity (task 5.4): `AvailabilityService::slotsForOnline / slotsForStaff($branch, list<BookingLine>, $from, $to)` on 15-minute cells of the shop day. A person counts in a cell only if their duty time (`DutySource::dutySets`: slots of that group minus time off) covers the whole cell, inside opening hours; taken = booked / checked-in lines of live appointments (online only for the Site). Lines of one pet run back to back, different pets in parallel. Fixed query count per range: never query per cell or per person. Intervals: `Interval` / `IntervalSet` (UTC epoch seconds, half-open).
 - Roster edits: `SaveWorkingHour` (staff row lock, no overlapping slots across branches), `AddTimeOff` (reports affected booked lines, never cancels), `SaveBranchClosure`, `SaveOnlineBookingRate`. Policy: `Gate::allows('manage', [StaffWorkingHour::class, $branch])`.
 
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
