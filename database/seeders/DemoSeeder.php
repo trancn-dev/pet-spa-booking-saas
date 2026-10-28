@@ -51,6 +51,7 @@ use App\Models\Species;
 use App\Models\Staff;
 use App\Models\StaffTimeOff;
 use App\Models\StaffWorkingHour;
+use App\Models\Tenant;
 use App\Models\TenantSetting;
 use App\Models\User;
 use App\Models\Vaccine;
@@ -95,6 +96,9 @@ class DemoSeeder extends Seeder
 
     private PlatformAdmin $admin;
 
+    /** @var list<array{0: Tenant, 1: array<string, mixed>}> */
+    private array $states = [];
+
     /** @var array<string, Staff> */
     private array $staff = [];
 
@@ -127,6 +131,10 @@ class DemoSeeder extends Seeder
         $this->meowClinic();
         $this->smallShop('Happy Tails', 'happy-tails', 'starter', TenantStatus::Trial, $this->at('23:59', 5), 'HT', 'Trịnh Văn Phúc', 'phuc@happytails.test');
         $this->smallShop('Bé Cún Spa', 'be-cun-spa', 'starter', TenantStatus::Suspended, $this->at('23:59', -10), 'BC', 'Lâm Thị Ngọc', 'ngoc@becun.test', 'Chưa thanh toán');
+
+        foreach ($this->states as [$tenant, $state]) {
+            $tenant->forceFill($state)->save();
+        }
 
         app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     }
@@ -542,8 +550,9 @@ class DemoSeeder extends Seeder
             branchPhone: $branch[3],
         ), sendInvitation: false);
 
-        // States provisioning never produces (past due, suspended) and exact demo expiry times.
-        $shop->tenant->forceFill(['status' => $status, 'plan_expires_at' => $expiresAt, ...$extra])->save();
+        // States provisioning never produces (past due, suspended) and exact demo expiry times, set
+        // once the owners have joined (nobody can join a suspended shop).
+        $this->states[] = [$shop->tenant, ['status' => $status, 'plan_expires_at' => $expiresAt, ...$extra]];
         app(PermissionRegistrar::class)->setPermissionsTeamId($shop->tenant->getKey());
 
         return $shop;

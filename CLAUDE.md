@@ -7,7 +7,7 @@ Laravel 12 / PHP 8.3 multi-tenant SaaS (pet spa booking). Frontend: Inertia 2 + 
 ## Commands
 
 ```bash
-docker compose up -d --build                      # app (:8080), queue, mysql 8, redis 7, mailpit (:8025)
+docker compose up -d --build                      # app (:8080), queue, scheduler, mysql 8, redis 7, mailpit (:8025)
 docker compose exec app composer install
 docker compose exec app php artisan migrate:fresh --seed   # = make fresh (see Makefile: up, down, sh, test, lint, analyse, ci)
 
@@ -32,11 +32,11 @@ The invariant: **tenant A must never see tenant B's data.** The pieces only make
 
 - `TenantContext` (scoped singleton, registered in `AppServiceProvider`) holds the tenant for the current request/job. `runAs($tenant, fn)` temporarily switches tenant; `Tenant::forEach(fn)` runs per tenant (scheduler); `withoutTenancy(fn)` is the explicit, greppable cross-tenant escape hatch. `withoutGlobalScope(s)` is banned in `app/` (arch test).
 - **`User` is a global identity** (`UNIQUE(email)`, `last_tenant_id`), not tenant-owned. Membership = an active `staff` row (`TenantMembership` interface, `StaffMembership` impl). Auth, password reset and account settings are central routes.
-- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/suspended), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`app.dashboard`).
+- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/cancelled), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`app.dashboard`).
 - `BelongsToTenant` trait adds `TenantScope`, auto-fills `tenant_id` on create, rejects creating for another tenant, and makes `tenant_id` immutable.
 - **Fails closed** on reads and writes: with no tenant in context (and no bypass) any query on a tenant-owned model throws `TenantNotResolvedException` rather than returning all rows, and so does creating one (even with an explicit `tenant_id`). Inside `withoutTenancy` creating needs an explicit `tenant_id`. Seeders, artisan commands, factories and tests must set a tenant (`TenantContext::runAs` / `inTenant()` in tests) or use `withoutTenancy`. `runAs` re-enables scoping even inside `withoutTenancy`.
 - `Tenant` is deliberately not scoped. `App\Models\Platform\*` (subscriptions, impersonation, platform audit) is data *about* shops: has `tenant_id` but is never scoped, only read from `/admin` (arch test exempts that namespace only).
-- `ResolveTenant` opens shops whose status `isAccessible()` (`trial`, `active`, `past_due`); `suspended` stays 404 until the read-only mode of task 4.5, `cancelled` is always 404.
+- The `tenant` middleware group is `ResolveTenant` + `EnsureTenantActive`. Every status except `cancelled` (404) opens; `suspended` is read-only: GET works, any write gets 423 (`Errors/ShopSuspended`). Inertia shares `planNotice` / `readOnly`. Status changes go through `App\Platform\TenantStatusChange::apply()` (compare-and-set + one audit row); `tenants:check-expiry` runs daily (`scheduler` container). Customer-facing jobs must check `TenantStatus::sendsReminders()`.
 - Helpers: `TenantRule::exists('pets')` / `TenantRule::unique('customers', 'phone')` for validation; `tenant()` and `tenant_cache_key('x')` → `t:{id}:x` for cache / lock / rate-limiter keys; queued jobs that touch shop data `use TenantAware` (the dispatching tenant rides in the payload; dispatching one with no tenant fails the job). Dispatch inside a closure body, never `runAs($t, fn () => Job::dispatch())`: `PendingDispatch` queues on destruct, after the context is restored.
 
 Rules when adding features:
@@ -47,7 +47,7 @@ Rules when adding features:
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): plan expiry / read-only suspended shops (4.5), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
+- Still to do (see plan): impersonation (4.6), Larastan level 8 + ESLint in CI (task 1.2), `assertTenantIsolated` helper once the first CRUD routes exist (5.1). `password_reset_tokens` are global like users.
 
 ## Shops, invitations, sign-in (task 4.3)
 

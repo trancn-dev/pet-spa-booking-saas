@@ -42,6 +42,8 @@ class TenantOverview
             'name' => $tenant->name,
             'slug' => $tenant->slug,
             'status' => $tenant->status->value,
+            'suspended_at' => $tenant->suspended_at?->toIso8601String(),
+            'suspended_reason' => $tenant->suspended_reason,
             'timezone' => $tenant->timezone,
             'plan' => $plan?->name,
             'plan_expires_at' => $tenant->plan_expires_at?->toIso8601String(),

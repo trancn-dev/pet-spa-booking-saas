@@ -10,9 +10,15 @@ use Database\Factories\Platform\TenantSubscriptionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * One row per sale / renewal; tenants.plan_id + plan_expires_at summarise it.
+ *
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
+ * @property Carbon|null $paid_at
+ * @property string $amount
  */
 class TenantSubscription extends Model
 {

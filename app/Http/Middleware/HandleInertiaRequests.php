@@ -8,6 +8,7 @@ use App\Authorization\CurrentBranch;
 use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\PlanNotice;
 use App\Tenancy\TenantMembership;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -62,6 +63,8 @@ class HandleInertiaRequests extends Middleware
             'permissions' => fn (): array => tenant() !== null && $request->user() instanceof User
                 ? $request->user()->getAllPermissions()->pluck('name')->values()->all()
                 : [],
+            'planNotice' => fn (): ?array => ($tenant = tenant()) === null ? null : PlanNotice::for($tenant),
+            'readOnly' => fn (): bool => tenant()?->status->isReadOnly() ?? false,
             // Topbar switchers (design 3.4): shops the user can open, branches they work at.
             'workspaces' => fn (): array => tenant() !== null && $request->user() instanceof User
                 ? app(TenantMembership::class)->tenantsFor($request->user())

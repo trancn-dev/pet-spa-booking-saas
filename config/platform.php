@@ -20,6 +20,11 @@ return [
     'trial_days' => 14,
     'site_host' => env('PLATFORM_SITE_HOST', 'pawbook.vn'),
 
+    // Plan lifecycle (db-schema 2.1, task 4.5): warn N days before expiry; past due for N days
+    // (grace, fully usable) before the shop is suspended.
+    'expiry_warning_days' => 7,
+    'grace_days' => 7,
+
     // Shown on the admin sidebar badge.
     'environment_label' => env('PLATFORM_ENV_LABEL'),
 ];

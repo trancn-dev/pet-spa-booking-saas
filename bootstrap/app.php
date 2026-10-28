@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTenant;
 use App\Platform\Http\Middleware\AuthenticatePlatformAdmin;
@@ -34,13 +35,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([__DIR__.'/../app/Platform/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'tenant' => ResolveTenant::class,
             'platform.auth' => AuthenticatePlatformAdmin::class,
             'platform.role' => RequirePlatformRole::class,
         ]);
 
-        // Resolve the tenant (and check membership) before auth/route-binding run.
+        // `tenant`: resolve the shop (and check membership), then block writes to a suspended shop.
+        $middleware->group('tenant', [ResolveTenant::class, EnsureTenantActive::class]);
+        // Both run before auth/route-binding, in this order.
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: ResolveTenant::class);
+        $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: EnsureTenantActive::class);
         // The admin session cookie name must be set before the session starts.
         $middleware->prependToPriorityList(before: StartSession::class, prepend: UsePlatformSessionCookie::class);
 

@@ -8,7 +8,12 @@ use App\Models\Concerns\AppendOnly;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property array<string, mixed>|null $changes
+ * @property Carbon $created_at
+ */
 class PlatformAuditLog extends Model
 {
     use AppendOnly;

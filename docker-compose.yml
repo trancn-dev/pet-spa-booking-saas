@@ -28,6 +28,19 @@ services:
     depends_on:
       - app
 
+  # Runs routes/console.php schedules (tenants:check-expiry, reminders later).
+  scheduler:
+    build:
+      context: ./docker/php
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    command: php artisan schedule:work
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - app
+
   mysql:
     image: mysql:8.0
     ports:

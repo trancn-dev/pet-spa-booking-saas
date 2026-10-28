@@ -17,6 +17,7 @@ withDefaults(defineProps<Props>(), {
 
 const page = usePage<ShopSharedData>();
 const status = computed(() => page.props.flash?.status);
+const notice = computed(() => page.props.planNotice);
 </script>
 
 <template>
@@ -24,6 +25,14 @@ const status = computed(() => page.props.flash?.status);
         <AppSidebar />
         <AppContent variant="sidebar">
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
+            <div
+                v-if="notice"
+                role="alert"
+                class="mx-4 mt-4 rounded-md border px-4 py-2 text-sm"
+                :class="notice.level === 'danger' ? 'border-danger/30 bg-danger/10 text-danger' : 'border-warning/30 bg-warning/10 text-warning'"
+            >
+                {{ notice.text }}
+            </div>
             <div
                 v-if="status"
                 role="status"

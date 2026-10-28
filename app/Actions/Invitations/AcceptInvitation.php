@@ -52,6 +52,10 @@ class AcceptInvitation
                 return $existing; // double submit / second click
             }
 
+            if ($tenant->status->isReadOnly()) {
+                throw ValidationException::withMessages(['invitation' => 'Shop đang tạm khóa, chưa nhận lời mời được. Liên hệ người mời.']);
+            }
+
             if ($invitation->state() !== InvitationState::Pending) {
                 throw ValidationException::withMessages(['invitation' => self::message($invitation->state())]);
             }

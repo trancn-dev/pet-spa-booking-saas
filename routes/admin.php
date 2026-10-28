@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Platform\Http\Controllers\AdminController;
+use App\Platform\Http\Controllers\AuditLogController;
 use App\Platform\Http\Controllers\AuthController;
 use App\Platform\Http\Controllers\InvitationController;
 use App\Platform\Http\Controllers\TenantController;
@@ -37,12 +38,16 @@ Route::middleware('platform.auth')->group(function () {
     Route::post('logout', [AuthController::class, 'destroy'])->name('logout');
 
     Route::get('tenants', [TenantController::class, 'index'])->name('tenants.index');
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     Route::middleware('platform.role:super_admin')->group(function () {
         Route::get('tenants/create', [TenantController::class, 'create'])->name('tenants.create');
         Route::get('tenants/slug-check', [TenantController::class, 'checkSlug'])->name('tenants.slug-check');
         Route::post('tenants', [TenantController::class, 'store'])->name('tenants.store');
         Route::post('tenants/{tenant:public_id}/invitation', [TenantController::class, 'resendInvitation'])->name('tenants.invitation.resend');
+        Route::post('tenants/{tenant:public_id}/extend', [TenantController::class, 'extend'])->name('tenants.extend');
+        Route::post('tenants/{tenant:public_id}/suspend', [TenantController::class, 'suspend'])->name('tenants.suspend');
+        Route::post('tenants/{tenant:public_id}/resume', [TenantController::class, 'resume'])->name('tenants.resume');
 
         Route::get('admins', [AdminController::class, 'index'])->name('admins.index');
         Route::post('admins/invitations', [AdminController::class, 'invite'])->name('admins.invite');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
@@ -22,14 +23,22 @@ it('serves only the data of the tenant in the URL slug', function () {
     $this->get('/app/b/__staff')->assertOk()->assertExactJson(['staff-b']);
 });
 
-it('returns 404 for an unknown, suspended or cancelled tenant', function () {
+it('returns 404 for an unknown or cancelled tenant', function () {
     $this->get('/app/nope/__staff')->assertNotFound();
-
-    $this->b->update(['status' => 'suspended']);
-    $this->get('/app/b/__staff')->assertNotFound();
 
     $this->b->update(['status' => 'cancelled']);
     $this->get('/app/b/__staff')->assertNotFound();
+});
+
+it('serves a suspended tenant read-only: its own data on GET, 423 on writes (task 4.5)', function () {
+    Route::middleware(['web', 'tenant'])->prefix('app/{tenant:slug}')
+        ->post('__staff', fn () => 'written')->withoutMiddleware(ValidateCsrfToken::class);
+
+    $this->b->update(['status' => 'suspended']);
+
+    $this->get('/app/b/__staff')->assertOk()->assertExactJson(['staff-b']);
+    $this->postJson('/app/b/__staff')->assertStatus(423);
+    $this->postJson('/app/a/__staff')->assertOk();
 });
 
 it('serves trial and past-due shops (still usable, db-schema 2.1)', function () {

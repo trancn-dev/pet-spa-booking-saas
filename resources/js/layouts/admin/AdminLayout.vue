@@ -2,7 +2,7 @@
 import type { AdminSharedData } from '@/types/admin';
 import { roleLabels } from '@/types/admin';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { LogOut, ShieldCheck, Store, Users } from 'lucide-vue-next';
+import { LogOut, ScrollText, ShieldCheck, Store, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 defineProps<{ title: string }>();
@@ -14,6 +14,7 @@ const status = computed(() => page.props.flash?.status);
 
 const nav = computed(() => [
     { title: 'Shop', href: route('admin.tenants.index'), icon: Store, active: route().current('admin.tenants.*') },
+    { title: 'Nhật ký', href: route('admin.audit-logs.index'), icon: ScrollText, active: route().current('admin.audit-logs.*') },
     ...(admin.value?.is_super_admin
         ? [{ title: 'Quản lý admin', href: route('admin.admins.index'), icon: Users, active: route().current('admin.admins.*') }]
         : []),

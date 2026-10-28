@@ -8,9 +8,14 @@ use App\Enums\TenantStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Platform\PlatformAdmin;
+use App\Models\Platform\PlatformAuditLog;
+use App\Models\Platform\TenantSubscription;
 use App\Models\Tenant;
+use App\Platform\Actions\ExtendSubscription;
 use App\Platform\Actions\ProvisionTenant;
 use App\Platform\Actions\ResendOwnerInvitation;
+use App\Platform\Actions\ResumeTenant;
+use App\Platform\Actions\SuspendTenant;
 use App\Platform\Http\Requests\StoreTenantRequest;
 use App\Platform\Queries\TenantList;
 use App\Platform\Queries\TenantOverview;
@@ -20,11 +25,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * A2 shop list, A3 create (super-admin), A4 shop detail (support: read only).
+ * A2 shop list, A3 create (super-admin), A4 shop detail with billing and log tabs, extend /
+ * suspend / resume (super-admin; support: read only).
  */
 class TenantController extends Controller
 {
@@ -97,13 +104,76 @@ class TenantController extends Controller
     public function show(Request $request, Tenant $tenant, TenantOverview $overview): Response
     {
         $admin = $request->user('platform');
+        $tab = in_array($request->string('tab')->value(), ['billing', 'logs'], true) ? $request->string('tab')->value() : 'overview';
 
         return Inertia::render('Admin/Tenants/Show', [
+            'tab' => $tab,
             'tenant' => $overview->for($tenant),
             // The raw link exists only right after creating / resending (the DB keeps a hash).
             'inviteUrl' => $request->session()->get('invite_url'),
+            'subscriptions' => fn () => $tab !== 'billing' ? [] : TenantSubscription::query()
+                ->where('tenant_id', $tenant->getKey())->with(['plan:id,name', 'createdBy:id,name'])->latest('starts_at')->get()
+                ->map(fn (TenantSubscription $s): array => [
+                    'id' => $s->id,
+                    'plan' => $s->plan?->name,
+                    'starts_at' => $s->starts_at->toIso8601String(),
+                    'ends_at' => $s->ends_at->toIso8601String(),
+                    'amount' => $s->amount,
+                    'paid_at' => $s->paid_at?->toIso8601String(),
+                    'payment_ref' => $s->payment_ref,
+                    'note' => $s->note,
+                    'by' => $s->createdBy?->name,
+                ])->values(),
+            'plans' => fn () => $tab !== 'billing' ? [] : Plan::query()->orderBy('id')->get(['id', 'code', 'name']),
+            'logs' => $tab === 'logs' ? AuditLogController::rows(PlatformAuditLog::query()->where('tenant_id', $tenant->getKey())) : null,
             'can' => ['manage' => $admin instanceof PlatformAdmin && $admin->isSuperAdmin()],
         ]);
+    }
+
+    public function extend(Request $request, Tenant $tenant, ExtendSubscription $extend): RedirectResponse
+    {
+        $data = $request->validate([
+            'plan_id' => ['required', Rule::exists('plans', 'id')],
+            'months' => ['required', 'integer', 'min:1', 'max:36'],
+            'amount' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'payment_ref' => ['nullable', 'string', 'max:100'],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $extend->handle(
+            $this->admin($request),
+            $tenant,
+            Plan::query()->findOrFail((int) $data['plan_id']),
+            (int) $data['months'],
+            (string) $data['amount'],
+            $data['payment_ref'] ?? null,
+            $data['note'] ?? null,
+        );
+
+        return to_route('admin.tenants.show', [$tenant->public_id, 'tab' => 'billing'])->with('status', 'Đã gia hạn '.$tenant->name.'.');
+    }
+
+    public function suspend(Request $request, Tenant $tenant, SuspendTenant $suspend): RedirectResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']], ['reason.required' => 'Nhập lý do tạm khóa.']);
+        $suspend->handle($this->admin($request), $tenant, (string) $data['reason']);
+
+        return back()->with('status', 'Đã tạm khóa '.$tenant->name.'.');
+    }
+
+    public function resume(Request $request, Tenant $tenant, ResumeTenant $resume): RedirectResponse
+    {
+        $resume->handle($this->admin($request), $tenant);
+
+        return back()->with('status', 'Đã mở khóa '.$tenant->name.'.');
+    }
+
+    private function admin(Request $request): PlatformAdmin
+    {
+        $admin = $request->user('platform');
+        assert($admin instanceof PlatformAdmin);
+
+        return $admin;
     }
 
     public function resendInvitation(Request $request, Tenant $tenant, ResendOwnerInvitation $resend): RedirectResponse

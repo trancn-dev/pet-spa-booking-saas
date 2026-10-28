@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import AuditLogTable from '@/components/admin/AuditLogTable.vue';
+import TenantBillingTab from '@/components/admin/TenantBillingTab.vue';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/admin/AdminLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, Copy, Mail } from 'lucide-vue-next';
+import type { AuditLogRow, Paginated, SubscriptionRow } from '@/types/admin';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { ArrowLeft, Copy, Lock, LockOpen, Mail } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 type TenantStatus = 'trial' | 'active' | 'past_due' | 'suspended' | 'cancelled';
@@ -13,6 +18,8 @@ interface Overview {
     name: string;
     slug: string;
     status: TenantStatus;
+    suspended_at: string | null;
+    suspended_reason: string | null;
     timezone: string;
     plan: string | null;
     plan_expires_at: string | null;
@@ -26,10 +33,22 @@ interface Overview {
 }
 
 const props = defineProps<{
+    tab: 'overview' | 'billing' | 'logs';
     tenant: Overview;
     inviteUrl: string | null;
+    subscriptions: SubscriptionRow[];
+    plans: { id: number; code: string; name: string }[];
+    logs: Paginated<AuditLogRow> | null;
     can: { manage: boolean };
 }>();
+
+const suspending = ref(false);
+const suspendForm = useForm({ reason: '' });
+const suspend = () =>
+    suspendForm.post(route('admin.tenants.suspend', props.tenant.id), { preserveScroll: true, onSuccess: () => (suspending.value = false) });
+const resume = () => {
+    if (confirm(`Mở khóa ${props.tenant.name}?`)) router.post(route('admin.tenants.resume', props.tenant.id), {}, { preserveScroll: true });
+};
 
 const page = usePage();
 const errors = computed(() => page.props.errors as Record<string, string | undefined>);
@@ -44,9 +63,9 @@ const statusMeta: Record<TenantStatus, { label: string; class: string }> = {
 
 const tabs = [
     { key: 'overview', label: 'Tổng quan', ready: true },
-    { key: 'billing', label: 'Gói & gia hạn', ready: false },
+    { key: 'billing', label: 'Gói & gia hạn', ready: true },
     { key: 'support', label: 'Truy cập hỗ trợ', ready: false },
-    { key: 'logs', label: 'Nhật ký', ready: false },
+    { key: 'logs', label: 'Nhật ký', ready: true },
 ];
 
 const dateTime = (iso: string | null) =>
@@ -96,22 +115,49 @@ const copyLink = () => (props.inviteUrl ? copy() : resend(true));
                 <p class="mt-1 text-sm text-stone-500">
                     {{ tenant.plan ?? '—' }} · hạn {{ date(tenant.plan_expires_at) }} · <span class="font-mono">{{ tenant.slug }}</span>
                 </p>
+                <p v-if="tenant.status === 'suspended'" class="mt-1 text-sm text-red-600">
+                    Tạm khóa từ {{ dateTime(tenant.suspended_at) }}<template v-if="tenant.suspended_reason"> · {{ tenant.suspended_reason }}</template>
+                </p>
+            </div>
+            <div v-if="can.manage && tenant.status !== 'cancelled'" class="flex gap-2">
+                <Button v-if="tenant.status === 'suspended'" variant="outline" @click="resume"><LockOpen /> Mở khóa</Button>
+                <Button v-else variant="outline" class="text-red-600" @click="suspending = true"><Lock /> Tạm khóa</Button>
             </div>
         </header>
+        <InputError :message="errors.status" class="mt-2" />
 
         <nav class="mt-6 flex gap-1 border-b border-stone-200 dark:border-slate-800" aria-label="Tabs">
-            <span
-                v-for="tab in tabs"
-                :key="tab.key"
-                class="-mb-px border-b-2 px-3 py-2 text-sm"
-                :class="tab.key === 'overview' ? 'border-teal-600 font-medium' : 'border-transparent text-stone-400'"
-                :title="tab.ready ? undefined : 'Có ở bước sau (task 4.5, 4.6)'"
-            >
-                {{ tab.label }}
-            </span>
+            <template v-for="t in tabs" :key="t.key">
+                <Link
+                    v-if="t.ready"
+                    :href="route('admin.tenants.show', { tenant: tenant.id, tab: t.key === 'overview' ? undefined : t.key })"
+                    class="-mb-px border-b-2 px-3 py-2 text-sm"
+                    :class="t.key === tab ? 'border-teal-600 font-medium' : 'border-transparent text-stone-500 hover:text-stone-800'"
+                    preserve-scroll
+                >
+                    {{ t.label }}
+                </Link>
+                <span v-else class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-stone-400" title="Có ở bước sau (task 4.6)">{{ t.label }}</span>
+            </template>
         </nav>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <div v-if="tab === 'billing'" class="mt-6">
+            <TenantBillingTab
+                :tenant-id="tenant.id"
+                :timezone="tenant.timezone"
+                :plan-expires-at="tenant.plan_expires_at"
+                :current-plan="tenant.plan"
+                :subscriptions="subscriptions"
+                :plans="plans"
+                :can-manage="can.manage"
+            />
+        </div>
+
+        <div v-else-if="tab === 'logs' && logs" class="mt-6">
+            <AuditLogTable :logs="logs" />
+        </div>
+
+        <div v-else class="mt-6 grid gap-6 lg:grid-cols-2">
             <section class="rounded-xl border border-stone-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
                 <h3 class="mb-4 font-medium">Thông tin</h3>
                 <dl class="grid grid-cols-[140px_1fr] gap-y-2 text-sm">
@@ -179,5 +225,23 @@ const copyLink = () => (props.inviteUrl ? copy() : resend(true));
                 </div>
             </section>
         </div>
+
+        <Dialog v-model:open="suspending">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Tạm khóa {{ tenant.name }}</DialogTitle>
+                    <DialogDescription>Nhân viên vẫn xem được nhưng không thao tác; Site ngừng nhận lịch.</DialogDescription>
+                </DialogHeader>
+                <form id="suspend-form" class="grid gap-2" @submit.prevent="suspend">
+                    <Label for="reason">Lý do</Label>
+                    <textarea id="reason" v-model="suspendForm.reason" rows="3" required class="rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                    <InputError :message="suspendForm.errors.reason" />
+                </form>
+                <DialogFooter>
+                    <Button variant="outline" @click="suspending = false">Hủy</Button>
+                    <Button type="submit" form="suspend-form" variant="destructive" :disabled="suspendForm.processing">Tạm khóa</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AdminLayout>
 </template>

@@ -55,6 +55,8 @@ export interface ShopSharedData extends SharedData {
     branches: BranchOption[];
     currentBranch: BranchOption | null;
     flash: { status: string | null };
+    planNotice: { level: 'warning' | 'danger'; text: string } | null;
+    readOnly: boolean;
     errors: Record<string, string>;
 }
 
