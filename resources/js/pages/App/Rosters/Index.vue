@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/pb/PageHeader.vue';
+import RingAvatar from '@/components/pb/RingAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +50,7 @@ const props = defineProps<{
 
 const tone = (group: string | null) =>
     group === 'medical'
-        ? 'bg-info/10 text-info border-info/30'
+        ? 'bg-primary-soft text-teal-900 dark:text-teal-200 border-primary/30'
         : group === 'grooming'
           ? 'bg-coral/10 text-coral border-coral/30'
           : 'bg-surface-muted text-muted-foreground';
@@ -117,6 +118,16 @@ const deleteClosure = (id: number) =>
 
 const select = 'h-9 rounded-md border border-input bg-background px-3 text-sm';
 const percent = (ratio: string | null) => (ratio === null ? 'không nhận online' : `${Math.round(Number(ratio) * 100)}% số người trực`);
+
+const initialsOf = (name: string) =>
+    name
+        .replace(/^BS\.?\s*/i, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 </script>
 
 <template>
@@ -215,11 +226,13 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                     <tbody>
                         <tr v-for="p in people" :key="p.id" class="border-b align-top last:border-0">
                             <td class="px-3 py-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="size-2.5 shrink-0 rounded-full" :style="{ backgroundColor: p.color ?? '#94a3b8' }" />
-                                    <span class="truncate font-medium">{{ p.name }}</span>
+                                <div class="flex items-center gap-2.5">
+                                    <RingAvatar :initials="initialsOf(p.name)" :color="p.color" :size="32" />
+                                    <div class="min-w-0">
+                                        <div class="truncate font-semibold">{{ p.name }}</div>
+                                        <div v-if="p.title" class="truncate text-xs text-muted-foreground">{{ p.title }}</div>
+                                    </div>
                                 </div>
-                                <div v-if="p.title" class="truncate text-xs text-muted-foreground">{{ p.title }}</div>
                             </td>
                             <td v-for="d in days" :key="d.date" class="px-1.5 py-1.5" :class="{ 'bg-danger/5': d.closed }">
                                 <div class="flex flex-col gap-1">
@@ -263,7 +276,7 @@ const percent = (ratio: string | null) => (ratio === null ? 'không nhận onlin
                             <th class="px-3 py-2 text-left font-medium">Số người trực</th>
                             <td v-for="d in days" :key="d.date" class="px-2 py-2 tabular-nums">
                                 <div>
-                                    <span class="text-info">Khám {{ d.on_duty.medical }}</span> ·
+                                    <span class="text-primary">Khám {{ d.on_duty.medical }}</span> ·
                                     <span class="text-coral">Spa {{ d.on_duty.grooming }}</span>
                                 </div>
                                 <div class="text-muted-foreground">

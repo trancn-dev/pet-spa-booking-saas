@@ -96,6 +96,9 @@ Rules when adding features:
   - `components/site/*` Site (mobile, 480px column): `SiteShell`, `SiteHeader`, `SiteStepHeader`, `SiteBottomNav`, `SiteFooter`, `BottomSheet`, `SiteCard`, `SiteChip`, `SiteField`, `ImagePlaceholder`.
   - Calendar: `appointments/CalendarBlock`, `CapacityBar`, `CalendarGrid`; safety badges: `PetAlertBadges`.
   - Every CMS page title goes through `PageHeader` (+ `BackLink`); do not run `prettier --write` over folders you did not touch.
+  - Shell (design K1, `components/shell/*`): `CmsTopbar` (`ShopChip` › `BranchSwitcher`, `GlobalSearch` with "/", `BookingButton` with "N", `UserMenu`), `SidebarBrand`, `CmsBottomNav` (< 640px). Auth screens use `layouts/auth/AuthSplitLayout` (S36/S37). The account page (`settings/Profile`) holds profile, password and appearance (S39).
+  - Exam = primary (teal) and Spa = coral everywhere (design 3.1): use `GroupBadge`, never hand-pick `info` for exams.
+  - `ReloadWhenShopChanges` (tenant group): an Inertia GET that enters a shop from outside it, or from another shop, becomes a full page load so Ziggy's `tenant` default is right. Tables go through `DataTable`, forms through `FormField`.
 - Drag a block to reschedule is done (whole appointment shifts); browser tests are not.
 
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)

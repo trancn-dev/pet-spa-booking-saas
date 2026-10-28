@@ -295,7 +295,7 @@ const views: { value: View; label: string }[] = [
                                 type="button"
                                 class="w-full rounded border px-1.5 py-1 text-left text-xs"
                                 :class="[
-                                    b.group === 'medical' ? 'bg-info/10' : 'bg-coral/10',
+                                    b.group === 'medical' ? 'bg-primary-soft' : 'bg-coral/15',
                                     { 'line-through opacity-50': b.line_status === 'cancelled' || b.line_status === 'no_show' },
                                 ]"
                                 @click="openDetail(b)"
