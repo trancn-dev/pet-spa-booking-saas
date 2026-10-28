@@ -28,6 +28,19 @@ services:
     depends_on:
       - app
 
+  # Runs routes/console.php schedules (tenants:check-expiry, reminders later).
+  scheduler:
+    build:
+      context: ./docker/php
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    command: php artisan schedule:work
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - app
+
   mysql:
     image: mysql:8.0
     ports:
@@ -39,6 +52,8 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
     volumes:
       - mysql-data:/var/lib/mysql
+      # Creates the `testing` database used by Pest (runs only on a fresh volume).
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:-secret}"]
       interval: 5s
@@ -56,6 +71,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "${FORWARD_MAILPIT_PORT:-1025}:1025"
+      - "${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025"
 
 volumes:
   mysql-data:

@@ -28,7 +28,9 @@ Nhà cung cấp (admin nền tảng) tạo shop, gán gói + hạn dùng, tạm 
 - Mọi hành động admin có dấu vết; chủ shop thấy được admin đã làm gì trong shop mình.
 
 ## Kiểm chứng
-- Test: user guard `web` gọi `/admin/*` → 404; đăng xuất CMS không đăng xuất admin.
+- Task 4.1 (`tests/Feature/Platform/`): khách và user guard `web` gọi `/admin/*` → 404; chỉ đăng nhập guard sau bước TOTP; mã sai / dùng lại bị từ chối; khóa sau 5 lần sai (email + IP); admin chưa bật 2FA bị đưa vào màn bật 2FA và không vào được A2; bỏ qua 2FA chỉ ở `local`/`demo` (production không); cookie phiên `pawbook_admin_session` tách khỏi cookie CMS; đăng xuất CMS không đăng xuất admin; admin bị vô hiệu bị đăng xuất ở request kế tiếp; token mời dùng 2 lần / hết hạn / thu hồi → 404; support không vào A6. A2 chạy số query cố định (2 shop = 6 shop). Arch test: `withoutTenancy()` chỉ trong `App\Platform` và lõi `App\Tenancy`.
+- Thử tay trên app thật (curl): `platform:admin-create` → mật khẩu → A2 trả 404 → bật 2FA → A2 200.
+- Ghi chú triển khai: model ở `App\Models\Platform\PlatformAdmin` (cạnh các model nền tảng khác, arch test miễn đúng một namespace); controller, action, query ở `App\Platform`. TOTP: `pragmarx/google2fa` + `bacon/bacon-qr-code`.
 - Test: token đăng nhập thay dùng 2 lần, hết hạn, dùng với slug shop khác → 404; route nhạy cảm bị chặn; hết 30 phút bị đăng xuất.
 
 ## Liên quan

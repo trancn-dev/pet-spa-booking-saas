@@ -68,3 +68,6 @@ jobs:
       - run: npm ci && npm run build
       - run: cp .env.example .env && php artisan key:generate
       - run: php artisan test
+      # ADR 0002: the booking races must hold run after run, not just once.
+      - name: Booking races, 10 runs in a row
+        run: for i in $(seq 1 10); do echo "run $i"; php artisan test --testsuite=Concurrency || exit 1; done

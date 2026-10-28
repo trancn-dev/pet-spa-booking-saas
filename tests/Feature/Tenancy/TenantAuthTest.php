@@ -19,8 +19,8 @@ beforeEach(function () {
 
     $this->userA = User::factory()->create();
     $this->userB = User::factory()->create();
-    Staff::factory()->create(['tenant_id' => $this->tenantA->id, 'user_id' => $this->userA->id]);
-    Staff::factory()->create(['tenant_id' => $this->tenantB->id, 'user_id' => $this->userB->id]);
+    inTenant($this->tenantA, fn () => Staff::factory()->create(['user_id' => $this->userA->id]));
+    inTenant($this->tenantB, fn () => Staff::factory()->create(['user_id' => $this->userB->id]));
 });
 
 it('lets a member open their tenant dashboard and 404s on another tenant', function () {
@@ -44,17 +44,14 @@ it('redirects /dashboard to the last tenant, falling back to a membership', func
 });
 
 it('uses one global identity per email', function () {
-    $payload = [
-        'name' => 'New',
-        'email' => 'fresh@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ];
+    // There is no sign-up: an invitation to an existing e-mail never creates a second user.
+    $shop = provisionShop(['ownerEmail' => $this->userA->email]);
 
-    $this->post('/register', $payload)->assertRedirect('/dashboard');
-    auth()->logout();
+    $this->post("/invite/{$shop->token}", ['name' => 'Copy', 'password' => 'password', 'password_confirmation' => 'password'])
+        ->assertSessionHasErrors('email');
 
-    $this->post('/register', $payload)->assertSessionHasErrors('email');
+    expect(User::query()->where('email', $this->userA->email)->count())->toBe(1);
+    $this->get('/register')->assertNotFound();
 });
 
 it('keeps the profile email unique across all users', function () {

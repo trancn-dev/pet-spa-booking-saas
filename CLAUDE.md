@@ -7,9 +7,9 @@ Laravel 12 / PHP 8.3 multi-tenant SaaS (pet spa booking). Frontend: Inertia 2 + 
 ## Commands
 
 ```bash
-docker compose up -d --build                      # app (:8080), queue, mysql 8, redis 7
+docker compose up -d --build                      # app (:8080), queue, scheduler, mysql 8, redis 7, mailpit (:8025)
 docker compose exec app composer install
-docker compose exec app php artisan migrate
+docker compose exec app php artisan migrate:fresh --seed   # = make fresh (see Makefile: up, down, sh, test, lint, analyse, ci)
 
 docker compose exec app npm run build          # Vite (Node 22 lives in the app image)
 docker compose exec app composer ci               # lint + analyse + test (same as CI)
@@ -22,7 +22,8 @@ docker compose exec app vendor/bin/pest --filter="fails closed"
 ```
 
 - Pint enforces `declare_strict_types` (`pint.json`); every PHP file needs `declare(strict_types=1);`.
-- Local tests run on SQLite in-memory (`phpunit.xml`); CI overrides via env to MySQL 8 + Redis. Test suites: `Unit`, `Feature`, `Arch`. `RefreshDatabase` is applied to `Feature` and `Arch` in `tests/Pest.php`.
+- Tests run on real MySQL 8, database `testing` (`phpunit.xml`): the schema relies on composite FKs, CHECK constraints, generated columns and row locks. `docker/mysql/init/` creates `testing` on a fresh volume; on an existing volume run once: `docker compose exec mysql mysql -uroot -psecret -e "CREATE DATABASE IF NOT EXISTS testing; GRANT ALL ON testing.* TO 'laravel'@'%';"`. CI uses MySQL 8 + Redis services. Test suites: `Unit`, `Feature`, `Arch`. `RefreshDatabase` is applied to `Feature` and `Arch` in `tests/Pest.php`, which also defines `inTenant($tenant, fn)`.
+- MySQL session runs in UTC (`config/database.php` `timezone => +00:00`), collation `utf8mb4_0900_ai_ci`. `Model::shouldBeStrict()` outside production (lazy loading, discarded or missing attributes throw).
 - `composer.json` pins `config.platform.php` to 8.3.0: resolving dependencies with a newer PHP (e.g. the `composer` image) pulls Symfony 8 packages that don't install on 8.3.
 
 ## Multi-tenancy architecture (`app/Tenancy/`)
@@ -31,17 +32,82 @@ The invariant: **tenant A must never see tenant B's data.** The pieces only make
 
 - `TenantContext` (scoped singleton, registered in `AppServiceProvider`) holds the tenant for the current request/job. `runAs($tenant, fn)` temporarily switches tenant; `Tenant::forEach(fn)` runs per tenant (scheduler); `withoutTenancy(fn)` is the explicit, greppable cross-tenant escape hatch. `withoutGlobalScope(s)` is banned in `app/` (arch test).
 - **`User` is a global identity** (`UNIQUE(email)`, `last_tenant_id`), not tenant-owned. Membership = an active `staff` row (`TenantMembership` interface, `StaffMembership` impl). Auth, password reset and account settings are central routes.
-- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/suspended), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`tenant.dashboard`).
+- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/cancelled), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`app.dashboard`).
 - `BelongsToTenant` trait adds `TenantScope`, auto-fills `tenant_id` on create, rejects creating for another tenant, and makes `tenant_id` immutable.
-- `TenantScope` **fails closed**: with no tenant in context (and no bypass) any query on a tenant-owned model throws `TenantNotResolvedException` rather than returning all rows. Seeders, artisan commands and tests touching such models must set a tenant (`TenantContext::runAs`) or use `withoutTenancy`.
-- `Tenant` is deliberately not scoped. `Staff` is the first tenant-owned model.
+- **Fails closed** on reads and writes: with no tenant in context (and no bypass) any query on a tenant-owned model throws `TenantNotResolvedException` rather than returning all rows, and so does creating one (even with an explicit `tenant_id`). Inside `withoutTenancy` creating needs an explicit `tenant_id`. Seeders, artisan commands, factories and tests must set a tenant (`TenantContext::runAs` / `inTenant()` in tests) or use `withoutTenancy`. `runAs` re-enables scoping even inside `withoutTenancy`.
+- `Tenant` is deliberately not scoped. `App\Models\Platform\*` (subscriptions, impersonation, platform audit) is data *about* shops: has `tenant_id` but is never scoped, only read from `/admin` (arch test exempts that namespace only).
+- The `tenant` middleware group is `ResolveTenant` + `EnsureTenantActive`. Every status except `cancelled` (404) opens; `suspended` is read-only: GET works, any write gets 423 (`Errors/ShopSuspended`). Inertia shares `planNotice` / `readOnly`. Status changes go through `App\Platform\TenantStatusChange::apply()` (compare-and-set + one audit row); `tenants:check-expiry` runs daily (`scheduler` container). Customer-facing jobs must check `TenantStatus::sendsReminders()`.
+- Helpers: `TenantRule::exists('pets')` / `TenantRule::unique('customers', 'phone')` for validation; `tenant()` and `tenant_cache_key('x')` → `t:{id}:x` for cache / lock / rate-limiter keys; queued jobs that touch shop data `use TenantAware` (the dispatching tenant rides in the payload; dispatching one with no tenant fails the job). Dispatch inside a closure body, never `runAs($t, fn () => Job::dispatch())`: `PendingDispatch` queues on destruct, after the context is restored.
 
 Rules when adding features:
-- Every model whose table has `tenant_id` must use `BelongsToTenant`; `tests/Arch/TenancyTest.php` fails otherwise. Add the migration column as `foreignId('tenant_id')->constrained()->cascadeOnDelete()`.
+- Every model whose table has `tenant_id` must use `BelongsToTenant`; `tests/Arch/TenancyTest.php` fails otherwise. Add the migration column as `foreignId('tenant_id')->constrained()->cascadeOnDelete()` (written out, not a macro: Larastan reads columns from migrations), then `App\Database\TenantSchema::key/foreign/unique/index/datetimes` for `UNIQUE(tenant_id,id)`, composite FKs, tenant-first indexes and DATETIME timestamps.
+- MySQL forbids `CASCADE`/`SET NULL` on columns used by a CHECK or by a stored generated column: keep those FKs at the default (RESTRICT). CHECK constraints are added with `DB::statement('ALTER TABLE … ADD CONSTRAINT …')`.
+- Models: `$guarded = ['id', 'tenant_id', …]` (tenant_id is never mass-assigned), enums in `app/Enums` (backed, cast in `casts()`), `HasPublicId` (ULID `public_id`, route key) for branches/customers/pets/appointments/visits/invoices, `AppendOnly` for payments, appointment_changes, activity/audit logs, addenda. Pivots with `tenant_id` use custom `Pivot` classes (`StaffBranch`, `BranchService`, `ServiceComboItem`) so attach() stamps the tenant. Lock/counter tables (`booking_capacity_locks`, `tenant_usage`, `branch_daily_counters`, `tenant_counters`) have no model: use the query builder in Actions.
+- Factories are tenant-aware (`Database\Factories\Concerns\InTenant`): tenant_id defaults to the current tenant and parents are created in the same tenant; run them inside `inTenant()`.
 - `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
 - `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
 - HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): queue jobs (`TenantAware`: carry `tenant_id`, wrap in `TenantContext::runAs`), cache keys prefixed `t:{tenant_id}:`, spatie roles (teams mode), workspace creation/invitations (plan phase 4), full `staff`/`branches` schema (plan task 3.1; `staff` currently has only the membership columns), `password_reset_tokens` are global like users.
+- HTTP isolation: `assertTenantIsolated($member, ['GET /app/acme/customers/{id}', ...], $payload)` (tests/Pest.php) expects 404 for every URL naming another shop's record; use it for each new tenant CRUD.
+- Still to do (see plan): Larastan level 8 + ESLint in CI (task 1.2). `password_reset_tokens` are global like users.
+
+## Shops, invitations, sign-in (task 4.3)
+
+- `App\Platform\Actions\ProvisionTenant` (input `App\Platform\Data\NewShop`) is the ONLY way to create a shop: tenant + settings + first branch (`CreateBranch`: stray profile + "Két 1") + 7 roles + first subscription + owner invitation + `tenant.created` audit, one transaction, mail queued after commit. The demo seeder and the `provisionShop()` test helper use it. Slugs: `App\Support\ShopSlug` (reserved list; a test scans the route table, add new central first segments there).
+- Invitations: `IssueInvitation` (token 32 bytes, DB keeps sha256, 7 days, `rotate()` = resend), `AcceptInvitation` (locked row, idempotent, owner gets every branch; `owner` only from an admin invitation). `/invite/{token}` is central; the token lookup crosses tenants in `App\Tenancy\InvitationLookup`. Mails carry plain values (`ShopInvitationMail`), never tenant models.
+- CMS shell: design tokens (design 3.1) are HSL CSS variables in `resources/css/app.css` with the shadcn variables mapped onto them; extra Tailwind colours `primary-soft`, `coral`, `success`, `warning`, `danger`, `info`, `subtle`. Inertia also shares `workspaces`, `branches`, `currentBranch`. The topbar branch is `CurrentBranch::get()` (session per shop, only `available()` branches); filter branch data by it.
+- Permission checks in app code use `checkPermissionTo()` (false for an unknown code), not `hasPermissionTo()` (throws).
+- Staff (task 4.4, `app/Actions/Staff`): `InviteStaff`, `ManageInvitation` (resend / revoke), `SaveStaff` (profile, roles except `owner`, branches; people without an account), `SetStaffStatus` (never delete). `StaffQuota` = active staff with an account + pending invitations vs `plans.max_staff`; every check runs after `lockTenant()`, and the lock order is tenant row → invitation / staff row.
+- No self sign-up (`register` removed). Login needs an active staff row in a non-cancelled shop or a pending invitation (`LoginRequest::NO_ACTIVE_SHOP`). A member disabled mid-session is moved to another shop or signed out by `ResolveTenant`; never-members still get 404.
+
+## Customers & pets (task 5.1)
+
+- Phones go through `App\Support\Phone` (`tryParse` → `e164()` stored, `display()` shown, `format()` for stored values); reuse it for the Site OTP and Zalo/SMS. Customer search is `App\Queries\CustomerSearch` (indexes only for phones, never `LIKE '%…'`; excludes the stray profiles).
+- `SaveCustomer` restores a soft-deleted profile when its phone is added again; `DeleteCustomer` / `DeletePet` refuse while upcoming appointments exist. `CreateStrayPet` numbers "Thú hoang #n" per branch profile (deleted ones count).
+- Every pet payload carries its safety alerts (`App\Http\Resources\PetSummary::alerts`), rendered with `PetAlertBadges.vue` wherever a pet appears. Size hints: `PetSizeSuggester` (weight first, then breed default), endpoint `app.pets.size-suggestion`.
+
+## Services & pricing (task 5.2)
+
+- Duration / reference price for a pet: `App\Pricing\ServiceQuoteResolver::resolve($service, Pet|PetProfile)` → `Quote` (one query; most specific rule per value: breed > species + size > species > size > service default). Never compute prices elsewhere. Booking holds `Quote::blockedMin()` (duration + buffer).
+- Combos are spa only and never nested (`SaveService`); a service inside a combo cannot turn medical or into a combo. `Service::availableAt($branch)`: no `branch_services` rows = every branch.
+- Uniques with nullable columns (e.g. price rules) do not stop duplicates in MySQL: check them in the Action under a row lock.
+
+## Rosters & shop time (task 5.3, `app/Scheduling`)
+
+- Convert shop time ↔ UTC only with `ShopClock` (`for($tenant)` / `current()`: `toUtc($date, $time)`, `localDayRangeUtc($date)`, `today()`, `toLocal()`, `weekday()` = ISO 1–7). Query a shop day by its UTC range, never `DATE(col)`.
+- `Roster` turns weekly `staff_working_hours` into dated UTC occurrences (`occurrences`, `onDutyPerDay`, `onDutyAt`): a slot counts only for its own `service_group`, time off covering it or a closed day removes it. `OnlineRates` resolves the ratio (weekday + hours > weekday > hours > default; none = no online booking) and `OnlineRates::maxOnline()` is the floor used for capacity.
+- Capacity (task 5.4): `AvailabilityService::slotsForOnline / slotsForStaff($branch, list<BookingLine>, $from, $to)` on 15-minute cells of the shop day. A person counts in a cell only if their duty time (`DutySource::dutySets`: slots of that group minus time off) covers the whole cell, inside opening hours; taken = booked / checked-in lines of live appointments (online only for the Site). Lines of one pet run back to back, different pets in parallel. Fixed query count per range: never query per cell or per person. Intervals: `Interval` / `IntervalSet` (UTC epoch seconds, half-open).
+- Roster edits: `SaveWorkingHour` (staff row lock, no overlapping slots across branches), `AddTimeOff` (reports affected booked lines, never cancels), `SaveBranchClosure`, `SaveOnlineBookingRate`. Policy: `Gate::allows('manage', [StaffWorkingHour::class, $branch])`.
+
+## Booking (task 5.5, ADR 0002)
+
+- Anything that puts lines on the calendar (book, `RescheduleAppointment`, `AddAppointmentItems`, `RestoreCancellation`) goes through `App\Booking\BookingGate` (prepare → lockCustomer → lockCapacity → checkCapacity → ensurePetsFree); never copy those steps. Line moves go through `AppointmentState::move()` and the appointment status only through `AppointmentState::sync()`; history via `AppointmentState::log()`. Visits are opened by `App\Actions\Visits\CreateVisit` (queue number from `App\Support\DailyCounter`).
+- Every appointment is created by `App\Actions\Appointments\BookAppointment` (input `App\Booking\BookingRequest`, result `BookingResult` with front-desk `warnings`). Online over capacity → `SlotTakenException` (409, 3 nearest free starts); plan quota → `QuotaExceededException`. Reschedule / add line / restore must reuse the same locking path.
+- The MySQL connection runs **READ COMMITTED** (`config/database.php`): reads after a lock see everything committed. Do not rely on re-reading the same rows inside a transaction; lock them if you must.
+- `INSERT IGNORE booking_capacity_locks` happens outside the transaction; lock order inside: customer → capacity rows (medical before grooming) → `tenant_usage`. Idempotency is checked after the customer lock.
+- Real races live in `tests/Concurrency` (suite `Concurrency`, `DatabaseTruncation`, one PHP process per attempt via `tests/Concurrency/Support/book.php`). CI runs it 10 times in a row. Do not run other test suites against the `testing` DB at the same time. `CONCURRENCY_REPORT=1` prints timings.
+
+## Calendar UI (task 5.7)
+
+- S1/S2/S3 live in `resources/js/pages/App/Appointments/Index.vue` + `components/appointments/{CalendarGrid,BookingDrawer,DetailDrawer}.vue`; data from `App\Queries\CalendarDay` (fixed query count per day/week, relations `withTrashed()`) and `Tenant\AppointmentController` (`index`, JSON `day`, `store`, `quotes`, `on-duty`, `show`). Literal `appointments/...` routes must stay before `{appointment}`.
+- Staff booking goes through `BookAppointment` (never refused by capacity, returns `warnings`); the drawer sends an idempotency key generated per open. `resources/js/lib/api.ts` is the fetch wrapper (XSRF cookie); customer / pet `store` return JSON when `expectsJson` for quick create.
+- Shared UI (design 3.5), reuse instead of copying classes: `ui/badge` (`Badge` tones), `GroupBadge`, `StatusBadge`, `Banner`, `EmptyState`, `Chip`, `ProgressBar`, `Timeline` + `TimelineItem`, `AppDrawer` (480px right drawer with header / body / sticky footer), `PetAlertBadges`; calendar: `CalendarBlock`, `CapacityBar`, `CalendarGrid`.
+- Drag a block to reschedule is done (whole appointment shifts); browser tests are not.
+
+## Impersonation (task 4.6, `App\Platform\Impersonation`)
+
+- A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.
+- `ImpersonationGuard` (web group, before `ResolveTenant`): ends expired sessions, 404s other shops, refuses `ImpersonationGuard::BLOCKED` route names (add new sensitive routes there), logs every other write as `impersonation.write`. `ActivityLog::record()` stamps `impersonation_session_id` automatically. Inertia shares `impersonating`.
+- In tests, `actingAs($admin, 'platform')` switches the default guard: call `auth()->shouldUse('web')` before the next CMS request. App code asks for `$request->user('web')` explicitly.
+
+## Roles & permissions (ADR 0009, `app/Authorization/`)
+
+- spatie/laravel-permission in teams mode, `team_id = tenant_id`, guard `web` only. `ResolveTenant` sets the team id per request (and resets it, the user's loaded roles and `CurrentStaff`); outside a request wrap checks in the team (`asTeam($tenant, fn)` in tests).
+- The catalogue lives in `config/permissions.php` (code, Vietnamese label, module, `sensitive`, `assignable`, `owner`, `phase`). Never create permissions elsewhere; after changing it run `php artisan permissions:sync` (also run by `ReferenceDataSeeder`): new codes go to every shop's `owner` role only.
+- `App\Models\Role` (`name` = stable code, `display_name` = shop label, custom roles `custom_{id}`; `{role}` binds within the current shop). Template roles come from `CreateDefaultRoles`; edits go through `SaveRole` / `DeleteRole` (owner role locked, `roles.manage` never assignable, sensitive grants need confirmation and log to `activity_logs`).
+- Check abilities with Policies (`app/Policies`, `Concerns\ChecksPermissions`), never role names. No `Gate::before` owner bypass: clinical permissions (`owner => false`) need the `vet` role. Branch scope: `CurrentBranch` / `CurrentStaff` (staff branches unless `branches.all`).
+- `ResolveTenant` drops the `{tenant}` route parameter after resolving it: controllers in tenant routes only receive their own parameters.
+- Inertia shares `tenant` and `permissions` (codes) for the open shop (UI disables buttons; the server still authorises).
+- `ResolveTenant` sets `URL::defaults` for both `tenant` and `tenant:slug` (routes bind `{tenant:slug}`), so `route('app.…')` never needs the slug.
 
 ## Infra notes
 
@@ -57,11 +123,14 @@ Rules when adding features:
 
 ## Key decisions (do not change without an ADR in docs/adr/)
 - Child tables reference parents with composite FK `(tenant_id, parent_id)` → `parents(tenant_id, id)`; parents need a unique index on `(tenant_id, id)`. Replace plain `constrained()` for tenant-owned relations.
-- Double-booking prevention: inside a transaction, `lockForUpdate()` the staff row, re-check overlap, then insert. Never rely on a check outside the lock.
+- Over-booking prevention (db-schema 5.1, ADR 0002): `INSERT IGNORE` the `booking_capacity_locks` rows *outside* the transaction, then inside it lock in this fixed order: `customers` row → `booking_capacity_locks` (date, group ascending; medical before grooming) → `tenant_usage`; re-check capacity, then insert. Invoices lock `invoices` → `visits` → `stock_items`. Never rely on a check outside the lock.
 - Branches (`branches`) are NOT a tenant boundary: `branch_id` uses a composite FK `(tenant_id, branch_id)` → `branches(tenant_id, id)` but has **no** global scope (staff may look up other branches' stock). Filter by the selected branch in queries + Policies. Operational tables get `branch_id` from day one.
-- Money is `DECIMAL(12,2)`, stock quantities `DECIMAL(12,3)`; never float. Appointments snapshot `duration_min`/`price` at booking time.
-- Customers (pet owners) are identified by phone (`owners.phone`, unique per tenant, shared across branches) and log into the portal with phone + SMS OTP (separate `customer` guard, not `users`). Strays attach to a per-branch system owner (`is_system`).
+- Money is `DECIMAL(12,2)`, stock quantities `DECIMAL(12,3)`; never float. Appointment items snapshot `duration_min` / `reference_price` at booking time (display only; billing uses the price when added to the Visit).
+- Customers (pet owners, table `customers`, never "owners": `owner` is the shop-owner role) are identified by phone (`customers.phone`, unique per tenant, shared across branches) and log into the Site with phone + SMS OTP (separate `customer` guard, not `users`). Strays attach to a per-branch system customer (`is_system`, `system_branch_id`).
 - Time: all DATETIME stored in UTC; shift times are TIME in the shop's local timezone (`tenants.timezone`). Convert at the edges only.
+- Counter tables use the column `last_value` (db-schema 2.10), a reserved word in MySQL 8: backtick it in every raw SQL statement.
+- Platform admin area (`/admin`, task 4.1): `routes/admin.php` + middleware group `platform` (own session cookie `pawbook_admin_session`, no tenant middleware), guard `platform`, code in `App\Platform\*`, models in `App\Models\Platform\*`. Protected pages 404 for anyone but an active admin who passed TOTP. First admin: `php artisan platform:admin-create {email}`. Demo admins `admin@pawbook.test` / `support@pawbook.test` (password `password`) can skip 2FA only when `APP_ENV=local|demo` and `PLATFORM_SKIP_2FA=true`. `withoutTenancy()` is allowed only in `App\Platform` and `App\Tenancy` (arch test).
+- Inertia pages live in `resources/js/pages` (lower case); `config/inertia.php` points the testing page finder there.
 - Booking/concurrency tests must run on MySQL (SQLite ignores row locks): mark them with `->group('mysql')`.
 
 ## Conventions

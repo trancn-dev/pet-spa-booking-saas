@@ -8,7 +8,8 @@ use App\Models\Tenant;
 use Closure;
 
 /**
- * Holds the tenant for the current request / job. Registered as a scoped singleton.
+ * Holds the tenant for the current request / job. Registered as a scoped singleton,
+ * so it is reset between Octane requests and queue jobs.
  */
 class TenantContext
 {
@@ -26,11 +27,24 @@ class TenantContext
         return $this->tenant;
     }
 
-    public function id(): int|string|null
+    public function has(): bool
+    {
+        return $this->tenant !== null;
+    }
+
+    /**
+     * The current tenant, or an exception: for code that can only run inside a tenant.
+     */
+    public function require(): Tenant
+    {
+        return $this->tenant ?? throw new TenantNotResolvedException('No current tenant.');
+    }
+
+    public function id(): ?int
     {
         $key = $this->tenant?->getKey();
 
-        return is_int($key) || is_string($key) ? $key : null;
+        return $key === null ? null : (int) $key;
     }
 
     public function forget(): void
@@ -45,6 +59,7 @@ class TenantContext
 
     /**
      * Run a callback as the given tenant, restoring the previous context afterwards.
+     * The callback always sees tenant scoping, even when called from inside withoutTenancy().
      *
      * @template TReturn
      *
@@ -54,17 +69,20 @@ class TenantContext
     public function runAs(Tenant $tenant, Closure $callback): mixed
     {
         $previous = $this->tenant;
+        $previousBypass = $this->bypassed;
         $this->tenant = $tenant;
+        $this->bypassed = false;
 
         try {
             return $callback();
         } finally {
             $this->tenant = $previous;
+            $this->bypassed = $previousBypass;
         }
     }
 
     /**
-     * Explicit, greppable escape hatch for cross-tenant work (admin, migrations, reports).
+     * Explicit, greppable escape hatch for cross-tenant work (platform admin, scheduler scans).
      *
      * @template TReturn
      *
@@ -81,5 +99,13 @@ class TenantContext
         } finally {
             $this->bypassed = $previous;
         }
+    }
+
+    /**
+     * Cache / lock / rate-limiter key namespaced by the current tenant: `t:{tenant_id}:{key}`.
+     */
+    public function key(string $key): string
+    {
+        return 't:'.$this->require()->getKey().':'.$key;
     }
 }

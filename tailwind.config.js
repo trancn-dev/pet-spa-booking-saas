@@ -12,7 +12,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Instrument Sans', ...defaultTheme.fontFamily.sans],
+                sans: ['Be Vietnam Pro', ...defaultTheme.fontFamily.sans],
+                mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
             },
             borderRadius: {
                 lg: 'var(--radius)',
@@ -49,6 +50,22 @@ export default {
                 destructive: {
                     DEFAULT: 'hsl(var(--destructive))',
                     foreground: 'hsl(var(--destructive-foreground))',
+                },
+                // Design tokens (design.md 3.1) that shadcn has no name for.
+                'primary-hover': 'hsl(var(--color-primary-hover) / <alpha-value>)',
+                'primary-soft': 'hsl(var(--color-primary-soft) / <alpha-value>)',
+                coral: {
+                    DEFAULT: 'hsl(var(--color-accent) / <alpha-value>)',
+                    soft: 'hsl(var(--color-accent-soft) / <alpha-value>)',
+                },
+                success: 'hsl(var(--color-success) / <alpha-value>)',
+                warning: 'hsl(var(--color-warning) / <alpha-value>)',
+                danger: 'hsl(var(--color-danger) / <alpha-value>)',
+                info: 'hsl(var(--color-info) / <alpha-value>)',
+                subtle: 'hsl(var(--color-text-subtle) / <alpha-value>)',
+                surface: {
+                    DEFAULT: 'hsl(var(--color-surface) / <alpha-value>)',
+                    muted: 'hsl(var(--color-surface-muted) / <alpha-value>)',
                 },
                 border: 'hsl(var(--border))',
                 input: 'hsl(var(--input))',

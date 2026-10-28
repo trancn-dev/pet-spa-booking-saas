@@ -341,12 +341,12 @@ erDiagram
 ### 5.1 Đặt vượt hạn mức online (race condition)
 **Vấn đề:** 2 khách cùng thấy "còn 1 chỗ" rồi cùng lưu. MySQL không có exclusion constraint.
 
-**Cách làm** (Action `BookAppointment`, dùng chung Site và lễ tân):
+**Cách làm** (Action `BookAppointment`, dùng chung Site và lễ tân; kết nối MySQL chạy `READ COMMITTED`, ADR 0002):
 0. **Trước transaction** (autocommit): `INSERT IGNORE` hàng `booking_capacity_locks(tenant, branch, group, date)` cho mọi nhóm có trong lịch. Không làm bước này trong transaction: 2 transaction cùng `INSERT IGNORE` trúng khóa trùng sẽ cùng giữ khóa S rồi cùng xin nâng lên X ở bước 3 → deadlock.
-1. Idempotency: `idempotency_key` đã có → trả lịch cũ.
-2. `SELECT … FOR UPDATE` hàng `customers` của khách (tuần tự hóa các lịch của cùng một khách để bước 6 không bị 2 request cùng lọt). Kiểm mọi pet thuộc khách, dịch vụ có ở cơ sở, cơ sở mở cửa, giờ nằm trong khung trực.
+1. `SELECT … FOR UPDATE` hàng `customers` của khách (tuần tự hóa các lịch của cùng một khách để bước 6 không bị 2 request cùng lọt).
+2. Idempotency, **sau** khóa khách: `idempotency_key` đã có → trả lịch cũ (2 request trùng key chạy tuần tự, không đâm vào UNIQUE). Kiểm mọi pet thuộc khách, dịch vụ có ở cơ sở, cơ sở mở cửa (giờ mở cửa, ngày nghỉ, mốc 15 phút). Mọi dòng bắt đầu cùng lúc `starts_at`; giờ kết thúc lịch = dòng muộn nhất.
 3. `SELECT … FOR UPDATE` các hàng `booking_capacity_locks` của **mọi nhóm có trong lịch** (khám, spa), theo thứ tự cố định (medical trước grooming) để không deadlock. Khóa một hàng đã tồn tại, không khóa dải `appointments` → tránh gap lock và deadlock ở REPEATABLE READ.
-4. Hạn mức mỗi khung 15 phút trong khoảng hẹn = `floor(số người trực của nhóm × ratio)`. Người trực đếm từ `shift_assignments` (GĐ3) hoặc `staff_working_hours` theo `service_group`, trừ `staff_time_off`, `branch_closures`.
+4. Hạn mức mỗi khung 15 phút trong khoảng hẹn = `floor(số người trực của nhóm × ratio)` (ratio lưu 3 chữ số, vd 1/3 = 0,333: phép floor bù sai số lưu, 3 × 1/3 = 1). Người trực đếm từ `shift_assignments` (GĐ3) hoặc `staff_working_hours` theo `service_group`, trừ `staff_time_off`, `branch_closures`.
 5. Site: với mỗi nhóm, (số dòng online đang chiếm chỗ chồng giờ + số dòng mới của nhóm đó) > hạn mức ở bất kỳ khung nào → `SlotTakenException` cho cả lịch + gợi ý giờ gần nhất đủ chỗ. Lễ tân: không chặn; tổng lịch chồng giờ > số người trực thì trả cờ cảnh báo, vẫn lưu.
 6. Kiểm từng pet không có dòng lịch khác chồng giờ (an toàn nhờ khóa khách ở bước 2).
 7. Quota gói (khóa cuối, giữ ngắn nhất vì là hàng nóng của cả shop): `INSERT … ON DUPLICATE KEY UPDATE` hàng tháng rồi `UPDATE tenant_usage SET appointments_count = appointments_count + 1 WHERE … AND appointments_count < ?`; affected = 0 → từ chối.

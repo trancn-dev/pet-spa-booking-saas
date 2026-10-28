@@ -56,11 +56,17 @@ return [
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_0900_ai_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // The app runs in UTC; the session must too so DATETIME/NOW() never shift (db-schema 5.4).
+            'timezone' => '+00:00',
+            // ADR 0002 (a): every read sees what is committed. Capacity counts taken after the
+            // booking locks must see bookings that just committed (REPEATABLE READ would read the
+            // transaction's first snapshot). Also avoids gap locks elsewhere.
+            'isolation_level' => 'READ COMMITTED',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

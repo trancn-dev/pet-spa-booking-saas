@@ -21,6 +21,6 @@ class WorkspaceRedirectController extends Controller
         // No workspace yet (creating one is a later task): land on home.
         return $tenant === null
             ? to_route('home')
-            : to_route('tenant.dashboard', ['tenant' => $tenant->slug]);
+            : to_route('app.dashboard', ['tenant' => $tenant->slug]);
     }
 }
