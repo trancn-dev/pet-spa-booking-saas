@@ -9,9 +9,13 @@ use Database\Factories\StaffTimeOffFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Leave; reduces the on-duty count.
+ *
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  */
 class StaffTimeOff extends Model
 {

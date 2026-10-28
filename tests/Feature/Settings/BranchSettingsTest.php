@@ -119,7 +119,7 @@ it('shows the first-run checklist to the owner only', function () {
     $this->actingAs($this->owner)->get('/app/paw-test/dashboard')
         ->assertInertia(fn (Assert $page) => $page->component('Dashboard')
             ->has('checklist', 6)
-            ->where('checklist.1', ['key' => 'services', 'label' => 'Thêm dịch vụ', 'done' => false, 'href' => null]));
+            ->where('checklist.1', ['key' => 'services', 'label' => 'Thêm dịch vụ', 'done' => false, 'href' => 'http://localhost/app/paw-test/services']));
 
     $groomer = memberWithRoles($this->shop->tenant, ['groomer'], [$this->q1]);
     $this->actingAs($groomer)->get('/app/paw-test/dashboard')->assertInertia(fn (Assert $page) => $page->where('checklist', null));

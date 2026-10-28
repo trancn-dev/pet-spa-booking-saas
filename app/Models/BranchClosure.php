@@ -9,9 +9,12 @@ use Database\Factories\BranchClosureFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Day the branch (or, with branch_id NULL, the whole shop) is closed.
+ *
+ * @property Carbon $date
  */
 class BranchClosure extends Model
 {

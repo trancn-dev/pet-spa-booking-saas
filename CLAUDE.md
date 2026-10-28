@@ -71,6 +71,12 @@ Rules when adding features:
 - Combos are spa only and never nested (`SaveService`); a service inside a combo cannot turn medical or into a combo. `Service::availableAt($branch)`: no `branch_services` rows = every branch.
 - Uniques with nullable columns (e.g. price rules) do not stop duplicates in MySQL: check them in the Action under a row lock.
 
+## Rosters & shop time (task 5.3, `app/Scheduling`)
+
+- Convert shop time ↔ UTC only with `ShopClock` (`for($tenant)` / `current()`: `toUtc($date, $time)`, `localDayRangeUtc($date)`, `today()`, `toLocal()`, `weekday()` = ISO 1–7). Query a shop day by its UTC range, never `DATE(col)`.
+- `Roster` turns weekly `staff_working_hours` into dated UTC occurrences (`occurrences`, `onDutyPerDay`, `onDutyAt`): a slot counts only for its own `service_group`, time off covering it or a closed day removes it. `OnlineRates` resolves the ratio (weekday + hours > weekday > hours > default; none = no online booking) and `OnlineRates::maxOnline()` is the floor used for capacity.
+- Roster edits: `SaveWorkingHour` (staff row lock, no overlapping slots across branches), `AddTimeOff` (reports affected booked lines, never cancels), `SaveBranchClosure`, `SaveOnlineBookingRate`. Policy: `Gate::allows('manage', [StaffWorkingHour::class, $branch])`.
+
 ## Impersonation (task 4.6, `App\Platform\Impersonation`)
 
 - A4 posts a reason → `impersonation_sessions` row + one-time token (60 s) → new tab `/app/{slug}/impersonate/{token}` (outside the `tenant` group; consumed by a conditional UPDATE, for that shop only) → CMS session as the owner with `impersonation_session_id` in the session, 30 minutes.

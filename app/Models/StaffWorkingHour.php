@@ -10,11 +10,16 @@ use Database\Factories\StaffWorkingHourFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Weekly roster slot. Times are shop-local; weekday is ISO (1 = Monday).
  *
  * @property ServiceGroup|null $service_group
+ * @property string $start_time
+ * @property string $end_time
+ * @property Carbon|null $effective_from
+ * @property Carbon|null $effective_to
  */
 class StaffWorkingHour extends Model
 {

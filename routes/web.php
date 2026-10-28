@@ -7,8 +7,10 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Tenant\BranchController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\OnlineBookingRateController;
 use App\Http\Controllers\Tenant\PetController;
 use App\Http\Controllers\Tenant\RoleController;
+use App\Http\Controllers\Tenant\RosterController;
 use App\Http\Controllers\Tenant\ServiceController;
 use App\Http\Controllers\Tenant\StaffController;
 use App\Http\Controllers\Tenant\SupportAccessController;
@@ -80,6 +82,16 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::put('services/{service}/rules/{rule}', [ServiceController::class, 'updateRule'])->name('app.services.rules.update');
         Route::delete('services/{service}/rules/{rule}', [ServiceController::class, 'destroyRule'])->name('app.services.rules.destroy');
 
+        // Rosters, time off, closed days (task 5.3), for the branch picked in the topbar.
+        Route::get('rosters', [RosterController::class, 'index'])->name('app.rosters.index');
+        Route::post('rosters/slots', [RosterController::class, 'storeSlot'])->name('app.rosters.slots.store');
+        Route::put('rosters/slots/{slot}', [RosterController::class, 'updateSlot'])->name('app.rosters.slots.update');
+        Route::delete('rosters/slots/{slot}', [RosterController::class, 'destroySlot'])->name('app.rosters.slots.destroy');
+        Route::post('rosters/time-off', [RosterController::class, 'storeTimeOff'])->name('app.rosters.time-off.store');
+        Route::delete('rosters/time-off/{timeOff}', [RosterController::class, 'destroyTimeOff'])->name('app.rosters.time-off.destroy');
+        Route::post('rosters/closures', [RosterController::class, 'storeClosure'])->name('app.rosters.closures.store');
+        Route::delete('rosters/closures/{closure}', [RosterController::class, 'destroyClosure'])->name('app.rosters.closures.destroy');
+
         Route::get('staff', [StaffController::class, 'index'])->name('app.staff.index');
         Route::get('staff/create', [StaffController::class, 'create'])->name('app.staff.create');
         Route::post('staff', [StaffController::class, 'store'])->name('app.staff.store');
@@ -100,6 +112,10 @@ Route::middleware('tenant')->prefix('app/{tenant:slug}')->group(function () {
         Route::get('settings/branches/{branch}', [BranchController::class, 'edit'])->name('app.settings.branches.edit');
         Route::put('settings/branches/{branch}', [BranchController::class, 'update'])->name('app.settings.branches.update');
         Route::delete('settings/branches/{branch}', [BranchController::class, 'destroy'])->name('app.settings.branches.destroy');
+        Route::get('settings/branches/{branch}/online-rates', [OnlineBookingRateController::class, 'index'])->name('app.settings.online-rates');
+        Route::post('settings/branches/{branch}/online-rates', [OnlineBookingRateController::class, 'store'])->name('app.settings.online-rates.store');
+        Route::put('settings/branches/{branch}/online-rates/{rate}', [OnlineBookingRateController::class, 'update'])->name('app.settings.online-rates.update');
+        Route::delete('settings/branches/{branch}/online-rates/{rate}', [OnlineBookingRateController::class, 'destroy'])->name('app.settings.online-rates.destroy');
 
         // S12.3 Cài đặt › Phân quyền
         Route::get('settings/roles', [RoleController::class, 'index'])->name('app.settings.roles');

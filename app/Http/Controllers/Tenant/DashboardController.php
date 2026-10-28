@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Authorization\CurrentBranch;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Invitation;
@@ -43,9 +44,9 @@ class DashboardController extends Controller
 
         $steps = [
             ['key' => 'branches', 'label' => 'Kiểm tra cơ sở và giờ mở cửa', 'done' => null, 'href' => route('app.settings.branches')],
-            ['key' => 'services', 'label' => 'Thêm dịch vụ', 'done' => Service::query()->exists(), 'href' => null],
-            ['key' => 'rosters', 'label' => 'Cài lịch trực', 'done' => StaffWorkingHour::query()->exists(), 'href' => null],
-            ['key' => 'online', 'label' => 'Cài tỉ lệ đặt online', 'done' => OnlineBookingRate::query()->exists(), 'href' => null],
+            ['key' => 'services', 'label' => 'Thêm dịch vụ', 'done' => Service::query()->exists(), 'href' => route('app.services.index')],
+            ['key' => 'rosters', 'label' => 'Cài lịch trực', 'done' => StaffWorkingHour::query()->exists(), 'href' => route('app.rosters.index')],
+            ['key' => 'online', 'label' => 'Cài tỉ lệ đặt online', 'done' => OnlineBookingRate::query()->exists(), 'href' => ($branch = CurrentBranch::get()) ? route('app.settings.online-rates', $branch) : null],
             [
                 'key' => 'staff',
                 'label' => 'Mời nhân viên',

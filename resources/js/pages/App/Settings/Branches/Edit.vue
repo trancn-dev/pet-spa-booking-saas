@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import type { ShopSharedData } from '@/types';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -26,6 +27,7 @@ const props = defineProps<{
 }>();
 
 const editing = computed(() => props.branch !== null);
+const canRates = computed(() => usePage<ShopSharedData>().props.permissions?.includes('rosters.manage') ?? false);
 const weekdays = [
     { key: '1', label: 'Thứ 2' },
     { key: '2', label: 'Thứ 3' },
@@ -72,6 +74,9 @@ const submit = () => {
             <div>
                 <Link :href="route('app.settings.branches')" class="text-sm text-muted-foreground hover:underline">← Cơ sở</Link>
                 <h1 class="mt-1 text-2xl font-semibold">{{ editing ? branch?.name : 'Thêm cơ sở' }}</h1>
+                <Link v-if="branch && canRates" :href="route('app.settings.online-rates', branch.id)" class="text-sm text-primary hover:underline">
+                    Tỉ lệ đặt online của cơ sở →
+                </Link>
             </div>
 
             <section class="grid gap-4 rounded-[10px] border bg-card p-6">
