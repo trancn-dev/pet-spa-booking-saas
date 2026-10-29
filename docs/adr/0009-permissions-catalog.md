@@ -31,10 +31,10 @@ Mỗi shop tổ chức nhân sự khác nhau: có shop lễ tân kiêm thu ngân
 - Thêm quyền mới = sửa config + migration gán cho `owner` các shop hiện có.
 
 ## Kiểm chứng
-- Test ma trận role × hành động theo `design/design.md` mục 8 (Pest dataset).
+- Test ma trận role × hành động theo `docs/design/design.md` mục 8 (Pest dataset).
 - Test: gán `roles.manage` cho role khác → từ chối; giao `inventory.view_cost` cho quản lý → có 1 dòng `activity_logs`.
 - Test: user là owner shop A, groomer shop B → quyền đúng theo shop đang mở.
 - Test dataset "role × endpoint → response không có khóa nhạy cảm".
 
 ## Liên quan
-`design/db-schema.md` mục 3 · `design/design.md` mục 8 · `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` mục 2 · ADR-0004.
+`docs/database/db-schema.md` mục 3 · `docs/design/design.md` mục 8 · `docs/analysis/nghiep-vu-da-chot.md` mục 2 · ADR-0004.

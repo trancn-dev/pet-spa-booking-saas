@@ -34,4 +34,4 @@ Hóa đơn đã hoàn thành có thể bị chủ shop sửa (ADR-0005: hủy + 
 - Test: cùng `idempotency_key` 2 lần → 1 khoản.
 
 ## Liên quan
-`design/db-schema.md` mục 2.7, 5.6 · ADR-0005 · sơ đồ 8c, 8e.
+`docs/database/db-schema.md` mục 2.7, 5.6 · ADR-0005 · sơ đồ 8c, 8e.

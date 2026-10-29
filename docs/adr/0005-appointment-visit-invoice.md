@@ -37,4 +37,4 @@ Hóa đơn đã thu tiền phải giữ nguyên để đối soát két, báo c�
 - Test concurrency: thêm dòng Visit đồng thời với hoàn thành hóa đơn → dòng không lọt vào hóa đơn đã chốt.
 
 ## Liên quan
-`design/db-schema.md` mục 2.5–2.7, 5.6 · ADR-0010 · sơ đồ 3a, 8a–8c trong `analysis/so-do-nghiep-vu/so-do-nghiep-vu.md`.
+`docs/database/db-schema.md` mục 2.5–2.7, 5.6 · ADR-0010 · sơ đồ 3a, 8a–8c trong `docs/analysis/so-do-nghiep-vu.md`.

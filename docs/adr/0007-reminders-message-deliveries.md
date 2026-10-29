@@ -8,12 +8,12 @@
 Shop nhắc khách: xác nhận lịch, nhắc trước 24h/2h, tiêm phòng đến hạn, tái khám, báo đón sau spa. Kênh chính là Zalo ZNS (rẻ, khách quen dùng), SMS dự phòng khi Zalo lỗi hoặc số không dùng Zalo. OTP gửi SMS. Gửi tin tốn tiền, nên gửi trùng là mất tiền và làm phiền khách. Scheduler và worker có thể chạy trùng, job có thể retry.
 
 ## Quyết định
-- `reminders`: một dòng cho mỗi việc cần nhắc (`purpose`, `send_at`, `status pending → processing → sent | failed | skipped`), `UNIQUE(tenant_id, dedupe_key)` (vd `vax:{pet_vaccination_id}:{offset}`). Lịch bị hủy/dời: nhắc cũ `skipped`, tạo nhắc mới.
+- `reminders`: một dòng cho mỗi việc cần nhắc (`purpose`, `send_at`, `status pending → processing → sent | failed | skipped`), `UNIQUE(tenant_id, dedupe_key)`. Khóa: `appt:{id}:{purpose}:{starts_at_unix}` (có giờ hẹn nên dời lịch tạo được nhắc mới), `vacc:{pet_vaccination_id}:{next_due_on}`, `fu:{medical_entry_id}`, `pickup:{visit_id}`. Lịch bị hủy/dời: nhắc cũ `skipped`, tạo nhắc mới; shop hủy/dời thì thêm tin `appointment_changed`. `appointment_confirm` chỉ cho lịch `source = online`.
 - `message_deliveries`: mỗi lần gọi nhà cung cấp một dòng (`channel zalo|sms`, `status`, `provider_message_id`, `cost`, `error`).
 - Thứ tự gửi: Zalo trước; lỗi hoặc không có Zalo thì SMS; không bao giờ gửi cả hai cho một nhắc.
-- Scheduler mỗi phút claim nguyên tử (`UPDATE … SET status='processing' WHERE status='pending'` hoặc `FOR UPDATE SKIP LOCKED`) rồi dispatch job; job mang `tenant_id` (`TenantAware`).
+- Scheduler mỗi phút (`reminders:dispatch`, quét mọi shop qua `withoutTenancy`) claim nguyên tử (`UPDATE … SET status='processing', claimed_at=now() WHERE status='pending'` hoặc `FOR UPDATE SKIP LOCKED`) rồi dispatch job; dòng `processing` có `claimed_at` quá 10 phút được nhận lại; job mang `tenant_id` (`TenantAware`).
 - Gateway sau interface (`ZnsGateway`, `SmsGateway`) để fake trong test và đổi nhà cung cấp.
-- Shop `suspended` không gửi nhắc khách.
+- Shop `suspended`: nhắc tới hạn chuyển `skipped`, không gửi bù khi mở lại.
 
 ## Phương án đã cân nhắc
 | Phương án | Ưu | Nhược | Lý do loại |
@@ -33,4 +33,4 @@ Shop nhắc khách: xác nhận lịch, nhắc trước 24h/2h, tiêm phòng đ�
 - `Http::fake` cho ZNS/SMS.
 
 ## Liên quan
-`design/db-schema.md` mục 2.8 · plan task 6.1.
+`docs/database/db-schema.md` mục 2.8 · plan task 6.1.

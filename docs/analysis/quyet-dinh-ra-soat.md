@@ -2,7 +2,7 @@
 
 Rà chéo nghiệp vụ, sơ đồ, db-schema, design, danh mục màn, plan. Mỗi dòng: vấn đề → phương án chọn → file đã sửa. Tài liệu chốt đã cập nhật tại chỗ.
 
-Viết tắt file: **NV** `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` · **SĐ** `so-do-nghiep-vu.html` · **DB** `design/db-schema.md` · **DS** `design/design.md` · **DM** `design/danh-muc-man-hinh.md` · **PL** `plan/implementation-plan.md`.
+Viết tắt file: **NV** `docs/analysis/nghiep-vu-da-chot.md` · **SĐ** `so-do-nghiep-vu.html` · **DB** `docs/database/db-schema.md` · **DS** `docs/design/design.md` · **DM** `docs/design/danh-muc-man-hinh.md` · **PL** `docs/plan/implementation-plan.md`.
 
 ## Race condition, deadlock, tiền
 

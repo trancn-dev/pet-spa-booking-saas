@@ -38,4 +38,4 @@ Mỗi shop một múi giờ (`tenants.timezone`, IANA), mọi cơ sở dùng chu
 - Test "hôm nay" lúc 23:30 và 00:30 giờ shop (UTC đã sang ngày khác).
 
 ## Liên quan
-`design/db-schema.md` mục 1, 5.4 · ADR-0002.
+`docs/database/db-schema.md` mục 1, 5.4 · ADR-0002.

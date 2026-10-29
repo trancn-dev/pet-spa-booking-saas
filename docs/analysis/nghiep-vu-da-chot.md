@@ -1,6 +1,6 @@
 # Nghiệp vụ đã chốt
 
-Tài liệu chốt chính thức về nghiệp vụ. Sơ đồ: `so-do-nghiep-vu.html` (cùng thư mục), Mermaid: `so-do-nghiep-vu.md`. Dữ liệu: `design/db-schema.md`. Giao diện: `design/design.md`. Kế hoạch: `plan/implementation-plan.md`. Bản cũ và biên bản rà soát ở `old/analysis/`.
+Tài liệu chốt chính thức về nghiệp vụ. Sơ đồ: `so-do-nghiep-vu.html` (cùng thư mục), Mermaid: `so-do-nghiep-vu.md`. Dữ liệu: `docs/database/db-schema.md`. Giao diện: `docs/design/design.md`. Kế hoạch: `docs/plan/implementation-plan.md`. Quyết định rà soát: `quyet-dinh-ra-soat.md` (cùng thư mục). Quyết định kiến trúc: `docs/adr/`. Bản cũ để ngoài repo.
 
 Giai đoạn: **MVP**, **GĐ2** (kho), **GĐ3** (ca, chấm công, lương), **Sau V1** (chỉ ghi lại, chưa làm).
 
@@ -10,7 +10,8 @@ Không còn câu hỏi mở.
 
 ## 1. Shop và cơ sở
 - Nhà cung cấp (admin nền tảng) tạo shop, gán gói + hạn dùng, mời chủ shop qua email. Không có tự đăng ký. Gói giới hạn số cơ sở, số nhân viên có tài khoản (tính cả lời mời còn hạn), số lịch/tháng (mọi lịch online + lễ tân, theo tháng tạo lịch; hủy không trả lại suất).
-- Hạn dùng: còn 7 ngày thì nhắc; quá hạn được dùng tiếp 7 ngày ân hạn (banner đỏ); hết ân hạn thì shop **tạm khóa**: nhân viên xem được nhưng không thao tác, Site ngừng nhận lịch, không gửi nhắc khách. Gia hạn xong mở lại ngay.
+- Hạn dùng: còn 7 ngày thì nhắc; quá hạn được dùng tiếp 7 ngày ân hạn (banner đỏ); hết ân hạn thì shop **tạm khóa**: nhân viên xem được nhưng không thao tác, Site ngừng nhận lịch và không gửi OTP, nhắc khách tới hạn bị bỏ (không gửi bù); khách đã đăng nhập vẫn hủy được lịch của mình. Gia hạn xong mở lại ngay.
+- Hạ gói giữa kỳ: dữ liệu đang vượt giới hạn gói mới giữ nguyên, chỉ chặn tạo mới vượt giới hạn (thêm cơ sở, mời nhân viên, đặt lịch).
 - Một shop nhiều cơ sở. Dùng chung toàn shop: khách, pet, bệnh án, sổ tiêm, danh mục dịch vụ/sản phẩm, **giá bán**.
 - Riêng từng cơ sở: lịch trực, lịch hẹn, Visit, hàng đợi, hóa đơn, ca thu ngân, tồn kho (lô, hạn dùng).
 - Chủ shop xem mọi cơ sở; nhân viên chỉ thao tác ở cơ sở được gán; chứng từ mang mã cơ sở.
@@ -21,7 +22,7 @@ Không còn câu hỏi mở.
 
 ## 2. Vai trò và quyền
 - Có màn quản lý role; tạo sẵn 7 role mẫu: Chủ shop, Quản lý chi nhánh, Lễ tân, Thu ngân, Bác sĩ, Nhân viên spa, Nhân viên kho. Chủ đổi tên role, sửa quyền, tạo role mới. Danh mục quyền do hệ thống định nghĩa, shop không tạo quyền mới. **Quyền nhạy cảm** (xem giá vốn, điền giá nhập, sửa hóa đơn đã hoàn thành, thao tác mọi cơ sở, xem lương) mặc định chỉ Chủ shop; chủ giao được cho role khác, có xác nhận và ghi nhật ký. Quyền phân quyền luôn chỉ Chủ shop. Một người nhiều role thì cộng quyền. Quyền lấy từ role, không từ chức danh.
-- Ma trận quyền: `design/design.md` mục 8 (theo sơ đồ 9).
+- Ma trận quyền: `docs/design/design.md` mục 8 (theo sơ đồ 9).
 - Bệnh án: bác sĩ mọi cơ sở xem đầy đủ; lễ tân, spa, quản lý chi nhánh chỉ thấy cảnh báo (dị ứng, bệnh nền, lưu ý hành vi) và ngày khám; thu ngân, kho không thấy. Chủ shop xem được nhưng không tự nhận Visit khám, không tự ghi (kiêm bác sĩ thì gán thêm role Bác sĩ).
 - Báo cáo doanh thu: chủ mọi cơ sở; quản lý chi nhánh cơ sở mình (không lãi gộp); lễ tân chỉ hôm nay cơ sở mình; thu ngân báo cáo ca; bác sĩ, spa không xem.
 - Khách trên Site xem: ngày khám, chẩn đoán, hướng dẫn chăm sóc, thuốc đã kê, sổ tiêm, lịch tái khám, kết quả xét nghiệm bác sĩ chọn chia sẻ, hóa đơn đã hoàn thành của mình; **không** xem ghi chú nội bộ của bác sĩ.
@@ -32,7 +33,7 @@ Không còn câu hỏi mở.
 - SĐT là khóa khách, dùng chung mọi cơ sở. Khách tự tạo hồ sơ khi đặt online lần đầu (xác minh OTP). Khách chỉ mua hàng không cần hồ sơ.
 - Mỗi cơ sở có một hồ sơ hệ thống "Thú hoang / vô chủ".
 - Pet có cảnh báo an toàn hiện ở mọi nơi: dị ứng, bệnh nền, lưu ý hành vi ("cắn người", "sợ máy sấy").
-- Bệnh án: mỗi pet một hồ sơ có **số hồ sơ** (dùng chung mọi cơ sở); mỗi lần khám thêm **một dòng chi tiết**. Chỉ **người lập** sửa dòng của mình, trong **24 giờ**; sau đó chỉ thêm ghi chú bổ sung.
+- Bệnh án: mỗi pet một hồ sơ có **số hồ sơ** (dùng chung mọi cơ sở); mỗi lần khám thêm **một dòng chi tiết**. Chỉ **người lập** sửa dòng của mình, tới **24 giờ sau khi hoàn tất Visit** (Visit chưa xong thì vẫn sửa được); sau đó chỉ thêm ghi chú bổ sung. Visit cấp cứu chưa gắn pet thì chưa lưu được bệnh án.
 - Xét nghiệm, chẩn đoán hình ảnh: là dịch vụ thêm vào Visit; kết quả ghi chữ + đính kèm ảnh/PDF; không có phòng xét nghiệm riêng.
 - Spa: nhân viên spa chụp ảnh lúc nhận và lúc trả (tùy chọn), đính kèm Visit.
 - Tiêm: ghi mũi (vaccine, số lô, hạn lô), hệ thống tính mũi kế tiếp theo phác đồ; không đủ điều kiện thì hoãn + ngày hẹn mới.
@@ -46,8 +47,12 @@ Không còn câu hỏi mở.
 - **Hạn mức đặt online** = số người trực của nhóm × tỉ lệ, làm tròn xuống; tỉ lệ riêng cho khám và spa, mỗi cơ sở một tỉ lệ, ca nào cần thì đặt riêng. Số người trực tự đếm từ lịch trực theo nhóm và cơ sở; người nghỉ thì giảm.
 - **Một nhân viên đi làm tính là một người trực**, dù có nhiều role (khung trực ghi rõ trực nhóm nào).
 - Đặt online 2 bé cùng giờ cần đủ 2 chỗ; thiếu thì báo hết chỗ cả lịch, không lưu một nửa.
+- **Một pet vừa khám vừa spa trong một lịch thì làm nối tiếp**: mặc định khám trước, spa bắt đầu khi khám xong; mỗi dòng có giờ bắt đầu riêng, lễ tân đổi được thứ tự. Một pet không bao giờ có 2 dòng chồng giờ.
+- Giới hạn đặt online (mặc định, chủ chỉnh được): đặt trước ít nhất 60 phút, xa nhất 14 ngày, mỗi khách tối đa 3 lịch sắp tới còn hiệu lực. Lễ tân đặt không bị giới hạn này.
 - Đặt online: chưa đăng nhập thì xác minh OTP (lần đầu nhập tên tạo hồ sơ), đã đăng nhập thì dùng luôn; lịch xác nhận ngay. Lịch online không gán người cụ thể; người làm được phân khi khách đến; khách ghi được người mong muốn.
-- Lịch lễ tân đặt không tính vào hạn mức online; tổng lịch vượt số người trực thì cảnh báo, vẫn lưu được. Lễ tân chọn được "Không gửi nhắc" cho từng lịch.
+- Lịch lễ tân đặt không trừ vào hạn mức online, nhưng **chỗ online còn = ít hơn trong hai số: hạn mức online còn lại, và số người trực trừ tổng số dòng đang chiếm (cả online lẫn lễ tân)**. Lễ tân đặt kín người trực thì online hết chỗ. Lễ tân: tổng lịch vượt số người trực thì cảnh báo, vẫn lưu được. Lễ tân chọn được "Không gửi nhắc" cho từng lịch.
+- Shop hủy hoặc dời lịch: gửi tin báo khách (lễ tân bỏ chọn được).
+- Ngày đóng cửa, nghỉ đột xuất (cả cơ sở hoặc một người): hệ thống trả danh sách lịch bị ảnh hưởng, lễ tân gọi khách và dời/hủy ở màn "Cần gọi hôm nay" (S20); không tự hủy.
 - Check-in: mỗi pet một Visit cho mỗi nhóm (pet khám + tiêm = 1 Visit khám; khám + spa = 2 Visit).
 - Khách tự đổi/hủy lịch trên Site trước 24 giờ (chủ cài được).
 - Đổi giờ, hủy đều lưu lịch sử.
@@ -56,7 +61,7 @@ Không còn câu hỏi mở.
 
 ## 5. Tin nhắn cho khách
 - Kênh: **Zalo ZNS trước, lỗi hoặc SĐT không dùng Zalo thì SMS**; không gửi cả hai. OTP gửi SMS. Không email/Telegram cho khách.
-- Nội dung: xác nhận lịch, nhắc trước 24 giờ và 2 giờ, nhắc tiêm/tẩy giun đến hạn, nhắc tái khám, báo đón sau spa. Lịch nhiều pet gửi một tin.
+- Nội dung: xác nhận lịch (chỉ lịch khách tự đặt online; lịch lễ tân đặt không gửi xác nhận), báo khi shop hủy/dời lịch, nhắc trước 24 giờ và 2 giờ, nhắc tiêm/tẩy giun đến hạn, nhắc tái khám, báo đón sau spa. Lịch nhiều pet gửi một tin.
 - Nhân viên nhận thông báo trong CMS (chuông): cần gọi xác nhận khách, hóa đơn bị hủy, chênh lệch ca thu ngân, cảnh báo kho, phiếu chờ duyệt.
 
 ## 6. Tiếp nhận, hàng đợi, Visit
@@ -75,6 +80,7 @@ Không còn câu hỏi mở.
 - Mở hóa đơn khi tiếp nhận: mỗi khách mỗi cơ sở mỗi ngày một hóa đơn chưa hoàn thành; nhiều pet → một hóa đơn.
 - Hóa đơn gom các Visit + hàng mua thêm + dòng gõ tay (tên + giá). Dòng dịch vụ của Visit chỉ đọc ở quầy (sửa ở Visit). Trạng thái: Chưa hoàn thành → Hoàn thành (thu đủ) / Đã hủy.
 - In tạm tính được trước khi thu.
+- Hóa đơn chưa hoàn thành bị hủy khi Visit còn đang làm: Visit tách khỏi hóa đơn cũ; lần thêm dịch vụ kế tiếp (hoặc lễ tân bấm gắn) thì Visit vào hóa đơn chưa hoàn thành mới của khách hôm đó.
 - Hóa đơn chưa hoàn thành từ ngày trước **không tự hủy**; đầu ngày hệ thống cảnh báo lễ tân/thu ngân/chủ để dọn (hoàn thành hoặc hủy có lý do).
 - Lễ tân/thu ngân/quản lý chi nhánh hủy được hóa đơn chưa hoàn thành, bắt buộc lý do; chủ shop nhận thông báo; có mục "hóa đơn đã hủy" trong báo cáo ngày.
 - Hóa đơn đã hoàn thành chỉ chủ shop sửa: bấm "Sửa" = hủy bản cũ + lập bản thay thế (số mới, tham chiếu bản cũ), tiền đã thu chuyển sang bản mới; tiền chênh thu thêm hoặc trả lại. Báo cáo không sửa ngược ngày cũ: ngày sửa ghi trừ bản cũ, cộng bản thay thế. Hóa đơn đã có phiếu trả hàng thì không sửa. Quyền sửa là quyền nhạy cảm, chủ giao được.

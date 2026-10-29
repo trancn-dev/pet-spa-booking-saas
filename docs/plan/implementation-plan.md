@@ -1,12 +1,13 @@
 # Kế hoạch triển khai: Pet Spa & Thú y SaaS (PawBook)
 
-Repo: https://github.com/trancn-dev/pet-spa-booking-saas (nhánh `dev`) · Laravel 12 · MySQL 8 · một DB + `tenant_id`
+Repo: https://github.com/trancn-dev/pet-spa-booking-saas (nhánh `dev`) · Laravel 12 · MySQL 8.4 (READ COMMITTED) · một DB + `tenant_id`
 
-Tài liệu chốt chính thức (bản cũ ở `old/`, cùng cấu trúc thư mục):
-- Nghiệp vụ: `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` (+ sơ đồ `so-do-nghiep-vu.md/.html`).
-- Dữ liệu: `design/db-schema.md`.
-- Giao diện: `design/design.md`. Mã màn (nguồn duy nhất): `design/danh-muc-man-hinh.md`.
-- Tổng quan: `project-brief.md`.
+Tài liệu chốt chính thức nằm trong `docs/` của repo (bản chính; bản cũ để ngoài repo):
+- Nghiệp vụ: `docs/analysis/nghiep-vu-da-chot.md` (+ sơ đồ `so-do-nghiep-vu.md/.html`).
+- Dữ liệu: `docs/database/db-schema.md`.
+- Giao diện: `docs/design/design.md`. Mã màn (nguồn duy nhất): `docs/design/danh-muc-man-hinh.md`.
+- Tổng quan: `docs/project-brief.md`. Kiến trúc: `docs/architecture.md`.
+- Quyết định kiến trúc: `docs/adr/` (10 ADR, **bản chính**). Task không viết ADR mới; khi code xong chỉ điền mục **Kiểm chứng** của ADR liên quan.
 
 Giai đoạn:
 - **MVP** (phase 1–10): đa shop, đa cơ sở, đặt lịch (CMS + Site), tiếp nhận, hàng đợi, Visit, bệnh án, tiêm phòng, hóa đơn, ca thu ngân, nhắc hẹn Zalo/SMS, admin nền tảng.
@@ -20,25 +21,32 @@ Giai đoạn:
 
 1. **Một task = một phiên Claude Code = một branch/PR.** Copy nguyên khối `prompt` của task vào Claude Code. Không gộp nhiều task vào một phiên.
 2. Task có nhãn ⭐ (lõi, dễ sai): bật **plan mode** trước (`Shift+Tab` hai lần), đọc kế hoạch, sửa rồi mới cho chạy.
-3. Mọi prompt giả định repo đã có `CLAUDE.md` và `docs/` (task 1.3). Khi tài liệu trong project đổi, copy lại cả bộ vào `docs/`.
+3. Mọi prompt giả định repo đã có `CLAUDE.md` và `docs/` (Bước 0, PR "docs: P0"). `docs/` trong repo là bản chính: sửa tài liệu bằng PR vào `dev`.
 4. Sau mỗi task, tự kiểm theo mục **"Xong khi"**. Chưa đạt thì yêu cầu sửa tiếp trong cùng phiên, đừng merge.
 5. Thứ tự phase là thứ tự phụ thuộc. Trong cùng phase, task đánh số theo thứ tự nên làm.
 6. Ưu tiên **làm sâu** phase 2, 5, 6 (multi-tenant, đặt lịch, hàng đợi, hóa đơn). Phase 9 có thể cắt bớt.
+7. **Test chạy MySQL 8.4, không SQLite** (FK ghép, khóa hàng, cột generated, CHECK chỉ đúng trên MySQL). Test concurrency (`->group('mysql')`, nhiều tiến trình) dùng trait `DatabaseTruncation`, không `RefreshDatabase` (dữ liệu phải commit để tiến trình khác thấy).
+8. **Thứ tự làm phase 5 khác số task**: 5.1 → 5.2 → 5.3 → 5.4 → 5.5 → **5.8** (CreateVisit) → 5.6 (check-in gọi CreateVisit) → 5.7 → 5.9 → **5.11** (ca thu ngân) → 5.10 (CompleteInvoice cần ca mở). Số task giữ nguyên để tài liệu khác tham chiếu không lệch; các mục trong file đã xếp theo thứ tự làm.
 
 Tham chiếu trong prompt: "db-schema 2.5" = `docs/database/db-schema.md` mục 2.5; "design S2" = màn S2 trong `docs/design/design.md`; "F3" = luồng F3 (design mục 7).
 
-> **Tiến độ thực tế (nhánh `dev`):** đã xong phase 1 (Laravel 12 + Docker + Pint/Larastan/Pest + CI), phase 2 (TenantContext, BelongsToTenant fail closed, ResolveTenant theo `/app/{tenant:slug}`), starter kit Vue/Inertia + auth với `users` toàn cục, bảng `staff` tối thiểu. Nhánh `main` là bản cũ: **đừng dựa vào `main`**. Chưa có migration nghiệp vụ nào cần giữ: task 3.1 viết lại migration theo `db-schema.md` hiện tại (được sửa/xóa migration chưa lên production). Việc tiếp theo: 1.3 → 3.1 → 3.2 → Phase 4. Task đã làm chỉ chạy prompt "Kiểm tra & bổ sung".
+> **Tiến độ thực tế (nhánh `dev`, rà 27/10/2026, commit 84d5cd2):** nhánh `main` là bản cũ, **đừng dựa vào `main`**. Chưa có migration nghiệp vụ nào cần giữ: task 3.1 viết lại migration theo `db-schema.md` (được sửa/xóa migration chưa lên production).
+>
+> - **Phase 1 ~70%.** Có: Laravel 12 + Docker (app, queue, mysql, redis), Pint (`declare_strict_types`), Larastan, Pest, CI 2 job, starter kit Vue/Inertia. Thiếu: test local chạy SQLite in-memory (phải là MySQL 8.4); Docker và CI dùng `mysql:8.0` (phải 8.4); Larastan level 6 (mục tiêu 8); CI chỉ chạy khi push `main` (thiếu `dev`), chưa có ESLint/build assets; `config/database.php` chưa có `isolation_level` READ COMMITTED; chưa `Model::shouldBeStrict()`.
+> - **Phase 2 ~60%.** Có: `TenantContext` (`runAs`, `withoutTenancy`), `Tenant::forEach`, `BelongsToTenant` + `TenantScope` fail closed, `StaffMembership`, `ResolveTenant` theo `/app/{tenant:slug}`, arch test BelongsToTenant + cấm `withoutGlobalScope(s)`, test cô lập cơ bản. Thiếu: `ResolveTenant` đang 404 mọi shop khác `active` (đúng: chỉ `cancelled` → 404, `suspended` chặn ghi 423 bằng `EnsureTenantWritable`); rule `exists`/`unique` theo tenant; job `TenantAware`; helper cache key `t:{id}:`; helper test `assertTenantIsolated`; route `/register` và chức năng xóa tài khoản của starter kit còn; route tenant tên `tenant.*` (đúng: `app.*`), trang cá nhân ở `/settings` (đúng: `/account`).
+>
+> Lộ trình: **Bước 0** (PR tài liệu + CLAUDE.md, thay task 1.3) → **Bước 1** đóng nợ phase 1–2 (prompt "Bước 1" dưới task 2.2) → 3.1, 3.2 → 4.x → 5.1–5.4 → 5.5 (PR riêng) → 5.8, 5.6, 5.7, 5.9, 5.11, 5.10 → 6.x → 7.1 → 9.x, 10.x.
 
 ### Lộ trình gợi ý (buổi tối/cuối tuần)
 
 | Tuần | Phase |
 |---|---|
-| 1 | 1. Init + tooling (đã xong) · 1.3 docs |
-| 2 | 2. Nền multi-tenant (đã xong, chạy kiểm tra) · 3. Migration + seed |
+| 1 | 1. Init + tooling (~70%) · Bước 0 docs |
+| 2 | 2. Nền multi-tenant (~60%) · Bước 1 đóng nợ phase 1–2 · 3. Migration + seed |
 | 3–4 | 4. Admin → tạo shop → phân quyền (4.1–4.6) |
 | 5 | 5a. Khách, pet, dịch vụ, lịch trực (5.1–5.3) |
-| 6–7 | 5b. ⭐ Hạn mức + đặt lịch + test concurrency + UI lịch (5.4–5.7) |
-| 8–9 | 5c. Tiếp nhận, hàng đợi, Visit, hóa đơn, ca thu ngân (5.8–5.11) |
+| 6–7 | 5b. ⭐ Hạn mức + đặt lịch + test concurrency (5.4, 5.5) · tiếp nhận + hàng đợi (5.8) · vòng đời lịch + UI lịch (5.6, 5.7) |
+| 8–9 | 5c. Visit, ca thu ngân, hóa đơn (5.9, 5.11, 5.10) |
 | 10 | 6. Nhắc hẹn, bệnh án, tiêm phòng |
 | 11 | 7. Site của shop |
 | 12 | 9. Dashboard, hiệu năng · 10. Deploy, README, ADR |
@@ -57,8 +65,8 @@ Phase 8 (thu phí gói tự động) để sau MVP.
 Repo hiện chỉ có README và LICENSE. Khởi tạo dự án:
 
 - Laravel 12 với starter kit Vue (Inertia 2 + Vue 3 `<script setup>` + TypeScript + Tailwind), cài vào thư mục gốc repo, giữ LICENSE.
-- Docker cho môi trường dev bằng docker compose (Laravel Sail cũng được, nhưng service phải có): app (PHP 8.3+), mysql:8.0, redis:7, mailpit. Queue worker chạy riêng sau khi có Horizon (để TODO trong compose).
-- Thời gian: `config/app.php` timezone = 'UTC'; connection mysql thêm `'timezone' => '+00:00'`; charset utf8mb4.
+- Docker cho môi trường dev bằng docker compose (Laravel Sail cũng được, nhưng service phải có): app (PHP 8.3+), mysql:8.4, redis:7, mailpit. Queue worker chạy riêng sau khi có Horizon (để TODO trong compose).
+- Thời gian: `config/app.php` timezone = 'UTC'; connection mysql thêm `'timezone' => '+00:00'`, `'isolation_level' => 'READ COMMITTED'`; charset utf8mb4, collation utf8mb4_0900_ai_ci (db-schema mục 1).
 - `.env.example` đủ biến cho docker (DB_HOST=mysql, REDIS_HOST=redis, MAIL_HOST=mailpit), QUEUE_CONNECTION=redis, CACHE_STORE=redis, SESSION_DRIVER=redis.
 - `Makefile` (hoặc composer scripts): up, down, sh, test, lint, analyse, fresh (migrate:fresh --seed).
 - README: mục "Chạy local" ngắn.
@@ -77,36 +85,20 @@ Thêm tooling chất lượng cho repo Laravel 12 hiện tại:
 - Larastan level 8, `phpstan.neon` baseline rỗng. Fix lỗi hiện có thay vì baseline.
 - Laravel Pint (preset laravel) + ESLint/Prettier cho resources/js.
 - Arch test cơ bản: không dùng `dd`, `dump`, `ray`; `App\Models` extend Model; `declare(strict_types=1)` cho app/.
-- GitHub Actions `.github/workflows/ci.yml`: job lint (pint --test, eslint), analyse (phpstan), test (service mysql:8.0 + redis, `pest --parallel --coverage --min=70`), build assets. Cache composer + npm.
+- GitHub Actions `.github/workflows/ci.yml`, chạy khi push `dev`/`main` và mọi PR: job lint (pint --test, eslint), analyse (phpstan), test (service mysql:8.4 + redis, `pest --parallel --coverage --min=70`), build assets. Cache composer + npm.
 - AppServiceProvider (không phải production): `Model::shouldBeStrict()`.
 - Badge CI vào README.
 ```
 
 **Xong khi:** PR có CI xanh cả 3 job; cố tình viết 1 lazy load trong test thì test fail.
 
-### Task 1.3: CLAUDE.md + tài liệu thiết kế trong repo
+### Task 1.3: CLAUDE.md + tài liệu thiết kế trong repo (đã thay bằng Bước 0)
 
-> Trước khi chạy: copy từ project vào repo (Claude Code trên máy bạn không đọc được thư mục project): `design/db-schema.md` → `docs/database/`, `design/design.md` và `design/danh-muc-man-hinh.md` → `docs/design/`, `plan/implementation-plan.md` → `docs/plan/`, `analysis/so-do-nghiep-vu/nghiep-vu-da-chot.md` → `docs/analysis/`, `project-brief.md` → `docs/`. Xóa trong `docs/` các bản cũ (ảnh ERD cũ, file đặt tên theo phiên bản). ERD nằm dạng mermaid trong db-schema.md mục 4.
+Đã làm ở **Bước 0** (PR "docs: P0", 27/10/2026): `docs/` là bản chính trong repo; `CLAUDE.md` viết lại theo tài liệu chốt (thứ tự khóa toàn cục, quy tắc tenant, quy ước thư mục); `docs/adr/` có đủ 10 ADR (0001–0010) + `README.md` + `0000-template.md`; `docs/architecture.md` có khu, middleware stack, module, luồng đặt lịch. Không còn bước copy tài liệu từ project vào repo.
 
-```prompt
-Thư mục docs/ có database/db-schema.md, design/design.md, design/danh-muc-man-hinh.md, plan/implementation-plan.md, analysis/nghiep-vu-da-chot.md, project-brief.md. Tạo hoặc cập nhật:
+Khi tài liệu đổi: sửa trực tiếp trong `docs/` bằng PR vào `dev`; đổi quy ước code thì sửa `CLAUDE.md` trong cùng PR.
 
-1. `CLAUDE.md` ở gốc repo (tiếng Việt, ngắn, gạch đầu dòng):
-   - Mô tả dự án 3 dòng, link tới docs/.
-   - Lệnh: test, lint, phpstan, migrate fresh (theo Makefile).
-   - Quy ước dữ liệu (lấy từ docs/database/db-schema.md mục 1): mọi bảng tenant có tenant_id + UNIQUE(tenant_id,id); FK giữa 2 bảng tenant là FK ghép (tenant_id, x_id) → (tenant_id, id); pet gắn khách bằng FK ghép (tenant_id, customer_id, pet_id); index ghép bắt đầu bằng tenant_id; DATETIME lưu UTC, giờ ca TIME local, ngày nghiệp vụ DATE local, một múi giờ mỗi shop (tenants.timezone); tiền DECIMAL(12,2), số lượng kho DECIMAL(12,3); public_id ULID cho thứ lộ ra URL; soft delete cho danh mục/hồ sơ, chứng từ không bao giờ xóa; cơ sở (branch_id) không có global scope.
-   - Quy ước code: PHP 8.3 typed, `declare(strict_types=1)`, logic nghiệp vụ trong `app/Actions/*` (một class một use case, method `handle`), DTO readonly class, query phức tạp trong Query class, Controller mỏng, FormRequest validate, Policy phân quyền, API Resource riêng cho dữ liệu nhạy cảm (giá vốn, bệnh án đầy đủ, lương). Vue 3 `<script setup lang="ts">`, Inertia.
-   - Quy tắc tenant: không gọi `withoutGlobalScope(s)` ngoài whitelist; validation `exists` kèm where tenant_id; cache/lock key prefix `t:{tenant_id}:`; job TenantAware.
-   - Thuật ngữ: shop = tenant, cơ sở = branch, khách = customers (không phải owners), chủ shop = role owner, Visit = lượt khám/spa.
-   - Thứ tự khóa (db-schema mục 1): customers → booking_capacity_locks → tenant_usage; invoices → visits → stock_items. Không INSERT IGNORE hàng khóa trong transaction.
-   - Màn hình gọi bằng mã + tên theo docs/design/danh-muc-man-hinh.md (vd `S17 Visit`).
-   - Mỗi tính năng có Pest test, gồm test cô lập tenant (user shop A truy cập ID shop B → 404).
-   - Không sửa migration đã lên production; tạo migration mới.
-2. `docs/adr/0000-template.md` (Context, Decision, Alternatives, Consequences) và `docs/adr/README.md` liệt kê 8 ADR ở db-schema mục 6 (đánh số 0001–0008, trạng thái "chưa viết" tới khi task tương ứng viết).
-3. `docs/architecture.md` với các mục trống: Tổng quan, Multi-tenancy, Đặt lịch & hạn mức, Hàng đợi & Visit, Hóa đơn, Queue & nhắc hẹn, Admin nền tảng.
-```
-
-**Xong khi:** mở phiên Claude Code mới, hỏi "quy ước FK giữa 2 bảng tenant là gì" và "khách lưu ở bảng nào" → trả lời đúng mà không cần đọc lại docs.
+**Xong khi:** mở phiên Claude Code mới, hỏi "quy ước FK giữa 2 bảng tenant là gì", "khách lưu ở bảng nào", "thứ tự khóa khi đặt lịch" → trả lời đúng mà không cần đọc lại docs.
 
 ---
 
@@ -124,7 +116,7 @@ Thư mục docs/ có database/db-schema.md, design/design.md, design/danh-muc-ma
 - Middleware `ResolveTenant`: route nhóm `/app/{tenant:slug}`; check user là thành viên (dòng `staff` active); set TenantContext; lưu users.last_tenant_id.
 - Octane/queue: context được clear giữa request/job.
 - Test Pest: scope lọc đúng, fail closed, auto gán tenant_id, không ghi đè tenant_id khác context (ném exception), runAs khôi phục context cũ kể cả khi callable ném lỗi.
-- `docs/adr/0001-single-db-tenant-id.md` (so với DB riêng mỗi shop / stancl/tenancy); cập nhật mục Multi-tenancy trong docs/architecture.md.
+- Điền mục Kiểm chứng của `docs/adr/0001-single-db-tenant-id.md` (link test); cập nhật mục Multi-tenancy trong docs/architecture.md nếu lệch.
 ```
 
 **Xong khi:** test xanh; đọc trait thấy không có đường nào trả dữ liệu khi thiếu context.
@@ -144,11 +136,19 @@ Thư mục docs/ có database/db-schema.md, design/design.md, design/danh-muc-ma
 
 **Xong khi:** helper dùng được trong 1 dòng; PHPStan báo lỗi khi thêm `withoutGlobalScopes()` vào controller.
 
-**Kiểm tra & bổ sung (phase 1–2 đã làm trên `dev`):**
+**Bước 1: đóng nợ phase 1–2 (làm trước 3.1, một PR):**
 
 ```prompt
-Đọc CLAUDE.md và docs/database/db-schema.md mục 1, 5.2. Repo đã có nền multi-tenant. Đối chiếu code hiện tại với các yêu cầu sau, liệt kê đạt / thiếu, rồi bổ sung phần thiếu kèm test: global scope fail closed; auto gán tenant_id; runAs/forEach/withoutTenancy thay cho withoutGlobalScope; middleware resolve tenant theo slug + check membership qua staff; Rule exists theo tenant; route binding 404 chéo shop; chặn withoutGlobalScopes bằng PHPStan/arch; job TenantAware; cache key prefix tenant; Model::shouldBeStrict; test chạy trên MySQL; CI xanh.
+Đọc CLAUDE.md, docs/architecture.md, docs/database/db-schema.md mục 1 và 5.2, docs/design/danh-muc-man-hinh.md mục 1.2 và 3.2. Repo đã có nền multi-tenant nhưng còn thiếu (xem "Tiến độ thực tế" đầu file plan). Làm từng mục, mỗi mục có test:
+- Test chạy MySQL 8.4: bỏ SQLite trong phpunit.xml, DB `testing` riêng trong docker compose; docker compose và CI dùng `mysql:8.4`. `config/database.php` kết nối mysql: `isolation_level` READ COMMITTED, `timezone` +00:00, collation utf8mb4_0900_ai_ci; `innodb_lock_wait_timeout` ~5 giây cho request web. Test: `SELECT @@transaction_isolation` = READ-COMMITTED, `@@session.time_zone` = +00:00.
+- Larastan level 8 (sửa lỗi, không baseline). CI chạy khi push `dev`/`main` và mọi PR; thêm job ESLint + build assets. `Model::shouldBeStrict()` ngoài production.
+- Helper tenancy: rule `exists`/`unique` theo tenant (`Rule::tenantExists`), cache key `t:{id}:`, trait/job middleware `TenantAware`, helper test `assertTenantIsolated`. Arch test: `withoutTenancy` chỉ được gọi trong `App\Platform`, `App\Tenancy`, các command quét mọi shop (`reminders:dispatch`, `tenants:check-expiry`) và `LoginRequest`.
+- Sửa `ResolveTenant`: chỉ `cancelled` (hoặc slug không có) → 404; trial/active/past_due/suspended đi tiếp; thêm middleware `EnsureTenantWritable` ngay sau: `suspended` → mọi request ghi trả 423, GET vẫn được.
+- Bỏ `/register` (route, controller, trang, link) và chức năng xóa tài khoản (route `profile.destroy`, `DeleteUser.vue`): tài khoản dùng chung nhiều shop. Trang cá nhân chuyển `/settings/*` → `/account` (S39, route `account.*`, controller `App\Http\Controllers\Account`). S37 quên/đặt lại mật khẩu giữ, đổi copy tiếng Việt.
+- Đổi route name tenant `tenant.*` → `app.*`; tách file route theo khu: `routes/web.php` (trung tâm), `auth.php`, `account.php`, `admin.php`, `app.php`, `site.php` (đăng ký cuối cùng). Controller CMS vào `App\Http\Controllers\Cms`. Trang Vue giữ `resources/js/pages/` chữ thường, thư mục con PascalCase (`pages/Cms/...`).
 ```
+
+**Xong khi:** `composer ci` xanh trên MySQL 8.4 ở local và CI nhánh `dev`; `/register` 404; shop suspended: GET 200, POST 423.
 
 ---
 
@@ -165,6 +165,7 @@ Yêu cầu:
 - `pets` có `UNIQUE(tenant_id, customer_id, id)`; `appointment_items` và `visits` dùng FK ghép `(tenant_id, customer_id, pet_id) → pets(tenant_id, customer_id, id)`. `appointments` có `UNIQUE(tenant_id, id, customer_id, branch_id)`, `appointment_items` FK ghép `(tenant_id, appointment_id, customer_id, branch_id)` tới đó. Liên kết lịch → Visit là `appointment_items.visit_id` (không có `visits.appointment_item_id`). Cột generated `customers.phone_suffix` + index. Visit cấp cứu có customer_id, pet_id NULL vẫn hợp lệ (thú hoang dùng hồ sơ hệ thống + pet is_stray) (FK bỏ qua khi có cột NULL).
 - Cột generated: `invoices.open_draft_key` (chỉ khi draft + kind=service + payer_name NULL; + UNIQUE(tenant_id, open_draft_key)), `cash_sessions.open_key` (+ UNIQUE). CHECK: `customers` phone hoặc is_system; `invoices` kind='service' thì có customer_id; `payments` kind payment/refund bằng cash thì có cash_session_id (bút toán transfer_in/out không cần); `invitations` đúng một người mời; `visit_items` theo item_type.
 - `tenant_settings` một dòng mỗi shop (tạo cùng shop ở task 4.3).
+- Bổ sung so với bản cũ: cột generated cho UNIQUE có NULL (`branch_closures.branch_key`, `service_price_rules.rule_key`); `appointment_items.source` (chép từ lịch); `reminders.claimed_at`; `customers.remember_token`; `branches.code VARCHAR(10)`; FK ghép riêng `visits(tenant_id, customer_id) → customers` (Visit cấp cứu có khách chưa có pet); `purpose` có `appointment_changed`; `medical_entries.editable_until` NULL được. FK `tenant_id → tenants` dùng RESTRICT, **không `cascadeOnDelete`**.
 - Thứ tự migration đúng phụ thuộc (invoices trước khi thêm FK visits.invoice_id; vòng phụ thuộc thì thêm FK ở migration sau).
 - Model: BelongsToTenant cho bảng tenant; HasUlids/public_id cho customers, appointments, visits, invoices, branches; SoftDeletes theo mục 1; `casts()` đầy đủ, enum PHP backed ở app/Enums (AppointmentStatus, AppointmentItemStatus, ServiceGroup, VisitStatus, InvoiceStatus, InvoiceKind, PaymentMethod, ReminderPurpose, MessageChannel…); quan hệ đầy đủ. Hằng `AppointmentItem::OCCUPYING_STATUSES = [booked, checked_in]`.
 - Factory cho mọi model, tenant-aware (con dùng cùng tenant với cha; pet và khách của nó cùng tenant; appointment_items dùng pet của đúng khách của lịch).
@@ -175,6 +176,7 @@ Yêu cầu:
   - hóa đơn service thiếu customer_id → lỗi CHECK; payment cash không có cash_session_id → lỗi CHECK.
   - 2 ca thu ngân mở cùng két → lỗi unique; đóng ca rồi mở ca mới → được.
   - 2 visit cùng (branch, ngày, queue_no) → lỗi unique; appointment_items trỏ appointment với customer_id/branch_id khác lịch → lỗi FK.
+  - 2 ngày nghỉ cả shop (branch_id NULL) cùng ngày → lỗi unique; 2 service_price_rules cùng dịch vụ, cùng (species NULL, breed NULL, size NULL) → lỗi unique; visit cấp cứu có customer_id của shop khác, pet_id NULL → lỗi FK; xóa tenant có dữ liệu → lỗi FK (không cascade).
 ```
 
 **Xong khi:** `make fresh` sạch; test DB-level xanh; `php artisan model:show Appointment` thấy quan hệ `items`, `changes`, `customer`, `branch` và cast enum.
@@ -223,7 +225,7 @@ Yêu cầu:
 - A6 Quản lý admin (super_admin): mời admin qua `platform_admin_invitations` (token 32 byte, lưu sha256, 1 lần, hạn 72 giờ) → A7 `/admin/invite/{token}` đặt mật khẩu → bắt buộc bật 2FA; vô hiệu hóa (không xóa), không tự vô hiệu chính mình.
 - DemoSeeder: thêm 2 admin theo design mục 9 (bỏ qua 2FA chỉ khi APP_ENV=local/demo; test production không bỏ qua được).
 - Test: user guard web gọi /admin/* → 404; admin chưa bật 2FA không vào được A2; support không thấy nút tạo shop và không mời được admin; token mời dùng 2 lần / hết hạn → 404; đăng xuất web không đăng xuất admin.
-- docs/adr/0008-platform-admin.md (cùng app vs app riêng; bảng riêng vs is_admin; đăng nhập thay bằng token 1 lần).
+- Điền mục Kiểm chứng của `docs/adr/0008-platform-admin.md` (link test).
 ```
 
 **Xong khi:** `php artisan platform:admin-create` → đăng nhập `/admin` với 2FA → thấy danh sách shop; mọi test cô lập tenant cũ vẫn xanh.
@@ -254,7 +256,8 @@ Yêu cầu:
 - Không tự đăng ký: gỡ route `register` của starter kit và link "Đăng ký". Đăng nhập: sau khi đúng mật khẩu, nếu user không còn dòng `staff` active ở shop nào chưa hủy (bị vô hiệu ở mọi shop, hoặc shop cancelled) → không tạo phiên, báo lỗi ở form "Tài khoản không còn hoạt động ở shop nào. Liên hệ chủ shop." Đang trong phiên mà staff bị vô hiệu → `ResolveTenant` đăng xuất và về /login (nếu còn shop khác thì chuyển sang shop đó). Test: staff disabled ở shop duy nhất → không đăng nhập được; disabled ở shop A nhưng active ở shop B → đăng nhập vào B, A không có trong switcher.
 - Màn A3 wizard 3 bước + A4 tab Tổng quan (chủ shop "Chưa nhận lời mời · Gửi lại / Sao chép link"; gửi lại = token mới, vô hiệu token cũ). Support chỉ xem.
 - CMS layout theo design 3.4, 3.5 (sidebar, topbar có tên shop + workspace switcher + branch switcher). Token màu design 3.1 làm CSS variables + Tailwind theme, có dark mode.
-- Branch switcher: `CurrentBranch` trong session, chỉ chọn cơ sở trong staff_branches (chủ shop thấy thêm "Tất cả" ở báo cáo). Màn Cài đặt › Cơ sở (CRUD, giờ mở cửa); thêm cơ sở kiểm `plans.max_branches`.
+- Branch switcher: `CurrentBranch` trong session, chỉ chọn cơ sở trong staff_branches (chủ shop thấy thêm "Tất cả" ở báo cáo). Màn Cài đặt › Cơ sở S12.2 (CRUD, giờ mở cửa; `branches.code` ≤ 10 ký tự chữ hoa + số); thêm cơ sở kiểm `plans.max_branches`.
+- **S5 Tổng quan (khung)**: trang `app.dashboard` với checklist lần đầu S13 và vùng trống cho widget (widget làm ở 9.1). **S12.1 Cài đặt › Shop**: tên, logo, múi giờ (chỉ đổi khi chưa có lịch), các giá trị `tenant_settings` (hạn hủy/dời, cửa sổ trả hàng, thuế mặc định, giới hạn đặt online).
 - Test: provision tạo đủ bản ghi và rollback toàn bộ nếu một bước lỗi; slug trùng/cấm; token sai/hết hạn/đã dùng; email đăng nhập khác email được mời → từ chối; nhận 2 lần không tạo 2 staff; route /register không tồn tại; vượt max_branches → từ chối; user của shop mới không thấy dữ liệu shop khác.
 ```
 
@@ -279,10 +282,12 @@ Yêu cầu:
 ```prompt
 Đọc docs/database/db-schema.md mục 2.1 (tenants, tenant_subscriptions, platform_audit_logs) và docs/design/design.md 6.10 (A4 tab Gói & gia hạn, Nhật ký; A5), F20. Làm vòng đời sau khi tạo shop:
 - Action `ExtendSubscription` (nối tiếp hạn hiện tại, thêm dòng tenant_subscriptions, cập nhật tenants.plan_id/plan_expires_at cùng transaction), `SuspendTenant`, `ResumeTenant`: đổi status bằng compare-and-set (`WHERE status = :expected`), mỗi action đúng 1 dòng `platform_audit_logs` (append-only: model ném exception khi update/delete).
-- `ResolveTenant`: trial/active/past_due/suspended đi tiếp, chỉ `cancelled` → 404. Middleware `EnsureTenantActive` ngay sau: suspended → request ghi trả 423 + trang thông báo, GET vẫn được; Site hiện "tạm ngưng nhận lịch". Banner hạn dùng/quá hạn/tạm khóa trong CMS (Inertia shared props).
+- `ResolveTenant` + `EnsureTenantWritable` đã có từ Bước 1 (chỉ `cancelled` → 404; suspended → request ghi 423, GET được). Ở task này: trang 423 thân thiện (K4); Site hiện "tạm ngưng nhận lịch", chặn gửi OTP, nhưng khách đã đăng nhập vẫn hủy được lịch (ngoại lệ có chủ đích của `EnsureTenantWritable`, test riêng); job nhắc chuyển nhắc tới hạn của shop suspended thành `skipped`. Banner hạn dùng/quá hạn/tạm khóa trong CMS (Inertia shared props).
+- **Hạ gói giữa kỳ**: dữ liệu đang vượt giới hạn mới giữ nguyên; chỉ chặn tạo mới vượt giới hạn (thêm cơ sở, mời nhân viên, đặt lịch). Gom kiểm tra vào `PlanLimits`.
+- **S12.6 Cài đặt › Gói & hạn dùng** (chủ shop): gói, hạn, usage tháng; tab Lịch sử truy cập hỗ trợ làm ở 4.6.
 - Màn A4 tab Gói & gia hạn + modal Tạm khóa, tab Nhật ký; A5 nhật ký toàn hệ thống. Support chỉ xem.
 - Command `tenants:check-expiry` hằng ngày: còn ≤ 7 ngày → mail nhắc (dedupe theo tenant + ngày hết hạn); quá hạn → past_due; quá 7 ngày ân hạn → suspended. Job nhắc khách bỏ qua shop suspended.
-- Test: suspended chặn POST nhưng cho GET; cancelled → 404; check-expiry chuyển đúng trạng thái theo mốc (Carbon::setTestNow); job và admin đồng thời đổi status không ghi đè nhau; gia hạn khi đang suspended do hết hạn → active ngay; mỗi action đúng 1 dòng audit.
+- Test: suspended chặn POST nhưng cho GET, khách Site vẫn hủy được lịch, OTP bị chặn; hạ gói khi đang vượt số cơ sở → cơ sở cũ vẫn dùng, thêm mới bị chặn; cancelled → 404; check-expiry chuyển đúng trạng thái theo mốc (Carbon::setTestNow); job và admin đồng thời đổi status không ghi đè nhau; gia hạn khi đang suspended do hết hạn → active ngay; mỗi action đúng 1 dòng audit.
 ```
 
 **Xong khi:** khóa shop thì CMS không tạo được lịch nhưng vẫn xem được; gia hạn xong mở lại ngay; A5 thấy đủ log.
@@ -295,7 +300,7 @@ Yêu cầu:
 - Route `/app/{slug}/impersonate/{token}`: tiêu thụ token 1 lần bằng UPDATE có điều kiện (affected = 0 → 404; token phải thuộc đúng shop của slug), đăng xuất user web hiện tại nếu có, đăng nhập guard web là chủ shop, session lưu impersonation_session_id; `Referrer-Policy: no-referrer`.
 - Middleware `ImpersonationGuard`: hết 30 phút → kết thúc + logout; chặn route nhạy cảm (đổi mật khẩu/email, lương, sửa/hủy hóa đơn, xóa, mời/khóa nhân viên, đổi quyền) theo danh sách route name; mọi request ghi khác ghi `platform_audit_logs` action `impersonation.write`; `activity_logs` của shop ghi kèm `impersonation_session_id` (S32 hiện "Admin … thực hiện thay"). Trong phiên, workspace switcher chỉ có shop đang hỗ trợ.
 - Banner đỏ đếm ngược + nút Thoát (ghi ended_at). Inertia prop `impersonating` để UI disable nút bị chặn.
-- Tab "Truy cập hỗ trợ" ở A4 và "Lịch sử truy cập hỗ trợ" trong Cài đặt của chủ shop (chỉ thấy phiên của shop mình).
+- Tab "Truy cập hỗ trợ" ở A4 và tab "Lịch sử truy cập hỗ trợ" của S12.6 (chủ shop chỉ thấy phiên của shop mình).
 - Test: token dùng 2 lần / hết hạn / dùng với slug shop khác → 404; route nhạy cảm bị chặn; request ghi tạo audit; hết 30 phút bị logout; chủ shop B không thấy phiên của shop A; không chuyển sang shop khác trong phiên.
 ```
 
@@ -336,7 +341,7 @@ Yêu cầu:
 ```prompt
 Đọc docs/database/db-schema.md mục 2.2, 2.5 (online_booking_rates), 5.4 và docs/design/design.md S8. Làm:
 - CRUD staff_working_hours: nhiều khung/ngày, effective_from/to, mỗi khung thuộc một cơ sở và có `service_group` (medical/grooming/NULL). Không cho một người 2 khung chồng giờ, kể cả khác cơ sở (kiểm ở Action, `lockForUpdate` hàng staff). Một người có cả role vet và groomer chọn đúng một nhóm cho mỗi khung: người trực đếm một lần.
-- staff_time_off (nhập giờ shop, lưu UTC); branch_closures (branch_id NULL = cả shop). Thêm nghỉ trùng lịch đã gán người: trả danh sách dòng lịch bị ảnh hưởng (không tự hủy).
+- staff_time_off (nhập giờ shop, lưu UTC); branch_closures (branch_id NULL = cả shop). Thêm nghỉ (`staff_time_off`) hoặc ngày đóng cửa / nghỉ đột xuất (`branch_closures`) trùng lịch đã có: trả danh sách lịch bị ảnh hưởng (không tự hủy); lễ tân xử lý ở S20 (gọi khách, dời, hủy kèm tin báo khách). `branch_closures` UNIQUE trên cột generated `branch_key` (NULL = cả shop).
 - CRUD online_booking_rates theo cơ sở × nhóm (Cài đặt › Cơ sở): tỉ lệ mặc định + ghi đè theo thứ/khung giờ. Không có dòng = không nhận đặt online nhóm đó.
 - `ShopClock` gom việc chuyển giờ shop ↔ UTC theo tenants.timezone: `localDayRangeUtc(date)`, `toUtc(date, time)`, `today()`. Không cộng offset cố định.
 - UI S8: lưới tuần theo người, màu theo nhóm trực, hàng "Số người trực" mỗi khung theo nhóm, panel tỉ lệ đặt online.
@@ -348,11 +353,12 @@ Yêu cầu:
 ```prompt
 Đọc docs/database/db-schema.md mục 2.2, 2.5 và 5.1, 5.4. Viết `CapacityService` (`AvailabilityService`):
 - Theo cơ sở + nhóm (medical/grooming), mỗi khung 15 phút trong ngày shop: số người trực = số staff có staff_working_hours khung đó với service_group của nhóm (GĐ3: ngày có shift_assignments thì dùng ca được xếp, để interface sẵn), trừ staff_time_off, branch_closures, ngoài giờ mở cửa. Ratio từ online_booking_rates (dòng có thứ/giờ cụ thể nhất thắng). Hạn mức online = floor(người trực × ratio).
-- Đang chiếm: số `appointment_items` nhóm đó có status booked/checked_in của lịch chưa hủy, chồng khung. Site: chỉ đếm dòng của lịch `source=online` để so với hạn mức online. Lễ tân: trả thêm số người trực và tổng dòng (online + staff) mỗi khung để cảnh báo.
+- Đang chiếm: số `appointment_items` nhóm đó có status booked/checked_in, chồng khung, lọc `appointment_items.source` (đã chép từ lịch, không JOIN `appointments`). **Chỗ online còn = min(hạn mức online − dòng online đang chiếm, số người trực − tổng dòng đang chiếm của mọi nguồn)**: lễ tân đặt nhiều thì online giảm theo. Lễ tân: trả thêm số người trực và tổng dòng mỗi khung để cảnh báo.
+- Pet vừa khám vừa spa trong một lịch: các dòng xếp **nối tiếp** (mặc định khám trước), mỗi dòng kiểm khung của chính nó. Giới hạn đặt online: trước tối thiểu 60 phút, xa nhất 14 ngày (từ `tenant_settings`).
 - API `slotsForOnline(branch, items: [{petProfile, service}], dateRange)`: khung bắt đầu (bước 15') mà MỌI nhóm của các dòng còn đủ chỗ trong suốt thời lượng (đã cộng buffer); nhiều pet cùng nhóm cần đủ số chỗ tương ứng; bỏ khung đã qua (now + lead time). `slotsForStaff(...)`: mọi khung trong giờ mở cửa, kèm số người trực / số dòng / cờ vượt.
 - Hiệu năng: tải dữ liệu cả khoảng ngày trong số query cố định (không query theo từng khung hay từng người). Tính bằng interval arithmetic trong PHP (class Interval/IntervalSet, unit test).
 - Endpoint JSON cho S2 và Site.
-- Test: 3 bác sĩ × 1/3 → 1 chỗ; 1 bác sĩ nghỉ → 0 chỗ (floor 2/3); ghi đè tỉ lệ theo khung; lịch lễ tân đặt không trừ chỗ online; lịch 2 pet khám cần 2 chỗ; lịch khám + spa kiểm cả 2 nhóm; người 2 role đếm một lần; ca gãy; closure; dòng cancelled/no_show không chiếm; DST; số query không tăng theo số nhân viên.
+- Test: 3 bác sĩ × 1/3 → 1 chỗ; 1 bác sĩ nghỉ → 0 chỗ (floor 2/3); ghi đè tỉ lệ theo khung; lịch lễ tân đặt không trừ hạn mức online nhưng lễ tân lấp đủ người trực thì online còn 0; pet khám + spa xếp nối tiếp; lịch 2 pet khám cần 2 chỗ; lịch khám + spa kiểm cả 2 nhóm; người 2 role đếm một lần; ca gãy; closure; dòng cancelled/no_show không chiếm; DST; số query không tăng theo số nhân viên.
 ```
 
 **Xong khi:** test xanh; với DemoSeeder, khung chiều của người nghỉ chiều giảm đúng số chỗ.
@@ -362,30 +368,50 @@ Yêu cầu:
 ```prompt
 Đọc kỹ docs/database/db-schema.md mục 2.5 và 5.1. Viết Action `BookAppointment` (dùng chung lễ tân và Site), đúng 8 bước ở mục 5.1:
 - Input DTO: branchId, customerId, items[{petId, serviceId, assignedStaffId|null}], startsAt (UTC), source (online|staff), preferredStaffId|null, customerNote, idempotencyKey (UUID từ client), createdByStaffId|null.
-- Trước transaction (autocommit): `INSERT IGNORE` hàng booking_capacity_locks(tenant, branch, group, ngày shop) cho mọi nhóm trong lịch. KHÔNG làm trong transaction (2 transaction cùng INSERT IGNORE trúng khóa trùng giữ khóa S rồi cùng nâng lên X → deadlock).
-- Trong DB::transaction:
-  (1) idempotency_key đã có → trả lịch cũ.
-  (2) `lockForUpdate` hàng customers của khách (tuần tự hóa lịch cùng khách cho bước 6). Mọi pet thuộc khách (FK ghép cũng chặn ở DB), dịch vụ có ở cơ sở (branch_services), cơ sở mở cửa, giờ trong khung trực; resolve quote từng dòng, các dòng cùng bắt đầu lúc startsAt; ends_at lịch = muộn nhất.
-  (3) `SELECT … FOR UPDATE` các hàng booking_capacity_locks đã tạo, thứ tự cố định medical → grooming.
-  (4)(5) Online: với mỗi nhóm, (dòng online đang chiếm chồng giờ + dòng mới của nhóm) > hạn mức ở bất kỳ khung nào → `SlotTakenException` cho cả lịch (không lưu dòng nào). Staff: không chặn; tổng dòng chồng giờ > người trực → trả cờ cảnh báo; dòng gán người cụ thể mà người đó đã có dòng chồng giờ → cảnh báo.
+- Kết nối đã chạy READ COMMITTED (Bước 1). Nguyên tắc **khóa trước, đọc sau**.
+- (0) Ngoài transaction: assert `DB::transactionLevel() === 0`; tạo hàng booking_capacity_locks(tenant, branch, group, ngày shop) cho mọi (ngày, nhóm) bằng `INSERT … ON DUPLICATE KEY UPDATE tenant_id = tenant_id` (KHÔNG `INSERT IGNORE`: nuốt lỗi FK; KHÔNG làm trong transaction: 2 transaction cùng insert trúng khóa trùng giữ khóa S rồi cùng nâng lên X → deadlock).
+- Trong `DB::transaction(fn, 3)`:
+  (1) `lockForUpdate` hàng customers của khách (tuần tự hóa mọi lịch cùng khách, kể cả request trùng key).
+  (2) `SELECT … FOR UPDATE` các hàng booking_capacity_locks theo (ngày, nhóm) tăng dần, medical trước grooming; **đếm số hàng khóa được**, thiếu → exception.
+  (3) Idempotency: lịch theo `idempotency_key` đã có và đúng khách đang khóa → trả lịch cũ; của khách khác → 422.
+  (4) Mọi pet thuộc khách (FK ghép cũng chặn ở DB), dịch vụ có ở cơ sở (branch_services), cơ sở mở cửa, giờ trong khung trực, giới hạn đặt online (60 phút / 14 ngày / tối đa 3 lịch tương lai mỗi khách); resolve quote từng dòng; pet vừa khám vừa spa xếp nối tiếp (mặc định khám trước), mỗi dòng starts_at riêng; ends_at lịch = muộn nhất.
+  (5) Online: với mỗi nhóm, dòng mới > `min(hạn mức online − dòng online đang chiếm, người trực − tổng dòng đang chiếm)` ở bất kỳ khung nào → `SlotTakenException` cho cả lịch (không lưu dòng nào). Staff: không chặn; tổng dòng chồng giờ + dòng mới > người trực → trả cờ cảnh báo; dòng gán người cụ thể mà người đó đã có dòng chồng giờ → cảnh báo.
   (6) Mỗi pet không có dòng lịch khác chồng giờ → lỗi.
-  (7) Quota gói (khóa cuối): `UPDATE tenant_usage … WHERE appointments_count < ?` (INSERT … ON DUPLICATE KEY cho tháng mới); affected = 0 → QuotaExceededException. Đếm mọi lịch (online + lễ tân) theo tháng tạo (giờ shop), theo lịch không theo dòng; hủy không trả suất.
-  (8) Tạo appointment `confirmed` + appointment_items (`booked`, snapshot duration/reference_price, service_group, branch_id/customer_id/starts_at chép), appointment_changes; dispatch `AppointmentBooked` afterCommit.
+  (7) Quota gói (hàng nóng, khóa cuối): `UPDATE tenant_usage … WHERE appointments_count < ?` (INSERT … ON DUPLICATE KEY cho tháng mới); affected = 0 → QuotaExceededException. Đếm mọi lịch (online + lễ tân) theo tháng tạo (giờ shop), theo lịch không theo dòng; hủy không trả suất.
+  (8) Tạo appointment `confirmed` + appointment_items (`booked`, snapshot duration/reference_price, service_group, `source`/branch_id/customer_id chép), appointment_changes; dispatch `AppointmentBooked` afterCommit.
+- Lưới an toàn: INSERT lịch vẫn đụng UNIQUE(tenant_id, idempotency_key) → bắt `UniqueConstraintViolationException`, đọc lại và áp quy tắc (3); không bao giờ 500.
 - Online không gán người (assigned_staff_id NULL). Deadlock/lock wait timeout: retry có giới hạn (DB::transaction attempts=3).
 - Exception nghiệp vụ map HTTP 409 với payload 3 khung gần nhất còn đủ chỗ (CapacityService).
-- **Test concurrency thật** (`->group('mysql')`, không RefreshDatabase transaction): 20 process (Symfony Process chạy artisan command, mỗi process một kết nối MySQL) cùng đặt online vào khung còn 1 chỗ → đúng 1 lịch, 19 SlotTaken; lịch 2 pet vào khung còn 1 chỗ → từ chối, không có dòng nào; quota còn 1 suất, 10 request → 1; cùng idempotency key 10 lần → 1 lịch; lịch khám+spa và lịch spa+khám song song không deadlock; ngày chưa có hàng khóa, 20 process cùng đặt → không deadlock; cùng khách, cùng pet, 2 lịch lễ tân chồng giờ song song (khác nhóm) → 1 lịch.
-- `docs/adr/0002-booking-capacity-lock.md` (khóa một hàng đếm theo cơ sở × nhóm × ngày; so với khóa hàng staff, bảng slot UNIQUE, GET_LOCK, SERIALIZABLE; vì sao không gap lock) kèm kết quả test concurrency. Cập nhật docs/architecture.md mục Đặt lịch & hạn mức, sequence diagram mermaid.
+- **Test concurrency thật** (`->group('mysql')`, trait `DatabaseTruncation`, không RefreshDatabase): 20 process (Symfony Process chạy artisan command, mỗi process một kết nối MySQL) cùng đặt online vào khung còn 1 chỗ → đúng 1 lịch, 19 SlotTaken; lịch 2 pet vào khung còn 1 chỗ → từ chối, không có dòng nào; quota còn 1 suất, 10 request → 1; cùng idempotency key 10 lần → 1 lịch; lịch khám+spa và lịch spa+khám song song không deadlock; ngày chưa có hàng khóa, 20 process cùng đặt → không deadlock; cùng khách, cùng pet, 2 lịch lễ tân chồng giờ song song (khác nhóm) → 1 lịch; cùng key của khách khác → 422; lễ tân lấp đủ người trực → online bị từ chối dù hạn mức online còn.
+- **Test isolation 2 kết nối** (giữ lâu dài): kịch bản "đọc thường trước khi khóa" chạy trên kết nối REPEATABLE READ → vượt hạn mức (test kỳ vọng lỗi, chứng minh vấn đề); cùng kịch bản trên kết nối READ COMMITTED → đúng hạn mức.
+- Điền mục Kiểm chứng của `docs/adr/0002-booking-capacity-lock.md` bằng số liệu thật (số tiến trình, số lần chạy, số deadlock được retry, thời gian trung bình). Cập nhật docs/architecture.md mục Đặt lịch nếu lệch.
 ```
 
-**Xong khi:** test concurrency chạy trong CI, lặp 10 lần liền đều xanh; ADR giải thích rõ vì sao khóa hàng đếm không gây gap lock.
+**Xong khi:** test concurrency chạy trong CI, lặp 10 lần liền đều xanh; test isolation 2 kết nối cho thấy RR đỏ, RC xanh; mục Kiểm chứng của ADR-0002 có số liệu.
+
+### Task 5.8: Tiếp nhận + hàng đợi + cấp cứu ⭐
+
+```prompt
+Đọc CLAUDE.md, docs/database/db-schema.md mục 2.6 (visits, quy tắc Visit), 2.7 (mở hóa đơn khi tiếp nhận), 2.10 và docs/design/design.md 6.3 (S15, S16), F3, F7, F8. Làm:
+- Action `CreateVisit` (check-in lịch hẹn và khách vãng lai): customer + pet + service_group + lý do đến/tình trạng ban đầu (`reason`) + cân nặng. Cấp queue_no nguyên tử qua `branch_daily_counters` name=queue (`INSERT … VALUES (…, LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)` rồi `SELECT LAST_INSERT_ID()`; hàng đếm khóa cuối transaction), ngày theo giờ shop. Service `Sequence` dùng chung cho mọi bộ đếm. Check-in: các appointment_items cùng pet + cùng nhóm → một Visit (`appointment_items.visit_id`); dòng đã có visit_id thì bỏ qua (check-in 2 lần idempotent). Một pet vừa khám vừa spa = 2 Visit; khám + tiêm = 1 Visit.
+- `priority_at`: khách có hẹn (giờ hẹn = starts_at sớm nhất của các dòng gom vào Visit) đến trong ±`tenant_settings.walk_in_priority_minutes` quanh giờ hẹn → giờ hẹn; muộn hơn hoặc vãng lai → giờ check-in.
+- Mở hóa đơn: `CreateVisit` gắn Visit vào hóa đơn `draft` của khách ở cơ sở hôm nay, chưa có thì tạo (`OpenDraftInvoice`) trong cùng transaction; tìm nháp bằng open_draft_key `FOR UPDATE`, chưa có thì INSERT, trùng UNIQUE thì đọc lại và khóa (2 lễ tân cùng lúc không mở 2 hóa đơn). Khóa hóa đơn trước rồi mới tới Visit. Thú hoang (khách is_system): không tự mở hóa đơn.
+- S15: tìm theo SĐT (Phone), card "Có lịch 14:00" → check-in nhiều pet; tạo nhanh khách + pet; nút "Thú hoang / vô chủ"; nút "Cấp cứu".
+- **Cấp cứu**: `CreateEmergencyVisit` chỉ cần loài + `emergency_label` (customer_id, pet_id NULL), `is_emergency`, lên đầu hàng đợi ngay; lễ tân gắn khách/pet sau (`AttachVisitProfile`, lúc đó mở/gắn hóa đơn). Không hoàn tất Visit, không lưu bệnh án, không hoàn tất hóa đơn khi chưa gắn khách và pet (Action; ghi tạm vào `reason`).
+- **S16.1 TV phòng chờ** (layout `Bare`, chỉ số + tên pet viết tắt, không SĐT). **S40 phiếu số thứ tự** (layout `Print`) in từ S15.
+- S16 hàng đợi theo cơ sở hiện tại, tab Khám/Spa, sắp `is_emergency DESC, priority_at`, thời gian chờ, queue_no trên phiếu giữ nguyên. "Nhận khách": `UPDATE visits SET status='in_progress', assigned_staff_id=?, started_at=? WHERE id=? AND status='waiting'`; affected = 0 → 409 "đã có người nhận". Cập nhật bằng polling 10s (hoặc Reverb, ghi lý do).
+- Test: 20 Visit tạo song song cùng cơ sở cùng ngày → queue_no 1..20 không trùng không lỗ (`->group('mysql')`); 2 bác sĩ nhận cùng khách → 1 thành công; qua 0h giờ shop thì số reset; khách có hẹn đến sớm 10' được xếp theo giờ hẹn, đến muộn 30' xếp như vãng lai; cấp cứu lên đầu, số khác giữ nguyên; 2 lễ tân tiếp nhận 2 pet của cùng khách song song → 1 hóa đơn; check-in lịch có pet khám + tiêm → 1 Visit, khám + spa → 2 Visit; thú hoang không có hóa đơn; cô lập tenant + cơ sở.
+```
+
+**Xong khi:** F3, F7 tới bước "Nhận khách" chạy được với dữ liệu demo; test concurrency queue_no xanh 10 lần liền.
 
 ### Task 5.6: Vòng đời lịch hẹn + dời lịch
 
 ```prompt
 Đọc docs/database/db-schema.md mục 2.5, 5.1 và docs/design/design.md S3, F3. Làm:
 - State machine theo dòng: appointment_items booked → checked_in | cancelled | no_show. Trạng thái lịch suy ra: `checked_in` khi có ít nhất một dòng đã đến; `cancelled`/`no_show` khi mọi dòng như vậy. Không có `completed`.
-- Action CheckIn (gọi `CreateVisit` của task 5.8 trong cùng transaction; các dòng cùng pet + cùng nhóm gom vào một Visit, ghi `appointment_items.visit_id`; dòng đã có visit_id thì bỏ qua; chọn từng dòng/pet đến, phân người cho dòng chưa phân, gợi ý preferred_staff_id), CancelAppointment / CancelItem (lý do, tùy chọn báo khách), MarkNoShow (lễ tân đánh dấu sớm). Command `appointments:mark-no-show` cuối ngày theo giờ từng shop: dòng còn `booked` của ngày đó → `no_show` (idempotent, không phạt). Mọi thay đổi ghi appointment_changes. Policy theo design mục 8.
-- `RescheduleAppointment`: dùng cùng đường khóa/kiểm hạn mức với BookAppointment (tái sử dụng, không copy code); đổi sang ngày/nhóm khác thì khóa cả hàng cũ và mới theo thứ tự (ngày, nhóm) tăng dần; nhắc cũ skipped, tạo nhắc mới.
+- **Làm sau 5.8** (cần `CreateVisit`). Action CheckIn (gọi `CreateVisit` của task 5.8 trong cùng transaction; các dòng cùng pet + cùng nhóm gom vào một Visit, ghi `appointment_items.visit_id`; dòng đã có visit_id thì bỏ qua; chọn từng dòng/pet đến, phân người cho dòng chưa phân, gợi ý preferred_staff_id), CancelAppointment / CancelItem (lý do; shop hủy thì gửi tin báo khách `appointment_changed`, lễ tân bỏ tick được), MarkNoShow (lễ tân đánh dấu sớm). Command `appointments:mark-no-show` cuối ngày theo giờ từng shop: dòng còn `booked` của ngày đó → `no_show` (idempotent, không phạt). Mọi thay đổi ghi appointment_changes. Policy theo design mục 8.
+- `RescheduleAppointment`: dùng cùng đường khóa/kiểm hạn mức với BookAppointment (tái sử dụng, không copy code); đổi sang ngày/nhóm khác thì khóa cả hàng cũ và mới theo thứ tự (ngày, nhóm) tăng dần; nhắc cũ skipped, tạo nhắc mới; shop dời thì gửi tin báo khách `appointment_changed`.
 - Thêm/bớt dòng (pet, dịch vụ) trên lịch đã đặt: qua cùng đường kiểm hạn mức (item_added / item_removed).
 - Hoàn tác hủy trong 5 giây (khôi phục = kiểm lại hạn mức, ghi appointment_changes `restored`).
 - Test: chuyển trạng thái không hợp lệ bị chặn; dời vào khung hết chỗ online → 409; hai reschedule chéo ngày đồng thời không deadlock (`->group('mysql')`); một pet không đến thì dòng kia vẫn check-in được; mark-no-show chạy 2 lần không đổi gì thêm; lịch sử đổi giờ đủ.
@@ -406,32 +432,30 @@ Yêu cầu:
 
 **Xong khi:** F1 (2 pet, 2 dịch vụ) làm được dưới 60 giây với dữ liệu demo; 2 tab cùng đặt online vào khung còn 1 chỗ → tab sau nhận thông báo thân thiện.
 
-### Task 5.8: Tiếp nhận + hàng đợi + cấp cứu ⭐
-
-```prompt
-Đọc CLAUDE.md, docs/database/db-schema.md mục 2.6 (visits, quy tắc Visit), 2.7 (mở hóa đơn khi tiếp nhận), 2.10 và docs/design/design.md 6.3 (S15, S16), F3, F7, F8. Làm:
-- Action `CreateVisit` (check-in lịch hẹn và khách vãng lai): customer + pet + service_group + lý do đến/tình trạng ban đầu (`reason`) + cân nặng. Cấp queue_no nguyên tử qua `branch_daily_counters` name=queue (`INSERT … ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)`), ngày theo giờ shop. Check-in: các appointment_items cùng pet + cùng nhóm → một Visit (`appointment_items.visit_id`); dòng đã có visit_id thì bỏ qua (check-in 2 lần idempotent). Một pet vừa khám vừa spa = 2 Visit; khám + tiêm = 1 Visit.
-- `priority_at`: khách có hẹn (giờ hẹn = starts_at sớm nhất của các dòng gom vào Visit) đến trong ±`tenant_settings.walk_in_priority_minutes` quanh giờ hẹn → giờ hẹn; muộn hơn hoặc vãng lai → giờ check-in.
-- Mở hóa đơn: `CreateVisit` gắn Visit vào hóa đơn `draft` của khách ở cơ sở hôm nay, chưa có thì tạo (`OpenDraftInvoice`) trong cùng transaction; tìm nháp bằng open_draft_key `FOR UPDATE`, chưa có thì INSERT, trùng UNIQUE thì đọc lại và khóa (2 lễ tân cùng lúc không mở 2 hóa đơn). Khóa hóa đơn trước rồi mới tới Visit. Thú hoang (khách is_system): không tự mở hóa đơn.
-- S15: tìm theo SĐT (Phone), card "Có lịch 14:00" → check-in nhiều pet; tạo nhanh khách + pet; nút "Thú hoang / vô chủ"; nút "Cấp cứu".
-- **Cấp cứu**: `CreateEmergencyVisit` chỉ cần loài + `emergency_label` (customer_id, pet_id NULL), `is_emergency`, lên đầu hàng đợi ngay; lễ tân gắn khách/pet sau (`AttachVisitProfile`, lúc đó mở/gắn hóa đơn). Không hoàn tất Visit hay hóa đơn khi chưa gắn khách và pet (Action).
-- S16 hàng đợi theo cơ sở hiện tại, tab Khám/Spa, sắp `is_emergency DESC, priority_at`, thời gian chờ, queue_no trên phiếu giữ nguyên. "Nhận khách": `UPDATE visits SET status='in_progress', assigned_staff_id=?, started_at=? WHERE id=? AND status='waiting'`; affected = 0 → 409 "đã có người nhận". Cập nhật bằng polling 10s (hoặc Reverb, ghi lý do).
-- Test: 20 Visit tạo song song cùng cơ sở cùng ngày → queue_no 1..20 không trùng không lỗ (`->group('mysql')`); 2 bác sĩ nhận cùng khách → 1 thành công; qua 0h giờ shop thì số reset; khách có hẹn đến sớm 10' được xếp theo giờ hẹn, đến muộn 30' xếp như vãng lai; cấp cứu lên đầu, số khác giữ nguyên; 2 lễ tân tiếp nhận 2 pet của cùng khách song song → 1 hóa đơn; check-in lịch có pet khám + tiêm → 1 Visit, khám + spa → 2 Visit; thú hoang không có hóa đơn; cô lập tenant + cơ sở.
-```
-
-**Xong khi:** F3, F7 tới bước "Nhận khách" chạy được với dữ liệu demo; test concurrency queue_no xanh 10 lần liền.
-
 ### Task 5.9: Visit (khám / spa)
 
 ```prompt
 Đọc docs/database/db-schema.md mục 2.6 (visit_items, attachments, quy tắc Visit), 2.7 (đồng bộ dòng) và docs/design/design.md 6.3 (S17), F4, F5. Làm:
 - S17: bác sĩ ghi bệnh án (task 6.2 làm phần medical_entries; ở đây khung + nút), thêm dịch vụ phát sinh / xét nghiệm vào visit_items khi khách đồng ý (unit_price = giá hiện tại từ ServiceQuoteResolver lúc thêm); groomer ghi dịch vụ + ghi chú spa, ảnh lúc nhận/trả (attachments kind intake_photo/return_photo, tùy chọn). MVP chỉ item_type=service; để sẵn interface cho medication/consumable (phase 11).
 - Đồng bộ một chiều visit_items (`is_billable = 1`) → invoice_lines `line_type=visit_item` khi hóa đơn còn draft (khóa theo visit_item_id, `lockForUpdate` hóa đơn; hóa đơn không còn draft → từ chối sửa visit_items). Combo = một dòng. Dòng mang pet_id.
-- Action `CompleteVisit`: phải có customer_id + pet_id; status done, finished_at; thông báo in-app (notifiable = staff) cho lễ tân/thu ngân cơ sở "Số 042 chờ thanh toán"; spa → tạo reminder `pickup_ready` gắn Visit (remindable_type `visit`, task 6.1). Visit bị hủy khi hóa đơn còn nháp → gỡ dòng visit_item khỏi hóa đơn. Nhận/hoàn tất Visit khám chỉ role vet (chủ shop không có vet → 403). Lịch hẹn giữ `checked_in`. GĐ2 trừ kho thuốc + vật tư ở đây (task 11.2).
+- Action `CompleteVisit`: phải có customer_id + pet_id; status done, finished_at; đặt `medical_entries.editable_until = finished_at + 24 giờ`; thông báo in-app (notifiable = staff) cho lễ tân/thu ngân cơ sở "Số 042 chờ thanh toán"; spa → tạo reminder `pickup_ready` gắn Visit (remindable_type `visit`, task 6.1). Visit bị hủy khi hóa đơn còn nháp → gỡ dòng visit_item khỏi hóa đơn. Hóa đơn nháp bị hủy khi Visit chưa xong → lần thêm dịch vụ tính tiền kế tiếp gắn Visit vào hóa đơn nháp mới (`OpenDraftInvoice`). Nhận/hoàn tất Visit khám chỉ role vet (chủ shop không có vet → 403). Lịch hẹn giữ `checked_in`. GĐ2 trừ kho thuốc + vật tư ở đây (task 11.2).
 - Groomer thấy dấu hiệu bệnh → nút "Báo lễ tân" tạo thông báo; lễ tân tạo thêm Visit khám cùng hóa đơn.
 - File private, URL ký có hạn, đường dẫn chứa tenant_id; test không tải được file shop khác.
 - Test: ma trận quyền (lễ tân xem, không sửa dòng Visit; bác sĩ chỉ Visit khám, spa chỉ Visit spa), giá dòng không đổi khi sửa giá dịch vụ, thêm/xóa dịch vụ thì dòng hóa đơn nháp đổi theo, 2 bác sĩ ghi dịch vụ cho 2 pet cùng hóa đơn song song không mất dòng (`->group('mysql')`), hoàn tất Visit cấp cứu chưa gắn hồ sơ → từ chối, cô lập tenant.
 ```
+
+### Task 5.11: Ca thu ngân theo két
+
+```prompt
+Đọc docs/database/db-schema.md mục 2.7 (cash_drawers, cash_sessions, payments) và docs/design/design.md S35, S18, F12. Làm:
+- CRUD két theo cơ sở (Cài đặt › Cơ sở › Két). `OpenCashSession` (tiền đầu ca; mỗi két một ca mở, dựa UNIQUE open_key + bắt lỗi duplicate), `CloseCashSession` (expected_cash = đầu ca + Σ cash payment − Σ cash refund của ca; bút toán transfer_in/out không tính; nhập counted_cash; chênh lệch ≠ 0 bắt buộc lý do, activity_logs + thông báo chủ shop). Ca đóng không nhận thêm khoản. Nhiều người thu chung ca, mỗi khoản ghi received_by_staff_id.
+- Mọi payment/refund cash bắt buộc cash_session_id của ca đang mở ở cơ sở hiện tại; chuyển khoản/QR/thẻ không cần nhưng vẫn vào báo cáo ca theo thời gian.
+- Ghi khoản tiền mặt khóa `cash_sessions` `FOR SHARE` (nhiều người thu song song không chặn nhau); `CloseCashSession` khóa `FOR UPDATE` (chờ mọi khoản đang ghi xong, sau đó không khoản nào lọt vào ca đã đóng).
+- Báo cáo ca: theo phương thức, theo người thu, hoàn tiền; in được (biến thể báo cáo ca của S40). Chủ shop thấy mọi ca, quản lý chi nhánh xem ca cơ sở mình. Chip ca đang mở ở topbar.
+- Test: 2 người mở ca cùng két song song → 1 (`->group('mysql')`); thu tiền mặt khi chưa mở ca → từ chối; expected_cash đúng với nhiều người thu + hoàn tiền; đóng ca 2 lần → 1 lần; cô lập tenant + cơ sở.
+```
+
+**Xong khi:** mở ca → thu 2 hóa đơn (tiền mặt + QR) → đóng ca lệch 10.000 ₫ có lý do → báo cáo ca đúng số, chủ shop nhận thông báo.
 
 ### Task 5.10: Hóa đơn + thanh toán ⭐
 
@@ -441,28 +465,16 @@ Yêu cầu:
 - Sửa nháp: dòng visit_item chỉ đọc ở quầy (sửa ở Visit); thêm/bớt dòng product, **dòng gõ tay** (custom: tên + giá, không trừ kho). **Không giảm giá tay** (discount_amount = 0). Thuế theo tenant_settings.default_tax_rate. Tiền DECIMAL/brick-money, không float.
 - `VoidDraftInvoice` (`invoices.void_draft`): lý do bắt buộc, gỡ visits.invoice_id, thông báo chủ shop, activity_logs; báo cáo ngày có mục "Hóa đơn đã hủy". Model guard ném exception khi sửa hóa đơn status ≠ draft.
 - Cảnh báo dọn nháp: job đầu ngày (giờ shop) đếm `status='draft' AND business_date < hôm nay` theo cơ sở → notifications cho lễ tân, thu ngân, chủ shop; S18 nhóm "Từ ngày trước"; card ở S5. Không tự hủy.
-- In tạm tính: HTML/PDF có watermark "TẠM TÍNH", không số hóa đơn; dùng chung mẫu in với hóa đơn hoàn thành.
-- `CompleteInvoice` (một transaction): lockForUpdate hóa đơn (phải draft) → mọi Visit gắn phải done/cancelled và đã có khách + pet → tiền mặt cần ca thu ngân đang mở (task 5.11) → ghi payments (nhiều phương thức, tổng = total, idempotency_key; tiền thối cho cash; cash gắn cash_session_id) → cấp code `{branch}-{yyyymmdd}-{seq}` từ branch_daily_counters name=invoice → completed → (GĐ2 trừ kho dòng product) → activity_logs. Không cọc, không trả một phần, không công nợ.
+- **S40 Mẫu in** (layout `Print`): tạm tính có watermark "TẠM TÍNH", không số hóa đơn; hóa đơn hoàn thành; dùng chung một mẫu.
+- **Làm sau 5.11.** `CompleteInvoice` (một transaction, theo thứ tự khóa toàn cục): lockForUpdate hóa đơn (phải draft) → khóa các Visit gắn (phải done/cancelled và đã có khách + pet) → tiền mặt: `FOR SHARE` ca thu ngân đang mở (task 5.11) → ghi payments (nhiều phương thức, tổng = total, idempotency_key; tiền thối cho cash; cash gắn cash_session_id) → cấp code `{branch}-{yyyymmdd}-{seq}` từ branch_daily_counters name=invoice → completed → (GĐ2 trừ kho dòng product) → activity_logs. Không cọc, không trả một phần, không công nợ.
 - `AmendInvoice` (chỉ `invoices.amend`, lý do bắt buộc, một transaction): bản cũ void (giữ số) → bản thay thế số mới `replaces_invoice_id` chép dòng → chuyển visits.invoice_id sang bản mới → ghi cặp payments `transfer_out` (bản cũ) / `transfer_in` (bản mới) theo từng phương thức, KHÔNG sửa dòng payments cũ (append-only) → sửa dòng → chênh lệch thu thêm (payment) hoặc trả lại (refund, tiền mặt cần ca mở) → completed. Hóa đơn đã có phiếu trả hàng → từ chối. Báo cáo: bản cũ giữ ở ngày gốc, ngày sửa ghi −bản cũ + bản mới.
 - `activity_logs` (append-only, model guard) + màn S32 Nhật ký (chủ shop, lọc theo người/loại/ngày).
 - UI S18 thu ngân (nháp đang mở theo cơ sở, nhóm "Từ ngày trước", dòng nhóm theo pet, Hoàn thành disabled khi còn Visit chưa xong) + S19 bán lẻ (UI đầy đủ ở phase 11).
 - Test: sửa hóa đơn completed bị chặn; hoàn thành khi còn Visit chưa done bị chặn; cùng idempotency key 2 lần → 1 lần; 2 người hoàn thành cùng hóa đơn song song → 1 (`->group('mysql')`); khách 2 pet → 1 hóa đơn, dòng đúng pet; nháp không chiếm số hóa đơn; hóa đơn service thiếu khách bị từ chối ở Action và DB; thú hoang có người trả → hóa đơn có payer_name; retail không cần khách, chặn thuốc kê đơn; chủ sửa hóa đơn → payments cũ không đổi, bản thay thế có transfer_in = đã thu + chênh lệch đúng, Thực thu và tiền mặt ca không bị tính đôi; lễ tân gọi amend → 403; hủy nháp không lý do → 422; thu tiền mặt khi chưa mở ca → từ chối; job dọn nháp đếm đúng và không gửi trùng trong ngày; mỗi thao tác đúng 1 dòng activity_logs.
-- `docs/adr/0005-visit-invoice-separation.md` (lịch hẹn tách Visit, Visit tách hóa đơn; hóa đơn bất biến, sửa = hủy + bản thay thế).
+- Điền mục Kiểm chứng của `docs/adr/0005-appointment-visit-invoice.md` và `docs/adr/0010-payments-append-only.md` (link test).
 ```
 
 **Xong khi:** F4, F8, F10, F11 chạy hết tới hóa đơn Hoàn thành; F9 (bán lẻ không hồ sơ) pass ở tầng Action.
-
-### Task 5.11: Ca thu ngân theo két
-
-```prompt
-Đọc docs/database/db-schema.md mục 2.7 (cash_drawers, cash_sessions, payments) và docs/design/design.md S35, S18, F12. Làm:
-- CRUD két theo cơ sở (Cài đặt › Cơ sở › Két). `OpenCashSession` (tiền đầu ca; mỗi két một ca mở, dựa UNIQUE open_key + bắt lỗi duplicate), `CloseCashSession` (expected_cash = đầu ca + Σ cash payment − Σ cash refund của ca; bút toán transfer_in/out không tính; nhập counted_cash; chênh lệch ≠ 0 bắt buộc lý do, activity_logs + thông báo chủ shop). Ca đóng không nhận thêm khoản. Nhiều người thu chung ca, mỗi khoản ghi received_by_staff_id.
-- Mọi payment/refund cash bắt buộc cash_session_id của ca đang mở ở cơ sở hiện tại; chuyển khoản/QR/thẻ không cần nhưng vẫn vào báo cáo ca theo thời gian.
-- Báo cáo ca: theo phương thức, theo người thu, hoàn tiền; in được. Chủ shop thấy mọi ca, quản lý chi nhánh xem ca cơ sở mình. Chip ca đang mở ở topbar.
-- Test: 2 người mở ca cùng két song song → 1 (`->group('mysql')`); thu tiền mặt khi chưa mở ca → từ chối; expected_cash đúng với nhiều người thu + hoàn tiền; đóng ca 2 lần → 1 lần; cô lập tenant + cơ sở.
-```
-
-**Xong khi:** mở ca → thu 2 hóa đơn (tiền mặt + QR) → đóng ca lệch 10.000 ₫ có lý do → báo cáo ca đúng số, chủ shop nhận thông báo.
 
 ---
 
@@ -473,15 +485,15 @@ Yêu cầu:
 ```prompt
 Đọc docs/database/db-schema.md mục 2.8 (reminders, message_deliveries, notifications) và 5.2 (job TenantAware). Làm:
 - Laravel Horizon (queue: high cho tin xác nhận/OTP, default, low cho nhắc hàng loạt), service horizon trong docker compose, dashboard chỉ admin nền tảng.
-- Tách "cần nhắc gì" (`reminders`) khỏi "đã gửi qua kênh nào" (`message_deliveries`). Khi AppointmentBooked: tạo reminders `appointment_confirm` (ngay), `appointment_24h`, `appointment_2h` với dedupe_key `appt:{id}:{purpose}`, insertOrIgnore; `appointments.send_reminders = 0` thì bỏ 24h/2h; nhắc có send_at đã qua thì không tạo. Một tin cho cả lịch nhiều pet. Lịch hủy/dời: reminders pending → skipped, tạo mới cho giờ mới.
+- Tách "cần nhắc gì" (`reminders`) khỏi "đã gửi qua kênh nào" (`message_deliveries`). Khi AppointmentBooked: tạo reminders `appointment_confirm` (ngay, **chỉ khi `source = online`**), `appointment_24h`, `appointment_2h` với dedupe_key `appt:{id}:{purpose}:{starts_at_unix}` (có giờ hẹn nên dời lịch tạo được nhắc mới), insertOrIgnore; `appointments.send_reminders = 0` thì bỏ 24h/2h; nhắc có send_at đã qua thì không tạo. Một tin cho cả lịch nhiều pet. Lịch hủy/dời: reminders pending → skipped, tạo mới cho giờ mới; shop hủy/dời thì tạo `appointment_changed` gửi ngay.
 - Gửi: Zalo ZNS trước; lỗi hoặc SĐT không dùng Zalo → SMS; không gửi cả hai khi Zalo thành công. Mỗi lần gửi thật một dòng message_deliveries (channel, template_code, status, provider_message_id, error, cost). Không email/Telegram cho khách.
 - `ZnsGateway`, `SmsGateway` (interface, driver log ở local/demo, driver thật cấu hình theo shop ở Cài đặt › Kênh nhắn tin); `SmsGateway` dùng chung cho OTP (task 7.1).
-- Scheduler mỗi phút: chọn reminders pending đến hạn (IDX(status, send_at)), claim nguyên tử (`SELECT … FOR UPDATE SKIP LOCKED` hoặc UPDATE có điều kiện sang processing), dispatch job gửi.
-- Job gửi: TenantAware, idempotent (đã sent thì thoát), retry backoff [60, 300, 900], `failed()` ghi failed + error. Nội dung tiếng Việt, giờ theo múi giờ shop, link S14. Rate limit nhà cung cấp → release theo retry_after. Bỏ qua shop suspended.
+- Scheduler mỗi phút: chọn reminders pending đến hạn (IDX(status, send_at)), claim nguyên tử (`SELECT … FOR UPDATE SKIP LOCKED` hoặc UPDATE có điều kiện sang processing + `claimed_at`), dispatch job gửi. Dòng `processing` quá 10 phút (`claimed_at`) thì lần quét sau nhận lại. Command `reminders:dispatch` quét mọi shop qua `withoutTenancy` (nằm trong whitelist).
+- Job gửi: TenantAware, idempotent (đã sent thì thoát), retry backoff [60, 300, 900], `failed()` ghi failed + error. Nội dung tiếng Việt, giờ theo múi giờ shop, link S14. Rate limit nhà cung cấp → release theo retry_after. Shop suspended: nhắc tới hạn → `skipped`, không gửi.
 - Nhắc nội bộ: trước 1 ngày tạo notifications (notifiable = staff, không phải users) cho lễ tân cơ sở → trang S20 "Cần gọi hôm nay", chuông S41 topbar. Cấu hình Zalo/SMS của shop lưu `tenant_settings.zalo_config`/`sms_config` (encrypted, không trả ra frontend).
 - Thử lại thủ công từ S3 ("SMS thất bại · Thử lại").
 - Test: chạy scheduler 2 lần không gửi 2 lần; lịch "Không gửi nhắc" không có nhắc 24h/2h; user làm ở 2 shop chỉ thấy thông báo của shop đang mở; 2 worker claim cùng lúc không trùng; retry; hủy lịch thì không gửi; Zalo lỗi → đúng 1 SMS dự phòng; Zalo thành công → không SMS; lịch 2 pet → 1 tin; Http::fake cho ZNS/SMS.
-- `docs/adr/0007-reminders-message-deliveries.md`; cập nhật docs/architecture.md mục Queue & nhắc hẹn.
+- Điền mục Kiểm chứng của `docs/adr/0007-reminders-message-deliveries.md`; cập nhật docs/architecture.md mục Queue & nhắc hẹn nếu lệch.
 ```
 
 ### Task 6.2: Bệnh án
@@ -489,7 +501,7 @@ Yêu cầu:
 ```prompt
 Đọc docs/database/db-schema.md mục 2.6 (medical_records, medical_entries, medical_entry_addenda, attachments), 2.10 (tenant_counters), 3.2, 5.3 và docs/design/design.md S4 tab Bệnh án, S17, F4. Làm:
 - Mỗi pet **một hồ sơ** `medical_records`, số hồ sơ `HS-000123` cấp ở lần khám đầu qua tenant_counters (nguyên tử, dùng chung mọi cơ sở). Mỗi lần khám **một dòng** `medical_entries` gắn visit (UNIQUE visit_id): triệu chứng, chỉ số sinh tồn, chẩn đoán, điều trị, hướng dẫn chăm sóc (khách thấy), ghi chú nội bộ, tái khám (`follow_up_on` → reminder follow_up), chuyển tuyến. Bác sĩ nhập bệnh sử khám nơi khác: dòng visit_id NULL.
-- Chỉ role vet tạo; **chỉ người lập sửa dòng của mình trong 24 giờ** (Policy + editable_until); sau đó chỉ thêm medical_entry_addenda. Mọi lần sửa ghi activity_logs trước/sau.
+- Chỉ role vet tạo; Visit cấp cứu chưa gắn pet thì chưa lưu được bệnh án. **Chỉ người lập sửa dòng của mình tới 24 giờ sau khi hoàn tất Visit** (`editable_until = visits.finished_at + 24h`, NULL khi Visit chưa xong = còn sửa được; bệnh sử nơi khác: 24h từ recorded_at; Policy + editable_until); sau đó chỉ thêm medical_entry_addenda. Mọi lần sửa ghi activity_logs trước/sau.
 - Quyền xem: `medical.view_full` (vet mọi cơ sở, chủ shop) nhận MedicalEntryResource đầy đủ; `medical.view_alerts` (lễ tân, spa, quản lý chi nhánh) chỉ cảnh báo + ngày khám (Resource riêng, không chỉ ẩn UI); thu ngân, kho không gọi được. Site (task 7.1) nhận ngày khám, chẩn đoán, hướng dẫn, thuốc đã kê, tái khám, **không bao giờ** internal_notes.
 - Đính kèm kết quả xét nghiệm / chẩn đoán hình ảnh (ảnh, PDF) vào dòng bệnh án qua attachments (private disk, URL ký có hạn, giới hạn loại + dung lượng); ô `is_shared_with_customer` (mặc định tắt) quyết định Site có thấy file không.
 - Timeline bệnh án ở hồ sơ pet, mọi cơ sở.
@@ -500,10 +512,10 @@ Yêu cầu:
 
 ```prompt
 Đọc docs/database/db-schema.md mục 2.6 (vaccines, care_protocols, care_protocol_steps, pet_vaccinations) và docs/design/design.md S4 tab Tiêm phòng, S7, F6, F13. Làm:
-- CRUD vaccines, care_protocols, care_protocol_steps (chủ shop/vet).
+- **S44 Phác đồ tiêm & danh mục vaccine**: CRUD vaccines, care_protocols, care_protocol_steps (chủ shop/vet).
 - `CareScheduleCalculator` (thuần, unit test kỹ): từ phác đồ + sổ tiêm của pet + ngày sinh → mũi kế tiếp và next_due_on (min_age_days, offset_days, recurring). Ngày theo DATE giờ shop.
 - Action `RecordVaccination` (vet, trong Visit): ghi mũi (vaccine, số lô, hạn lô), visit_id, tính next_due_on, đánh dấu dòng cũ cùng vaccine superseded_at, trong transaction. UI hiển thị trước "Mũi kế tiếp dự kiến: dd/MM/yyyy". `PostponeVaccination`: dòng `postponed` + lý do + ngày hẹn mới ở next_due_on. "Đã tiêm ở nơi khác": dòng không visit_id.
-- Scheduler hằng ngày theo giờ sáng của TỪNG shop (vd 08:00 giờ shop; Tenant::forEach, dùng IDX(tenant_id, superseded_at, next_due_on)): next_due_on trong 7 ngày tới hoặc quá hạn, superseded_at null → reminders `vaccine_due` dedupe_key `vax:{pet_vaccination_id}:{offset}`. chunkById, không load hết vào bộ nhớ.
+- Scheduler hằng ngày theo giờ sáng của TỪNG shop (vd 08:00 giờ shop; Tenant::forEach, dùng IDX(tenant_id, superseded_at, next_due_on)): next_due_on trong 7 ngày tới hoặc quá hạn, superseded_at null → reminders `vaccine_due` dedupe_key `vacc:{pet_vaccination_id}:{next_due_on}`. chunkById, không load hết vào bộ nhớ.
 - S7: tab Quá hạn / 7 ngày / 30 ngày, lọc, trạng thái nhắc, action Đặt lịch tiêm (mở S2 điền sẵn), Gửi nhắc lại.
 - Tab Tiêm phòng ở hồ sơ pet với tiến độ phác đồ (3/4 mũi).
 - Test: dữ liệu design mục 9 (Sushi mũi 2/4, Tôm quá hạn); hoãn tiêm thì nhắc theo ngày mới; chạy scheduler 2 lần không nhắc trùng; múi giờ.
@@ -520,7 +532,8 @@ Yêu cầu:
 - Trang chủ shop (giới thiệu, cơ sở, giờ mở cửa, gọi, chỉ đường), Dịch vụ & giá (dịch vụ is_public, giá "tham khảo") công khai.
 - Đăng nhập khách S21: SĐT + OTP SMS (customer_otps lưu hash, hết hạn 5 phút, sai 5 lần khóa 15 phút; gửi lại sau 60s, tối đa 5 lần/giờ mỗi SĐT, 20 lần/giờ mỗi IP, key có tiền tố shop); guard riêng `customer`, không dùng bảng users; phiên `tenant_settings.customer_session_days`. Đăng nhập xong về `/{slug}/tai-khoan` hoặc trang đang xem dở (intended chỉ nhận đường dẫn thuộc Site đúng shop). Khách KHÔNG bao giờ vào được `/app` (test: khách mở /app/{slug} → về /login, không thấy dữ liệu); đăng nhập Site shop A thì ở Site shop B vẫn là khách lạ.
 - **Đặt lịch S6, 5 bước**: (1) chọn cơ sở (ẩn nếu chỉ có 1) + dịch vụ công khai; (2) xác minh: đã đăng nhập thì bỏ qua, chưa thì SĐT + OTP, SĐT mới thì nhập tên → tạo customers (khách tự đăng ký; 2 request cùng SĐT đồng thời không tạo trùng: UNIQUE + bắt lỗi duplicate rồi đọc lại); (3) chọn một hoặc nhiều pet đã có hoặc thêm mới (loài, giống, cân nặng → quote qua ServiceQuoteResolver), mỗi pet một dịch vụ; (4) dải 14 ngày + khung còn đủ chỗ cho mọi pet (CapacityService.slotsForOnline), không chọn nhân viên, ô "người mong muốn"; (5) xác nhận → BookAppointment source=online → lịch `confirmed` ngay. Không gợi ý pet trước khi xác minh OTP.
-- Chống lạm dụng: rate limit theo IP + SĐT + shop, honeypot hoặc Turnstile, giới hạn số lịch tương lai mỗi SĐT.
+- Chống lạm dụng: rate limit theo IP + SĐT + shop, honeypot hoặc Turnstile. Giới hạn đặt online (mặc định, chỉnh ở S12.1): trước tối thiểu 60 phút, xa nhất 14 ngày, tối đa 3 lịch tương lai còn hiệu lực mỗi khách (kiểm trong BookAppointment sau khi khóa khách).
+- **S12.5 Cài đặt › Site**: giới thiệu, ảnh bìa, dịch vụ hiển thị, Điều khoản (S33).
 - Trang thành công: mã lịch (public_id), file .ics, link quản lý; tin xác nhận Zalo (lỗi thì SMS) qua task 6.1.
 - S14 quản lý lịch qua signed URL theo public_id (không cần đăng nhập): xem, hủy cả lịch hoặc một pet, dời (về bước 4). Chặn ở server theo `tenant_settings.booking_cancel_cutoff_hours` / `booking_reschedule_cutoff_hours` (mặc định 24 giờ).
 - Tài khoản "Của tôi": pet, lịch sắp tới, lịch sử khám/spa mọi cơ sở (ngày khám, chẩn đoán, hướng dẫn chăm sóc, thuốc đã kê, tái khám, file bác sĩ chia sẻ; không ghi chú nội bộ), sổ tiêm, hóa đơn đã hoàn thành của mình.
@@ -594,7 +607,7 @@ Chuẩn bị deploy production cho một VPS nhỏ (hoặc Laravel Cloud/Forge; 
 ### Task 10.2: README & ADR hoàn chỉnh
 
 ```prompt
-Viết lại README cho nhà tuyển dụng đọc trong 2 phút: demo link + tài khoản demo theo role, ảnh chụp (lịch, đặt lịch nhiều pet, hàng đợi, hồ sơ pet, Site mobile), sơ đồ kiến trúc (mermaid), mục "Điểm kỹ thuật đáng chú ý" (multi-tenant fail closed + FK ghép; chống vượt hạn mức đặt online bằng khóa hàng đếm + test concurrency; hàng đợi cấp số nguyên tử; hóa đơn bất biến + bản thay thế; timezone/DST; nhắc Zalo→SMS idempotent), mỗi mục 2–3 dòng + link code/ADR, số liệu (coverage, PHPStan level, p95 đặt lịch). Rà docs/adr/ đủ 8 ADR theo docs/database/db-schema.md mục 6 (0001 single DB, 0002 capacity lock, 0003 UTC + TIME local, 0004 branch không global scope, 0005 Visit/hóa đơn, 0006 sổ kho FIFO (GĐ2), 0007 reminders/message_deliveries, 0008 platform admin).
+Viết lại README cho nhà tuyển dụng đọc trong 2 phút: demo link + tài khoản demo theo role, ảnh chụp (lịch, đặt lịch nhiều pet, hàng đợi, hồ sơ pet, Site mobile), sơ đồ kiến trúc (mermaid), mục "Điểm kỹ thuật đáng chú ý" (multi-tenant fail closed + FK ghép; chống vượt hạn mức đặt online bằng khóa hàng đếm + test concurrency; hàng đợi cấp số nguyên tử; hóa đơn bất biến + bản thay thế; timezone/DST; nhắc Zalo→SMS idempotent), mỗi mục 2–3 dòng + link code/ADR, số liệu (coverage, PHPStan level, p95 đặt lịch). Rà docs/adr/ (10 ADR, bản chính; danh sách ở docs/adr/README.md): không viết ADR mới, chỉ kiểm mục **Kiểm chứng** của từng ADR đã có link test và số liệu thật; ADR nào chưa có thì ghi rõ "chưa kiểm chứng" và lý do.
 ```
 
 **Xong khi:** người lạ mở README hiểu dự án làm gì, vào được demo, thấy ngay 3–4 điểm kỹ thuật khó.
@@ -618,7 +631,7 @@ Viết lại README cho nhà tuyển dụng đọc trong 2 phút: demo link + t�
 - Cảnh báo kho `stock_alerts`: sắp hết (`stock_items.reorder_level` → `products.default_reorder_level`), hết hàng (kiểm sau mỗi lần xuất, job sau commit), cận date/quá hạn (ngưỡng sản phẩm → nhóm → tenant_settings.expiry_alert_days; quét 07:00 giờ shop). Một cảnh báo mở mỗi sự việc (open_key). Báo qua notifications cho chủ shop + người có `inventory.alerts` của cơ sở; card ở S5, tab Cảnh báo ở S22.
 - S22 Kho (tồn, lô & HSD, sổ kho, lọc Cận date / Quá hạn), S24 phiếu nhập, hao hụt, kiểm kê, nhà cung cấp.
 - Test: tổng lô = on_hand sau mọi thao tác; giá vốn xuất đúng theo lô FIFO (lô 180.000 rồi lô 190.000, bán 1 → 180.000; bán vượt lô 1 → 2 movement 2 giá); giá bán không đổi khi nhập lô giá mới; lô chưa có giá → movement unit_cost NULL, điền giá sau thì cập nhật; kho gọi CostPurchaseReceipt → 403; phiếu hao hụt chưa duyệt không đổi tồn, duyệt 2 lần song song → trừ 1 lần (`->group('mysql')`); nhập 2 thùng → 48 gói; xuống dưới ngưỡng → đúng 1 cảnh báo mở, chạy job 2 lần không trùng; nhập bù → resolved; cảnh báo cơ sở A không hiện ở cơ sở B; cô lập tenant.
-- `docs/adr/0006-stock-ledger-fifo.md` (FIFO theo lô nhập, giá vốn = giá lô, phiếu nhập 2 bước; so với FEFO và bình quân gia quyền).
+- Điền mục Kiểm chứng của `docs/adr/0006-stock-ledger-fifo.md` (link test).
 ```
 
 ### Task 11.2: Trừ kho khi hoàn tất Visit / hoàn thành hóa đơn + lãi gộp ⭐

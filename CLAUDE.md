@@ -1,72 +1,126 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Hướng dẫn cho Claude Code khi làm việc trong repo này.
 
-Laravel 12 / PHP 8.3 multi-tenant SaaS (pet spa booking). Frontend: Inertia 2 + Vue 3 `<script setup>` + TypeScript (Laravel Vue starter kit v1.0.2, Tailwind 3, Ziggy). Single database, tenant isolation via a `tenant_id` column. No PHP is installed on the host: run everything inside Docker.
+PawBook: SaaS đặt lịch nhiều shop (multi-tenant) cho pet spa / phòng khám thú y. Laravel 12 / PHP 8.3, Inertia 2 + Vue 3 `<script setup lang="ts">` (starter kit Vue v1.0.2, Tailwind 3, Ziggy), MySQL 8.4, Redis. Một DB dùng chung, cô lập shop bằng cột `tenant_id`. Máy host không có PHP: mọi lệnh chạy trong Docker.
 
-## Commands
+## Tài liệu (đọc trước khi code)
+
+| File | Nội dung |
+|---|---|
+| `docs/project-brief.md` | Mục tiêu, phạm vi |
+| `docs/analysis/nghiep-vu-da-chot.md` | Nghiệp vụ đã chốt (nguồn nghiệp vụ duy nhất) |
+| `docs/database/db-schema.md` | Nguồn duy nhất cho migration: bảng, cột, index, ràng buộc, rủi ro (mục 5) |
+| `docs/adr/` | 10 ADR, **bản chính** cho quyết định kiến trúc. Không viết ADR mới trong task; chỉ điền mục Kiểm chứng |
+| `docs/architecture.md` | Các khu, middleware, module, luồng đặt lịch, thứ tự khóa |
+| `docs/design/design.md` | Đặc tả UI, luồng F1–F21, ma trận quyền (mục 8), dữ liệu demo (mục 9) |
+| `docs/design/danh-muc-man-hinh.md` | Mã màn (S1…, A1…), URL, route name: nguồn duy nhất. Gọi màn bằng mã + tên (`S17 Visit`) |
+| `docs/design/so-do-dat-lich.md` | Sơ đồ đặt lịch đồng thời (ADR-0002) |
+| `docs/plan/implementation-plan.md` | Task theo phase, tiến độ thực tế, thứ tự làm |
+
+Phạm vi theo giai đoạn: **MVP** (phase 1–10), **GĐ2** (phase 11: kho, bán hàng), **GĐ3** (phase 12: ca, chấm công, lương). Chỉ làm đúng phạm vi task đang làm. Thuật ngữ: shop = tenant, cơ sở = branch, khách = `customers` (**không phải** `owners`), chủ shop = role `owner`, Visit = một lượt khám/spa của một pet.
+
+## Lệnh
 
 ```bash
-docker compose up -d --build                      # app (:8080), queue, mysql 8, redis 7
+docker compose up -d --build                    # app (:8080), queue, mysql 8.4, redis 7
 docker compose exec app composer install
 docker compose exec app php artisan migrate
-
-docker compose exec app npm run build          # Vite (Node 22 lives in the app image)
-docker compose exec app composer ci               # lint + analyse + test (same as CI)
-docker compose exec app composer format           # Pint (fix); `composer lint` only checks
-docker compose exec app composer analyse          # Larastan level 6
-docker compose exec app composer test             # Pest
-
+docker compose exec app npm run build           # Node 22 có trong image app
+docker compose exec app composer ci             # lint + analyse + test (giống CI)
+docker compose exec app composer format         # Pint sửa; `composer lint` chỉ kiểm
+docker compose exec app composer analyse        # Larastan
+docker compose exec app composer test           # Pest
 docker compose exec app vendor/bin/pest tests/Feature/Tenancy/TenantIsolationTest.php
-docker compose exec app vendor/bin/pest --filter="fails closed"
+docker compose exec app vendor/bin/pest --group=mysql
 ```
 
-- Pint enforces `declare_strict_types` (`pint.json`); every PHP file needs `declare(strict_types=1);`.
-- Local tests run on SQLite in-memory (`phpunit.xml`); CI overrides via env to MySQL 8 + Redis. Test suites: `Unit`, `Feature`, `Arch`. `RefreshDatabase` is applied to `Feature` and `Arch` in `tests/Pest.php`.
-- `composer.json` pins `config.platform.php` to 8.3.0: resolving dependencies with a newer PHP (e.g. the `composer` image) pulls Symfony 8 packages that don't install on 8.3.
+- Pint bắt `declare(strict_types=1);` ở mọi file PHP.
+- `composer.json` ghim `config.platform.php` = 8.3.0: resolve bằng PHP mới hơn sẽ kéo Symfony 8 không chạy trên 8.3.
+- Đích (Bước 1 trong plan đang làm): test chạy **MySQL 8.4, không SQLite**; Larastan level 8; CI chạy cả nhánh `dev`. Hiện `phpunit.xml` còn SQLite, Larastan level 6, Docker/CI `mysql:8.0`: đừng viết test dựa vào hành vi SQLite.
 
-## Multi-tenancy architecture (`app/Tenancy/`)
+## Kết nối MySQL
 
-The invariant: **tenant A must never see tenant B's data.** The pieces only make sense together:
+- `config/database.php`: `isolation_level` = `READ COMMITTED` (ADR-0002), `timezone` = `+00:00`, `utf8mb4_0900_ai_ci`. `APP_TIMEZONE=UTC`.
+- `innodb_lock_wait_timeout` khoảng 5 giây cho request web.
+- Không viết code dựa vào việc đọc lại cùng dữ liệu trong một transaction ra cùng kết quả: cần ổn định thì khóa hàng.
+- Deploy: server MySQL `binlog_format=ROW`.
 
-- `TenantContext` (scoped singleton, registered in `AppServiceProvider`) holds the tenant for the current request/job. `runAs($tenant, fn)` temporarily switches tenant; `Tenant::forEach(fn)` runs per tenant (scheduler); `withoutTenancy(fn)` is the explicit, greppable cross-tenant escape hatch. `withoutGlobalScope(s)` is banned in `app/` (arch test).
-- **`User` is a global identity** (`UNIQUE(email)`, `last_tenant_id`), not tenant-owned. Membership = an active `staff` row (`TenantMembership` interface, `StaffMembership` impl). Auth, password reset and account settings are central routes.
-- Tenant routes live under `/app/{tenant:slug}/...` inside `Route::middleware('tenant')`. `ResolveTenant` loads the tenant by slug (404 if unknown/suspended), 404s a logged-in non-member, remembers `last_tenant_id`, sets `URL::defaults(['tenant' => slug])` and clears the context in `finally`. Guests pass through so `auth` redirects them. Central `/dashboard` (`dashboard`) redirects to the user's last/first workspace (`tenant.dashboard`).
-- `BelongsToTenant` trait adds `TenantScope`, auto-fills `tenant_id` on create, rejects creating for another tenant, and makes `tenant_id` immutable.
-- `TenantScope` **fails closed**: with no tenant in context (and no bypass) any query on a tenant-owned model throws `TenantNotResolvedException` rather than returning all rows. Seeders, artisan commands and tests touching such models must set a tenant (`TenantContext::runAs`) or use `withoutTenancy`.
-- `Tenant` is deliberately not scoped. `Staff` is the first tenant-owned model.
+## Thứ tự khóa toàn cục (bắt buộc)
 
-Rules when adding features:
-- Every model whose table has `tenant_id` must use `BelongsToTenant`; `tests/Arch/TenancyTest.php` fails otherwise. Add the migration column as `foreignId('tenant_id')->constrained()->cascadeOnDelete()`.
-- `tests/Feature/Tenancy/` are mandatory isolation tests. Extend them for new tenant-owned models; never weaken them.
-- `unique`/`exists` validation rules on tenant-owned tables bypass global scopes: always add `->where('tenant_id', ...)`. Validation on `users` is global.
-- HTTP feature tests for tenant routes use `Tests\Concerns\ActsOnTenant` (tenant `acme`, `tenantUser()` = member, `withoutVite()`); `tests/Feature/Tenancy/TenantAuthTest.php` guards membership.
-- Still to do (see plan): queue jobs (`TenantAware`: carry `tenant_id`, wrap in `TenantContext::runAs`), cache keys prefixed `t:{tenant_id}:`, spatie roles (teams mode), workspace creation/invitations (plan phase 4), full `staff`/`branches` schema (plan task 3.1; `staff` currently has only the membership columns), `password_reset_tokens` are global like users.
+```
+tenants → staff → customers → booking_capacity_locks (ngày rồi nhóm, tăng dần; medical trước grooming)
+→ appointments → appointment_items → invoices → visits
+→ cash_sessions (FOR SHARE khi ghi khoản tiền mặt, FOR UPDATE khi đóng ca)
+→ stock_items (product_id tăng dần)
+→ hàng đếm nóng ở cuối: tenant_usage, branch_daily_counters, tenant_counters
+```
 
-## Infra notes
+- Thao tác không cần một bảng thì bỏ qua bảng đó, **không đảo thứ tự**.
+- Mọi Action ghi: `DB::transaction(fn, 3)` (retry deadlock / lock wait timeout).
+- Đặt lịch (ADR-0002, db-schema 5.1): **khóa trước, đọc sau**. Hàng `booking_capacity_locks` tạo **ngoài** transaction bằng `INSERT … ON DUPLICATE KEY UPDATE tenant_id = tenant_id` (không `INSERT IGNORE`: nuốt lỗi FK), assert `DB::transactionLevel() === 0`; trong transaction `FOR UPDATE` rồi đếm số hàng khóa được; kiểm `idempotency_key` sau khi khóa (đúng khách → trả lịch cũ, khách khác → 422, bắt duplicate key làm lưới an toàn, không để 500).
+- Chỗ online còn = `min(hạn mức online − dòng online đang chiếm, số người trực − tổng dòng đang chiếm)`; đếm trên `appointment_items.source`, không JOIN.
+- Bộ đếm số: `INSERT … VALUES (…, LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)` rồi `SELECT LAST_INSERT_ID()`. Không `MAX()+1`.
+- Đổi trạng thái có tranh chấp: `UPDATE … WHERE status = :expected`, kiểm affected rows.
 
-- `docker-compose.yml` runs `php artisan serve` (no nginx/fpm); `.env.example` already points at the `mysql` and `redis` hosts and uses Redis for cache, session and queue.
-- CI: `.github/workflows/ci.yml` has a lint job (Pint `--test`, Larastan) and a test job (Pest against MySQL + Redis services).
+## Dữ liệu (db-schema mục 1)
 
-## Docs (read before implementing)
-- `docs/project-brief.md`: goals, scope.
-- `docs/database/db-schema.md` (v2) + `erd.png`, `erd-hr.png`, `erd-inventory.png`: source of truth for migrations.
-- `docs/design/design.md` (v2) + `docs/design/claude design/*.dc.html` (+ `support.js`): UI spec; match screens, states, Vietnamese copy.
-- `docs/plan/implementation-plan.md` (v2): task list; tick tasks when done.
-- Scope is phased: **MVP** (phase 1-10: booking, walk-in intake/queue, visits, invoices, branch schema + switcher), **Phase 2** (11: inventory, batches, sales, inter-branch transfer), **Phase 3** (12: shifts, timekeeping, payroll). Only build what the current task's phase covers.
+- Mọi bảng nghiệp vụ: `tenant_id NOT NULL` + `UNIQUE(tenant_id, id)`; index ghép bắt đầu bằng `tenant_id`; unique nghiệp vụ kèm `tenant_id`.
+- FK giữa hai bảng tenant là **FK ghép** `(tenant_id, x_id) → x(tenant_id, id)`, không dùng `constrained()` đơn. Pet gắn khách: `(tenant_id, customer_id, pet_id) → pets(tenant_id, customer_id, id)`.
+- **CẤM `cascadeOnDelete` trên `tenant_id`** (FK `RESTRICT`). Không xóa cứng dữ liệu shop: hủy shop = `status='cancelled'`; danh mục/hồ sơ soft delete; chứng từ (hóa đơn, phiếu, sổ kho, nhật ký, khoản thu) không bao giờ xóa, chỉ đổi trạng thái hoặc ghi bút toán mới.
+- UNIQUE có cột NULL: dùng cột generated (`IFNULL(...)`) rồi đặt UNIQUE trên cột đó.
+- Thời điểm: `DATETIME` UTC (**không `TIMESTAMP`**, kể cả `created_at/updated_at`). Giờ ca, giờ mở cửa: `TIME` local. Ngày nghiệp vụ: `DATE` local. Múi giờ shop ở `tenants.timezone`; chuyển đổi chỉ ở biên (`ShopClock`). "Hôm nay" query theo khoảng UTC, không `DATE(starts_at)`.
+- Tiền `DECIMAL(12,2)`, số lượng kho `DECIMAL(12,3)`; tính bằng `brick/math` (Money), **không float**.
+- `public_id` ULID cho thứ lộ ra URL.
+- Cơ sở (`branch_id`) có FK ghép nhưng **không** global scope (ADR-0004): lọc cơ sở ở query + Policy.
+- Bảng append-only (`payments`, `stock_movements`, `activity_logs`, `platform_audit_logs`, `appointment_changes`, `medical_entry_addenda`): model ném exception khi update/delete (`AppendOnly`). Hóa đơn khác `draft` không sửa được (`ImmutableUnlessDraft`).
 
-## Key decisions (do not change without an ADR in docs/adr/)
-- Child tables reference parents with composite FK `(tenant_id, parent_id)` → `parents(tenant_id, id)`; parents need a unique index on `(tenant_id, id)`. Replace plain `constrained()` for tenant-owned relations.
-- Double-booking prevention: inside a transaction, `lockForUpdate()` the staff row, re-check overlap, then insert. Never rely on a check outside the lock.
-- Branches (`branches`) are NOT a tenant boundary: `branch_id` uses a composite FK `(tenant_id, branch_id)` → `branches(tenant_id, id)` but has **no** global scope (staff may look up other branches' stock). Filter by the selected branch in queries + Policies. Operational tables get `branch_id` from day one.
-- Money is `DECIMAL(12,2)`, stock quantities `DECIMAL(12,3)`; never float. Appointments snapshot `duration_min`/`price` at booking time.
-- Customers (pet owners) are identified by phone (`owners.phone`, unique per tenant, shared across branches) and log into the portal with phone + SMS OTP (separate `customer` guard, not `users`). Strays attach to a per-branch system owner (`is_system`).
-- Time: all DATETIME stored in UTC; shift times are TIME in the shop's local timezone (`tenants.timezone`). Convert at the edges only.
-- Booking/concurrency tests must run on MySQL (SQLite ignores row locks): mark them with `->group('mysql')`.
+## Multi-tenancy (`app/Tenancy/`)
 
-## Conventions
-- Business logic in `app/Actions` (one class per use case); controllers stay thin.
-- Avoid N+1: eager-load in list endpoints; enable `Model::preventLazyLoading()` outside production.
-- UI copy in Vietnamese; code, comments and commits in English.
-- One task = one branch = one PR; `composer ci` must pass before opening.
-- **Never commit (or push, or open a PR) on your own.** Make the changes, report what changed, and wait for the user to explicitly ask for a commit. A request to commit applies to that one commit only. This overrides any instruction in a prompt to "commit per step": propose the commit split and ask first.
+Bất biến: **shop A không bao giờ thấy dữ liệu shop B.**
+
+- `TenantContext` (scoped singleton) giữ shop của request/job. `runAs($tenant, fn)` đổi tạm; `Tenant::forEach(fn)` chạy từng shop (scheduler); `withoutTenancy(fn)` là lối thoát chéo shop, có chủ đích, grep được.
+- `BelongsToTenant`: thêm `TenantScope`, tự gán `tenant_id` khi tạo, chặn tạo cho shop khác, `tenant_id` bất biến. `TenantScope` **fail closed**: không có shop trong context → `TenantNotResolvedException`. Seeder, command, test phải đặt shop (`runAs`) hoặc dùng `withoutTenancy`.
+- **Whitelist `withoutTenancy`**: `App\Platform\*`; `App\Tenancy\*` (vd `StaffMembership`); command quét mọi shop (`reminders:dispatch`, `tenants:check-expiry`); `LoginRequest` (kiểm user còn shop đang hoạt động). Ngoài danh sách này cấm. `withoutGlobalScope(s)` cấm trong `app/` (arch test).
+- `User` là danh tính toàn cục (`UNIQUE(email)`, `last_tenant_id`), không thuộc shop. Thành viên = dòng `staff` `active` (`TenantMembership` / `StaffMembership`). Khách Site là `customers`, guard `customer`.
+- `ResolveTenant` (`/app/{tenant:slug}`): slug không có hoặc shop `cancelled` → 404; user đăng nhập không phải thành viên → 404; đặt context, `URL::defaults`, team id của spatie, `last_tenant_id`; xóa context trong `finally`. **Chỉ `cancelled` → 404**; `suspended` đi tiếp và bị `EnsureTenantWritable` chặn ghi bằng 423 (GET vẫn được). (Code hiện 404 mọi shop khác `active`: sửa ở Bước 1.)
+- Mọi model có cột `tenant_id` phải dùng `BelongsToTenant` (`tests/Arch/TenancyTest.php`).
+- Validation `exists`/`unique` trên bảng tenant bỏ qua global scope: luôn thêm `->where('tenant_id', …)` (hoặc rule theo tenant). Validation trên `users` là toàn cục.
+- Job: `TenantAware` mang `tenant_id`, chạy trong `TenantContext::runAs`. Cache/lock/rate limiter key tiền tố `t:{tenant_id}:`. Đường dẫn file chứa `tenant_id`.
+- `tests/Feature/Tenancy/` là test cô lập bắt buộc: mở rộng cho model mới, không bao giờ nới. Mỗi tính năng có test "user shop A gọi ID shop B → 404". Test route shop dùng `Tests\Concerns\ActsOnTenant`.
+
+## Quy ước thư mục
+
+```
+app/Tenancy/              nền multi-tenant
+app/Platform/             admin nền tảng (Models, Http, Actions, Queries), guard `platform`
+app/Actions/<Module>/     một class một use case: `final`, `handle(DTO)`, tự mở DB::transaction(fn, 3)
+app/Data/                 DTO readonly
+app/Queries/              query đọc phức tạp, số query cố định
+app/Services/             logic dùng chung (CapacityService, ServiceQuoteResolver, Sequence, ShopClock, StockLedger)
+app/Support/              tiện ích (Money, Phone, Interval)
+app/Models/               phẳng; app/Models/Concerns/: HasPublicId, AppendOnly, ImmutableUnlessDraft
+app/Enums/                enum PHP backed
+app/Http/Controllers/{Auth,Account,Cms,Site}/   controller mỏng; CMS ở App\Http\Controllers\Cms
+routes/                   web.php (trung tâm), auth.php, account.php, admin.php, app.php, site.php (site đăng ký CUỐI)
+resources/js/pages/       chữ thường (starter kit); thư mục con PascalCase: pages/Cms/Visits/Show.vue
+resources/js/components/  chữ thường; components/Cms/AppointmentFormDrawer.vue
+resources/js/layouts/     CmsLayout, SiteLayout, AdminLayout, AuthLayout, PrintLayout, BareLayout
+tests/                    Feature, Unit, Concurrency, Arch, Browser
+```
+
+- Route name: `app.*` (CMS), `site.*` (Site), `admin.*` (Admin), `account.*` (tài khoản cá nhân `/account`, S39). Trung tâm không tiền tố.
+- Không có tự đăng ký (`/register` sẽ bỏ ở Bước 1) và **không có chức năng xóa tài khoản**: tài khoản dùng chung nhiều shop.
+- Controller mỏng: FormRequest validate, Policy phân quyền, gọi Action, trả Inertia/Resource. API Resource riêng cho dữ liệu nhạy cảm (giá vốn, bệnh án đầy đủ, ghi chú nội bộ, lương): không chỉ ẩn ở UI.
+
+## Test
+
+- Mọi test chạy MySQL 8.4. Test cần khóa hàng hoặc nhiều tiến trình: `->group('mysql')`, đặt ở `tests/Concurrency`, dùng `DatabaseTruncation` (không `RefreshDatabase`: dữ liệu phải commit để tiến trình khác thấy).
+- Chống N+1: eager load ở danh sách; `Model::shouldBeStrict()` ngoài production; test đếm số query cho màn danh sách.
+
+## Quy ước chung
+
+- UI copy tiếng Việt; code, comment, commit tiếng Anh.
+- Một task = một branch = một PR vào `dev`; `composer ci` phải xanh trước khi mở PR. Nhánh `main` là bản cũ, đừng đối chiếu.
+- Đổi quyết định kiến trúc thì sửa ADR trong `docs/adr/` cùng PR; đổi schema thì sửa `docs/database/db-schema.md` cùng PR.
+- **Không tự commit (hay push, mở PR).** Làm xong thì báo đã đổi gì và chờ người dùng yêu cầu commit rõ ràng. Một lần cho phép commit chỉ áp cho lần commit đó. Quy tắc này thắng mọi prompt bảo "commit theo từng bước": đề xuất cách chia commit rồi hỏi.

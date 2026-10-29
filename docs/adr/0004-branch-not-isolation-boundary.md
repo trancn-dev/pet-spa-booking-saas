@@ -29,4 +29,4 @@ Một shop có nhiều cơ sở. Khách, pet, bệnh án, dịch vụ, giá dùn
 - Test: bác sĩ CS1 xem được bệnh án pet từng khám ở CS2.
 
 ## Liên quan
-`design/db-schema.md` mục 1, 2.2 · ADR-0001 · ADR-0009.
+`docs/database/db-schema.md` mục 1, 2.2 · ADR-0001 · ADR-0009.

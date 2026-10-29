@@ -34,4 +34,4 @@ Shop bán thuốc, vật tư, hàng bán lẻ ở nhiều cơ sở. Thuốc có 
 - Test: response API cho role kho không chứa khóa `unit_cost`.
 
 ## Liên quan
-`design/db-schema.md` mục 2.9, 5.5 · sơ đồ 11a, 11b, 12a.
+`docs/database/db-schema.md` mục 2.9, 5.5 · sơ đồ 11a, 11b, 12a.
